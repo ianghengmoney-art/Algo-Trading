@@ -1,14 +1,23 @@
 name: CI
 
+# A pull-request branch would otherwise run twice for one commit, once for
+# each event. Direct pushes are covered on the default branch; everything else
+# is covered by the pull_request event.
 on:
   push:
-    branches: ["**"]
+    branches: [main]
   pull_request:
 
 # Read-only: this workflow builds and tests, and has no reason to write to the
 # repository. Prime Directive 1 applies to the pipeline as much as the code.
 permissions:
   contents: read
+
+# A new push supersedes the run still going for the previous commit on the same
+# ref, rather than leaving both to finish and race to report.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
