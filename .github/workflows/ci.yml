@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+# Read-only: this workflow builds and tests, and has no reason to write to the
+# repository. Prime Directive 1 applies to the pipeline as much as the code.
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install
+        run: pip install -e ".[dev]"
+
+      # Run first and on its own so a violation is legible in the log as what
+      # it is -- an execution library reaching the dependency tree -- rather
+      # than as one failure among a hundred. The environment check in this
+      # file is stricter in CI than locally, because CI installs only what
+      # pyproject.toml declares.
+      - name: Prime Directive 1 -- no execution capability
+        run: pytest tests/test_prime_directives.py -v
+
+      - name: Tests
+        run: pytest -q
+
+      - name: Lint
+        run: |
+          pip install pyflakes
+          pyflakes gcfp tests
+
+      # The Section 17 probe against the offline fixture set. It exercises the
+      # coverage machinery itself, which is the part a broken adapter would
+      # silently take down.
+      - name: Section 17 coverage probe (fixtures)
+        run: gcfp coverage --adapter fixtures
