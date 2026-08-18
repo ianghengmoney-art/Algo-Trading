@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gcfp"
+version = "3.0.0"
+description = "GCFP v3 - unified adaptive value framework. Alert-only screening and valuation; never executes."
+requires-python = ">=3.11"
+dependencies = [
+    "pandas>=2.0",
+    "requests>=2.31",
+]
+
+# Prime Directive 1: no broker or execution library may enter this tree.
+# tests/test_prime_directives.py fails the build if one does.
+
+[project.optional-dependencies]
+yfinance = ["yfinance>=0.2.40"]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+gcfp = "gcfp.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["gcfp*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = [".", "tests"]
