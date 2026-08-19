@@ -2,7 +2,8 @@
     "algorithm-language": "Python",
     "parameters": {
         "live_enabled": "0",
-        "ballast_pct": "50"
+        "ballast_pct": "50",
+        "edgar_user_agent": ""
     },
     "description": "GCFP v3 - unified adaptive value framework on QuantConnect paper trading. Dry run until live_enabled is set to 1.",
     "cloud-id": null,

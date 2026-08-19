@@ -245,6 +245,7 @@ class QCDataAdapter(DataAdapter):
             is_actively_trading=_attr(security, "delisting_date") is None,
             ipo_date=_to_date(_attr(security, "ipo_date")),
             sic_code=str(sic) if sic not in (None, "") else None,
+            cik=str(_attr(company, "cik") or "") or None,
             is_reit=is_reit,
             is_bank=is_bank,
             is_insurer=is_insurer,
@@ -353,12 +354,17 @@ class QCDataAdapter(DataAdapter):
 
     # -- filing flags ------------------------------------------------------
     def get_filing_flags(self, symbol: str) -> FilingFlags:
-        """Auditor change is detectable. The rest is not, and stays unknown.
+        """What Morningstar can answer about gate A4, and no more.
 
-        Returning ``None`` for the three unavailable flags is deliberate: gate
-        A4 converts unknown into DATA_GAP, which is the correct reading. A
-        clean bill of health would have to be earned from filing text this
-        source does not carry.
+        Two signals are available. ``period_auditor`` lets an auditor change be
+        inferred by diffing snapshots -- weaker than EDGAR's 8-K item 4.01,
+        and superseded by it when the overlay is present.
+        ``auditor_report_status`` is a coded audit opinion, which is the
+        better going-concern signal than text-searching a filing.
+
+        Restatement and late-filing status are not carried at all and stay
+        ``None``, which gate A4 reads as DATA_GAP. Combine with
+        ``gcfp.data.edgar`` to close them.
         """
         history = []
         try:
@@ -378,14 +384,54 @@ class QCDataAdapter(DataAdapter):
             recent = auditors[:4]  # roughly the last twelve months of snapshots
             changed = len(set(recent)) > 1
 
+        opinion, going_concern = self._audit_opinion(history)
+
+        evidence = []
+        if changed is not None:
+            evidence.append(f"QC: auditor name {'changed' if changed else 'stable'} across snapshots")
+        if opinion:
+            evidence.append(f"QC: audit opinion {opinion}")
+
         return FilingFlags(
             restatement_within_lookback=None,
             auditor_change_within_lookback=changed,
             auditor_change_reason=None,
-            going_concern_language=None,
+            going_concern_language=going_concern,
             delayed_filing=None,
             as_of=self.as_of,
+            audit_opinion=opinion,
+            evidence=tuple(evidence),
         )
+
+    @staticmethod
+    def _audit_opinion(history: Sequence[Any]) -> tuple[Optional[str], Optional[bool]]:
+        """Read the coded audit opinion, and what it does and does not settle.
+
+        Morningstar codes: UQ unqualified, UE unqualified with explanation,
+        QM/QL/OT qualified, AO adverse, DS disclaimer, UA unaudited.
+
+        Only the unambiguous ends are mapped. A clean UQ opinion positively
+        establishes that there is no going-concern paragraph. AO and DS are
+        strictly more severe than one, so they are treated as disqualifying.
+        Everything between is left unknown on purpose: UE covers going concern
+        *and* several unrelated explanatory matters, and guessing which would
+        be exactly the kind of inference this system refuses elsewhere.
+        """
+        code = None
+        for row in history:
+            value = period_value_text(
+                _attr(row, "financial_statements", "auditor_report_status"), ANNUAL_PERIODS
+            )
+            if value:
+                code = value.strip().upper()
+                break
+        if code is None:
+            return None, None
+        if code == "UQ":
+            return code, False
+        if code in {"AO", "DS"}:
+            return code, True
+        return code, None
 
     # -- prices and multiples ---------------------------------------------
     def get_price_history(self, symbol: str, years: int = 10) -> Sequence[PricePoint]:

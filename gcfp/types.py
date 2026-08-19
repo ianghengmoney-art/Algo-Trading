@@ -53,6 +53,8 @@ class CompanyProfile:
     ipo_date: Optional[date] = None
     # SIC / GICS style hints used by the A6 router for the structural tags.
     sic_code: Optional[str] = None
+    # SEC Central Index Key -- the join key for the EDGAR filing-flag overlay.
+    cik: Optional[str] = None
     is_reit: Optional[bool] = None
     is_bank: Optional[bool] = None
     is_insurer: Optional[bool] = None
@@ -161,6 +163,38 @@ class FilingFlags:
     going_concern_language: Optional[bool] = None
     delayed_filing: Optional[bool] = None
     as_of: Optional[date] = None
+    # Provenance, so a human reading a PASS can see which source answered and
+    # on what evidence. A4 is the gate most likely to be wrong for boring
+    # reasons, and "which filing said so" is the first question worth asking.
+    audit_opinion: Optional[str] = None
+    evidence: tuple = ()
+
+    def merge(self, other: "FilingFlags") -> "FilingFlags":
+        """Overlay ``other`` onto self, with known beating unknown.
+
+        Neither source is trusted to say "clean" about a field it does not
+        carry: a ``None`` never overwrites a real answer, and a real answer
+        always wins over ``None``. Where both sources have an opinion, the
+        overlay wins, because it is the more specific source by construction.
+        """
+
+        def pick(a, b):
+            return b if b is not None else a
+
+        return FilingFlags(
+            restatement_within_lookback=pick(
+                self.restatement_within_lookback, other.restatement_within_lookback
+            ),
+            auditor_change_within_lookback=pick(
+                self.auditor_change_within_lookback, other.auditor_change_within_lookback
+            ),
+            auditor_change_reason=pick(self.auditor_change_reason, other.auditor_change_reason),
+            going_concern_language=pick(self.going_concern_language, other.going_concern_language),
+            delayed_filing=pick(self.delayed_filing, other.delayed_filing),
+            as_of=pick(self.as_of, other.as_of),
+            audit_opinion=pick(self.audit_opinion, other.audit_opinion),
+            evidence=tuple(self.evidence) + tuple(other.evidence),
+        )
 
 
 @dataclass(frozen=True)

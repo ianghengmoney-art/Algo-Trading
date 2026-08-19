@@ -76,6 +76,7 @@ def make_fundamental(
         gross_profit=mpf(revenue * 0.45, revenue * 0.45 / 4),
         operating_income=mpf(revenue * 0.16, revenue * 0.16 / 4),
         ebitda=mpf(revenue * 0.20, revenue * 0.20 / 4),
+        depreciation_amortization_depletion=mpf(revenue * 0.05, revenue * 0.05 / 4),
         net_income=mpf(net_income, net_income / 4),
         interest_expense=mpf(revenue * 0.01),
         tax_provision=mpf(net_income * 0.26),
@@ -91,17 +92,22 @@ def make_fundamental(
         gain_loss_on_sale_of_business=absent(),
         normalized_ebitda=absent(),
     )
+    # Balance-sheet lines are stocks: reported at every period end, and not
+    # scaled down for a shorter period the way a flow is.
+    def stock(value):
+        return mpf(value, value)
+
     balance = SimpleNamespace(
-        current_assets=mpf(revenue * 0.45),
-        current_liabilities=mpf(revenue * 0.25),
-        cash_and_cash_equivalents=mpf(revenue * 0.20),
-        available_for_sale_securities=mpf(revenue * 0.05),
-        total_debt=mpf(revenue * 0.30),
-        total_assets=mpf(revenue * 1.6),
-        total_liabilities_net_minority_interest=mpf(revenue * 0.8),
-        stockholders_equity=mpf(revenue * 0.8),
-        goodwill_and_other_intangible_assets=mpf(revenue * 0.1),
-        tangible_book_value=mpf(revenue * 0.7),
+        current_assets=stock(revenue * 0.45),
+        current_liabilities=stock(revenue * 0.25),
+        cash_and_cash_equivalents=stock(revenue * 0.20),
+        available_for_sale_securities=stock(revenue * 0.05),
+        total_debt=stock(revenue * 0.30),
+        total_assets=stock(revenue * 1.6),
+        total_liabilities_net_minority_interest=stock(revenue * 0.8),
+        stockholders_equity=stock(revenue * 0.8),
+        goodwill_and_other_intangible_assets=stock(revenue * 0.1),
+        tangible_book_value=stock(revenue * 0.7),
     )
     cash_flow = SimpleNamespace(
         operating_cash_flow=mpf(net_income * 1.2, net_income * 1.2 / 4),

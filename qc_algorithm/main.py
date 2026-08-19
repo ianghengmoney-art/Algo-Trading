@@ -24,6 +24,8 @@ from AlgorithmImports import (
 )
 
 from gcfp.config import DEFAULT_PARAMS, GROWTH_SLEEVE, SLEEVE_OF
+from gcfp.data.composite import CompositeAdapter
+from gcfp.data.edgar import EdgarFilingFlags
 from gcfp.data.quantconnect import QCDataAdapter
 from gcfp.data.registry import capability_gate
 from gcfp.engine import screen
@@ -54,7 +56,8 @@ class GCFPAlgorithm(QCAlgorithm):
         self.add_universe(self._select_universe)
 
         self.state = ObjectStoreState(self.object_store)
-        self.adapter = QCDataAdapter(history_provider=self._fundamental_history)
+        self.fundamentals = QCDataAdapter(history_provider=self._fundamental_history)
+        self.adapter = self._build_adapter()
 
         # Section 14 cadence: a weekly new-passer report, and a full Module A-E
         # re-run each quarter after earnings season.
@@ -73,6 +76,40 @@ class GCFPAlgorithm(QCAlgorithm):
                 "order is logged, but nothing is submitted. Set the live_enabled parameter to "
                 "1 to place simulated orders."
             )
+
+    def _build_adapter(self):
+        """QuantConnect for fundamentals, optionally EDGAR for gate A4.
+
+        Without the overlay, A4 returns DATA_GAP on every name -- restatement
+        and late-filing status are not carried by any fundamentals vendor -- so
+        no candidate reaches a full PASS and the screen returns nothing. The
+        overlay is what makes a BUY possible at all.
+
+        It is off unless an `edgar_user_agent` parameter is supplied, because
+        SEC refuses requests that do not identify the operator.
+
+        BACKTESTS: leave it off. One HTTP request per name per refresh is
+        impractical across a 15-year run, and EDGAR is a live service rather
+        than a point-in-time one -- querying it mid-backtest reads today's
+        filing history against a historical date. Filings before the as-of date
+        are filtered, which keeps a live run honest, but the request cost makes
+        the overlay a live/paper feature. For a backtest, either accept the
+        DATA_GAP on A4 or pre-load a snapshot into ObjectStore.
+        """
+        user_agent = str(self.get_parameter("edgar_user_agent") or "").strip()
+        if not user_agent:
+            self.log(
+                "EDGAR overlay OFF -- gate A4 will return DATA_GAP on every candidate, so no "
+                "name can reach a full PASS. Set the edgar_user_agent parameter to enable it."
+            )
+            return self.fundamentals
+        try:
+            provider = EdgarFilingFlags(user_agent=user_agent)
+        except ValueError as exc:
+            self.log(f"EDGAR overlay OFF -- {exc}")
+            return self.fundamentals
+        self.log("EDGAR overlay ON -- gate A4 enforceable.")
+        return CompositeAdapter(self.fundamentals, provider)
 
     # -- universe ---------------------------------------------------------
     def _select_universe(self, fundamental):
@@ -94,8 +131,8 @@ class GCFPAlgorithm(QCAlgorithm):
         ]
         candidates.sort(key=lambda f: f.market_cap, reverse=True)
         self._selected = candidates[:400]
-        self.adapter.set_universe(self._selected)
-        self.adapter.as_of = self.time.date()
+        self.fundamentals.set_universe(self._selected)
+        self.fundamentals.as_of = self.time.date()
         return [f.symbol for f in self._selected]
 
     def _fundamental_history(self, symbol, years):

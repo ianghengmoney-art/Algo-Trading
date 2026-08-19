@@ -223,16 +223,26 @@ unrealised gains as the spec requires.
 | Gap | Module | Consequence |
 |---|---|---|
 | No recurring-maintenance-capex or straight-line-rent line | **B4** | **AFFO still uncomputable.** B4 falls back to P/FFO with its warning. FFO itself is derivable from `net_income` + `depreciation_amortization_depletion` − `gain_on_sale_of_ppe`. |
-| No restatement, going-concern or late-filing fields | **A4** | Gate A4 still returns `DATA_GAP`, so **no candidate reaches a full PASS**. Auditor change alone is not the whole gate. Enforcing it needs EDGAR. |
+| No restatement or late-filing fields | **A4** | **Closed by the EDGAR overlay — see §9.** Alone, QC leaves A4 at `DATA_GAP`, so no candidate reaches a full PASS. |
 | No earnings calendar | **E** | The ten-trading-day pre-earnings blackout **never fires** on this source. A real reduction in entry hygiene, not a cosmetic one. |
 | No beta on `Fundamental` | **B1/B2** | CAPM cannot run, so the discount rate falls back to its floor (9% / 10% / 12%). That is the conservative direction — the floor is usually the operative number anyway — but it means the rate no longer varies with the company. |
 
+### Audit opinion
+
+`financial_statements.auditor_report_status` is a coded opinion — `UQ`
+unqualified, `UE` unqualified with explanation, `QM`/`QL`/`OT` qualified, `AO`
+adverse, `DS` disclaimer, `UA` unaudited. Only the unambiguous ends are mapped
+to A4's going-concern flag: `UQ` establishes there is no going-concern
+paragraph, and `AO`/`DS` are strictly more severe than one. `UE` is left
+**unknown**, because it covers going concern *and* several unrelated
+explanatory matters, and guessing which would be the kind of inference this
+system refuses everywhere else.
+
 ### Recommendation, updated
 
-QuantConnect supersedes FMP as the primary source for everything except gate
-A4's filing red flags. The remaining work to reach a full PASS on any candidate
-is **sourcing restatement / going-concern / late-filing status from SEC EDGAR**,
-which no price-and-fundamentals vendor probed so far supplies.
+QuantConnect supersedes FMP as the primary source for fundamentals. Paired with
+the EDGAR overlay in §9, gate A4 becomes fully enforceable and a candidate can
+reach a full PASS.
 
 Reproduce with:
 
@@ -241,3 +251,64 @@ gcfp capabilities --adapter quantconnect
 ```
 
 and, inside a QC research notebook, the same `run_coverage_probe` used for FMP.
+
+---
+
+## 9. Gate A4, closed — SEC EDGAR overlay (built 2026-08-19)
+
+**This was the blocker.** Across FMP, yfinance and QuantConnect, none carried
+restatement or late-filing status, so gate A4 returned `DATA_GAP` on every
+candidate and **no name could ever reach a full PASS**. The screen would have
+returned zero passers on live data forever — not because the market was
+expensive, but because a gate could not be evaluated.
+
+EDGAR carries all of it as *structured filing events*, not prose, in one JSON
+document per company (`data.sec.gov/submissions/CIK##########.json`):
+
+| A4 red flag | Signal | Confidence |
+|---|---|---|
+| Restatement | 8-K carrying item **4.02** (Non-Reliance on Previously Issued Financial Statements) | High — this is the restatement announcement itself |
+| Auditor change | 8-K carrying item **4.01** (Changes in Registrant's Certifying Accountant) | High — the event, not a name diff across vendor snapshots |
+| Late filing | Form **NT 10-K** / **NT 10-Q** | High |
+| Going concern | *Not sourced here* — see below | — |
+
+**Going concern is deliberately not taken from EDGAR.** Full-text searching a
+10-K for the phrase over-flags badly: it appears in accounting-policy
+boilerplate and in negative constructions ("no substantial doubt"). QC's coded
+audit opinion (§8) is the better signal, and the two are merged.
+
+### Merge semantics
+
+`FilingFlags.merge` refuses to let a `None` overwrite a known value, in either
+direction. An EDGAR outage therefore degrades A4 to whatever the fundamentals
+source knew — it never reads as a clean bill of health. Every flag carries its
+`evidence`, so a human reading a PASS can see which filing answered.
+
+### Operational constraints
+
+- **SEC requires a User-Agent identifying the operator, with a contact
+  address.** `EdgarFilingFlags` raises rather than defaulting one, so a
+  deployment cannot silently violate the access terms. Throttled to 8 req/s
+  against SEC's ~10 req/s limit, and cached for 7 days per filer.
+- **Live/paper only.** One request per name per refresh is fine weekly
+  (~400 names ≈ 50s) and impractical across a 15-year backtest. EDGAR is also a
+  live service rather than a point-in-time one; filings after the as-of date
+  are filtered out, which keeps a live run honest, but a backtest should either
+  accept the A4 `DATA_GAP` or pre-load a snapshot.
+
+### VERIFICATION STATUS
+
+**Written against EDGAR's documented submissions API but never exercised
+against the live service** — this build environment's egress policy refuses
+sec.gov, exactly as it refuses Yahoo and quantconnect.com. Parsing is tested
+against recorded-shape payloads, not real responses.
+
+Before relying on it, from a network that permits sec.gov:
+
+```python
+from gcfp.data.edgar import EdgarFilingFlags
+EdgarFilingFlags(user_agent="Your Name you@example.com").self_test()
+```
+
+That fetches one real filer and prints what it found. **Do this before trusting
+an A4 PASS.**

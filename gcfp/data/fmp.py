@@ -162,6 +162,7 @@ class FMPAdapter(DataAdapter):
             is_fund=row.get("isFund"),
             is_actively_trading=row.get("isActivelyTrading"),
             ipo_date=_parse_date(row.get("ipoDate")),
+            cik=str(row.get("cik") or "") or None,
             is_reit="reit" in industry,
             is_bank="bank" in industry or ("financial" in sector and "bank" in industry),
             is_insurer="insurance" in industry,

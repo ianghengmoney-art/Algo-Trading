@@ -44,6 +44,29 @@ Expected state: both Section 17 stop conditions clear, point-in-time available,
 gate A4 still `DATA_GAP` (so no candidate reaches a full PASS), REIT AFFO
 unavailable, no earnings blackout.
 
+## Phase 1b — Enable gate A4
+
+Without this, **the screen returns nothing**. QC carries no restatement or
+late-filing status, so gate A4 returns `DATA_GAP` on every candidate and no
+name reaches a full PASS. The EDGAR overlay closes it.
+
+First verify EDGAR is reachable and the API shape holds — it has never been run
+against the live service:
+
+```python
+from gcfp.data.edgar import EdgarFilingFlags
+EdgarFilingFlags(user_agent="Your Name you@example.com").self_test()
+```
+
+Then set the `edgar_user_agent` algorithm parameter to the same string. SEC
+refuses requests that do not identify the operator, which is why there is no
+default.
+
+**Leave it off for backtests.** One request per name per refresh is impractical
+across a 15-year run, and EDGAR is a live service rather than a point-in-time
+one. Filings after the as-of date are filtered out, so a live run is honest,
+but a backtest should accept the A4 `DATA_GAP` or pre-load a snapshot.
+
 ## Phase 2 — Backtest
 
 Section 12's protocol becomes runnable here for the first time, because QC's
@@ -119,9 +142,10 @@ in one place is a cap enforced once.
 
 ## Known limitations in this deployment
 
-- **Gate A4 never fully passes.** Restatement, going-concern and late-filing
-  status are not served, so A4 returns `DATA_GAP` and no candidate reaches a
-  full PASS. Sourcing these from SEC EDGAR is the outstanding work.
+- **Gate A4 needs the EDGAR overlay** (Phase 1b). Without it, A4 returns
+  `DATA_GAP` and no candidate reaches a full PASS. With it, A4 is fully
+  enforceable — but the overlay is unverified against live EDGAR, so run
+  `self_test()` first.
 - **No earnings blackout.** QC serves no earnings calendar, so Module E's
   ten-day pre-earnings deferral never fires.
 - **REIT AFFO unavailable.** Module B4 falls back to P/FFO and says so.
