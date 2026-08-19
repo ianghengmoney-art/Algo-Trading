@@ -5,9 +5,15 @@ buy-and-hold book. It confirms a business is healthy, classifies what kind of bu
 values it by the method that fits that kind, cross-checks that value against two independent
 anchors, scores conviction, sizes by sleeve regime, and monitors on fundamentals.
 
-**It never executes.** There is no broker client, no order hook and no trading library
-anywhere in the dependency tree — enforced by `tests/test_prime_directives.py`, which fails
-the build if one appears.
+**The decision engine never executes.** `gcfp/` has no broker client, no order hook and no
+trading library anywhere in its dependency tree.
+
+The QuantConnect deployment (`qc_algorithm/`) *does* place simulated paper-trading orders —
+a deliberate, operator-chosen departure from the original alert-only spec. The guarantee is
+narrowed rather than dropped: `qc_algorithm/execution.py` is the single permitted execution
+boundary, and `tests/test_prime_directives.py` fails the build if an order call appears
+anywhere else, if `gcfp/` imports the execution package, or if the shipped config stops
+defaulting to dry run. See [docs/QUANTCONNECT.md](docs/QUANTCONNECT.md).
 
 ---
 
@@ -27,12 +33,20 @@ share-count history causes the router to refuse the SPEC-GROWTH tag, and a sourc
 seven years of multiple history disables Module C1 and makes the buy trigger unsatisfiable.
 Both print at the top of every report.
 
+## Deploying to QuantConnect
+
+QC is the first source that clears both Section 17 stop conditions and supplies point-in-time
+data, which makes the Section 12 backtest certifiable for the first time. The step-by-step —
+including why the first deploy runs in dry run — is in
+**[docs/QUANTCONNECT.md](docs/QUANTCONNECT.md)**.
+
 ## Quick start
 
 ```bash
 pip install -e ".[dev]"
 
 gcfp capabilities --adapter fixtures      # what a source can actually serve
+gcfp capabilities --adapter quantconnect  # ...and what QC clears
 gcfp coverage     --adapter fixtures      # the Section 17 probe
 gcfp screen       --adapter fixtures --as-of 2026-06-30
 pytest -q

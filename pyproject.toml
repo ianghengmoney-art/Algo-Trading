@@ -12,18 +12,23 @@ dependencies = [
     "requests>=2.31",
 ]
 
-# Prime Directive 1: no broker or execution library may enter this tree.
-# tests/test_prime_directives.py fails the build if one does.
+# Prime Directive 1, as re-scoped for the QuantConnect deployment:
+# `gcfp` stays a pure decision engine with no execution capability, and
+# `qc_algorithm/execution.py` is the sole permitted order-placing boundary.
+# tests/test_prime_directives.py fails the build if either half slips.
 
 [project.optional-dependencies]
 yfinance = ["yfinance>=0.2.40"]
+# Type stubs only. The QC runtime itself is supplied by LEAN, never installed
+# here -- the data adapter is duck-typed so it stays testable off-platform.
+quantconnect = ["quantconnect-stubs"]
 dev = ["pytest>=8.0"]
 
 [project.scripts]
 gcfp = "gcfp.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["gcfp*"]
+include = ["gcfp*", "qc_algorithm*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

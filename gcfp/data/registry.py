@@ -49,9 +49,22 @@ def _yfinance() -> DataAdapter:
     return YFinanceAdapter()
 
 
+def _quantconnect() -> DataAdapter:
+    """Built empty here.
+
+    Inside an algorithm the adapter is handed the universe selection and a
+    history provider; a bare instance is still useful for `gcfp capabilities`,
+    which reports what the source can serve without touching data.
+    """
+    from .quantconnect import QCDataAdapter
+
+    return QCDataAdapter()
+
+
 register("fixtures", _fixtures)
 register("fmp", _fmp)
 register("yfinance", _yfinance)
+register("quantconnect", _quantconnect)
 
 
 def measure_multiple_history_years(

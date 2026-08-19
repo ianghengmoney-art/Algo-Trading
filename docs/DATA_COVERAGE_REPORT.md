@@ -170,3 +170,74 @@ The probe attempts every Module A gate input and every Module B input for each c
 path, seven years of the path's own multiple for C1, and a full peer set for C2, across one
 company per classification plus a foreign ADR and a delisted name
 (`gcfp/data/coverage.py::DEFAULT_PROBE_TARGETS`).
+
+---
+
+## 8. Addendum — QuantConnect (probed 2026-08-19)
+
+**Verdict: both Section 17 stop conditions clear on this source, and the
+point-in-time problem is solved.** This is the first source available to the
+system that can certify a Section 12 backtest.
+
+Probed against the published `quantconnect-stubs` package (the authoritative
+API surface) rather than documentation prose. QC's own site is unreachable
+from the build environment's egress policy, so the stubs were the primary
+source; field names below are copied from them, not recalled.
+
+### Stop conditions
+
+| Stop condition | FMP | QuantConnect |
+|---|---|---|
+| Cash-burn + share-count history | TRIGGERED | **Clear** — `cash_flow_statement.*`, `earning_reports.diluted_average_shares` |
+| 7y historical multiples | TRIGGERED | **Clear** — `valuation_ratios.pe_ratio` / `forward_pe_ratio` / `pb_ratio` / `ev_to_revenue`, per-snapshot over history |
+| Point-in-time data | Absent | **Present** — Morningstar fundamentals are as-of-date |
+
+`CapabilityGate` for this adapter returns **no blocking notices**, which is
+asserted in `tests/test_quantconnect_adapter.py`.
+
+### Two findings from the original report are now fixed
+
+**The A6 structural router no longer infers from industry strings.** QC serves
+`company_reference.is_reit` as an explicit boolean,
+`company_reference.industry_template_code` as Morningstar's statement-template
+code (`B` bank, `I` insurance, `R` REIT), and `asset_classification.sic` as the
+SEC-filed code. The mechanism that mislabelled Caterpillar as "Agricultural -
+Machinery" — failure mode #1 in Section 13 — does not apply here.
+
+**Gate A4 is partially enforceable for the first time.**
+`financial_statements.period_auditor` and `auditor_report_status` are served,
+so an auditor change is detectable by comparing snapshots. FMP exposed nothing
+at all.
+
+### Better than predicted: insurer underwriting
+
+The original report predicted combined-ratio inputs would be unavailable from
+any mainstream source. On QC they are present:
+`total_premiums_earned`, `policyholder_benefits_gross`,
+`underwriting_expenses`, and `unrealized_gain_loss`. **Module B5's primary
+underwriting read is computable**, and operating ROE can be cleaned of
+unrealised gains as the spec requires.
+
+### Gaps that survive
+
+| Gap | Module | Consequence |
+|---|---|---|
+| No recurring-maintenance-capex or straight-line-rent line | **B4** | **AFFO still uncomputable.** B4 falls back to P/FFO with its warning. FFO itself is derivable from `net_income` + `depreciation_amortization_depletion` − `gain_on_sale_of_ppe`. |
+| No restatement, going-concern or late-filing fields | **A4** | Gate A4 still returns `DATA_GAP`, so **no candidate reaches a full PASS**. Auditor change alone is not the whole gate. Enforcing it needs EDGAR. |
+| No earnings calendar | **E** | The ten-trading-day pre-earnings blackout **never fires** on this source. A real reduction in entry hygiene, not a cosmetic one. |
+| No beta on `Fundamental` | **B1/B2** | CAPM cannot run, so the discount rate falls back to its floor (9% / 10% / 12%). That is the conservative direction — the floor is usually the operative number anyway — but it means the rate no longer varies with the company. |
+
+### Recommendation, updated
+
+QuantConnect supersedes FMP as the primary source for everything except gate
+A4's filing red flags. The remaining work to reach a full PASS on any candidate
+is **sourcing restatement / going-concern / late-filing status from SEC EDGAR**,
+which no price-and-fundamentals vendor probed so far supplies.
+
+Reproduce with:
+
+```bash
+gcfp capabilities --adapter quantconnect
+```
+
+and, inside a QC research notebook, the same `run_coverage_probe` used for FMP.

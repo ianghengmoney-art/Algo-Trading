@@ -47,7 +47,7 @@ jobs:
       - name: Lint
         run: |
           pip install pyflakes
-          pyflakes gcfp tests
+          pyflakes gcfp qc_algorithm tests
 
       # The Section 17 probe against the offline fixture set. It exercises the
       # coverage machinery itself, which is the part a broken adapter would
