@@ -401,12 +401,10 @@ def _probe_target(
     coverage.gate_inputs["B path-specific"] = _path_inputs(data, tag or target.expected_classification)
 
     # C1: seven years of the relevant multiple.
-    multiple_name = (
-        c_anchors.ANCHOR_MULTIPLE[tag]
-        if tag
-        else c_anchors.ANCHOR_MULTIPLE.get(
-            target.expected_classification or Classification.CORE_STABLE, "trailing_pe"
-        )
+    # Route through the resolver so a source without forward estimates probes
+    # the multiple it will actually use, not the one it cannot compute.
+    multiple_name = c_anchors.anchor_multiple_for(
+        tag or target.expected_classification or Classification.CORE_STABLE, config
     )
     try:
         history = adapter.get_historical_multiples(

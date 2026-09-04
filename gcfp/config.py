@@ -111,6 +111,14 @@ class AnchorConfig:
     pegy_flag_above: float = 2.0
     # C4
     divergence_flag: float = 0.30
+    #: C1's anchor multiple for CORE-GROWTH.  The spec's default is forward
+    #: P/E, which needs analyst estimates.  On a source without them, set this
+    #: to "trailing_pe" — an explicit, logged substitution rather than a
+    #: forward multiple that quietly degrades into a trailing one.
+    core_growth_multiple: str = "forward_pe"
+    #: Whether the data source supplies forward EPS estimates at all.  When
+    #: False, C3 reports "PEGY n/a" and the substitution above is logged.
+    forward_estimates_available: bool = True
     # C5
     single_anchor_threshold_penalty: float = 0.10
     single_anchor_conviction_cap: float = 70.0

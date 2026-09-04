@@ -52,6 +52,25 @@ class AnchorMode(str, Enum):
 #: full-history name would carry a spurious "shorter listing history" flag.
 _WINDOW_TOLERANCE_YEARS = 0.25
 
+def anchor_multiple_for(
+    classification: Classification, config: Config | None = None
+) -> str:
+    """The multiple C1 uses for this classification.
+
+    CORE-GROWTH's default is forward P/E, which needs analyst estimates.  A
+    source without them configures ``anchors.core_growth_multiple`` to a
+    trailing measure; routing that through here keeps the substitution in one
+    place and visible, rather than letting a forward series quietly fill with
+    trailing numbers.
+    """
+    if (
+        classification is Classification.CORE_GROWTH
+        and config is not None
+    ):
+        return config.anchors.core_growth_multiple
+    return ANCHOR_MULTIPLE[classification]
+
+
 #: Which multiple C1 uses per classification.  Assembling a series from two
 #: different measures would make the statistics meaningless, so this mapping is
 #: the only place the choice is made.
@@ -207,11 +226,17 @@ def compute_current_multiple(
             # number (Prime Directive 3).
             return None
         eps = net_income / shares
-        pe = price / eps
-        if multiple == "forward_pe" and data.forward_eps_growth is not None:
+        if multiple == "forward_pe":
+            if data.forward_eps_growth is None:
+                # Returning the trailing P/E here would be an imputation: the
+                # series would be labelled "forward" while carrying trailing
+                # values, and nothing downstream could tell.  A source without
+                # estimates should set anchors.core_growth_multiple to
+                # "trailing_pe", which makes the substitution explicit.
+                return None
             forward_eps = eps * (1.0 + data.forward_eps_growth)
             return price / forward_eps if forward_eps > 0 else None
-        return pe
+        return price / eps
 
     if multiple == "ev_revenue":
         revenue = _ttm("revenue")
@@ -406,7 +431,13 @@ def compute_c1(
     """Own-history anchor over a minimum 7-year window."""
     cfg = config.anchors
     as_of = as_of or date.today()
-    multiple_name = ANCHOR_MULTIPLE[classification]
+    multiple_name = anchor_multiple_for(classification, config)
+    if multiple_name != ANCHOR_MULTIPLE[classification] and ledger is not None:
+        ledger.note(
+            f"C1 substitution: {classification.value} anchored on "
+            f"{multiple_name} instead of {ANCHOR_MULTIPLE[classification]} "
+            "(no forward estimates from this source)"
+        )
 
     raw = [o for o in data.multiples if o.multiple == multiple_name]
     if not raw:
@@ -793,6 +824,7 @@ __all__ = [
     "PeerDecision",
     "SeriesAdjustment",
     "ANCHOR_MULTIPLE",
+    "anchor_multiple_for",
     "adjust_series",
     "detect_re_rating",
     "compute_c1",
