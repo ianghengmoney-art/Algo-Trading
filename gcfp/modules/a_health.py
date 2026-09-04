@@ -204,6 +204,20 @@ def gate_a2_leverage(
             ),
             grouping,
         )
+    if not grouping.meets_minimum:
+        # Every rung of the ladder was too thin.  Falling back on the median
+        # anyway would use exactly the number the escalation existed to avoid.
+        return (
+            gate_uncomputable(
+                "A2",
+                f"no grouping reached {config.health.min_peers_for_subindustry_median} "
+                f"computable members; finest available was {grouping.key!r} at "
+                f"{grouping.level.value} with {grouping.member_count}",
+                value=ratio,
+                detail={"group": grouping.key, "group_median": median},
+            ),
+            grouping,
+        )
 
     # A company with net cash has negative net debt and clears on any median.
     threshold = median * config.health.leverage_median_multiple

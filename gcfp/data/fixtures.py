@@ -46,6 +46,11 @@ class FixtureCompany:
     peers: list[str] = field(default_factory=list)
     forward_eps_growth: float | None = None
     dividend_yield: float | None = None
+    # A4's red-flag inputs live on CompanyData rather than on any statement,
+    # so the fixture has to carry them explicitly or A4 can never be exercised.
+    restatements: list = field(default_factory=list)
+    auditor_events: list = field(default_factory=list)
+    going_concern_language: bool = False
 
 
 @dataclass
@@ -150,6 +155,9 @@ class FixtureAdapter(DataAdapter):
             data,
             forward_eps_growth=fixture.forward_eps_growth,
             dividend_yield=fixture.dividend_yield,
+            restatements=tuple(fixture.restatements),
+            auditor_events=tuple(fixture.auditor_events),
+            going_concern_language=fixture.going_concern_language,
         )
 
 
@@ -171,7 +179,7 @@ def make_quarters(
     net_income: float,
     operating_cash_flow: float,
     revenue_growth: float = 0.0,
-    shares: float = 1_000_000_000.0,
+    shares: float | None = 1_000_000_000.0,
     share_growth: float = 0.0,
     anchor: date | None = None,
     **extra,
@@ -180,7 +188,9 @@ def make_quarters(
     out: list[PeriodFinancials] = []
     for i, period_end in enumerate(quarters_back(n, anchor)):
         decay = (1.0 + revenue_growth) ** (-i / 4.0)
-        share_decay = (1.0 + share_growth) ** (-i / 4.0)
+        # ``shares=None`` models a source that does not report a share count,
+        # which is what A4's dilution flag needs to be exercised against.
+        share_decay = (1.0 + share_growth) ** (-i / 4.0) if shares is not None else None
         out.append(
             PeriodFinancials(
                 period_end=period_end,
@@ -188,8 +198,8 @@ def make_quarters(
                 revenue=revenue * decay,
                 net_income=net_income * decay,
                 operating_cash_flow=operating_cash_flow * decay,
-                shares_diluted=shares * share_decay,
-                shares_outstanding=shares * share_decay,
+                shares_diluted=shares * share_decay if shares is not None else None,
+                shares_outstanding=shares * share_decay if shares is not None else None,
                 **extra,
             )
         )

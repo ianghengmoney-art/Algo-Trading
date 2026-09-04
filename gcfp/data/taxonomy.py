@@ -41,6 +41,11 @@ class Grouping:
     #: How many members had the metric in question computable.  A2 escalates
     #: when this falls below its minimum.
     member_count: int = 0
+    #: False when the ladder was exhausted without any rung reaching the
+    #: minimum.  Using such a grouping's median anyway would defeat the
+    #: escalation: the reason for escalating was that the median was not
+    #: trustworthy at that size.
+    meets_minimum: bool = True
 
     @property
     def is_substitute(self) -> bool:
@@ -49,10 +54,13 @@ class Grouping:
 
     def as_log_line(self) -> str:
         provenance = "GICS" if self.is_gics else "VENDOR-SUBSTITUTE"
-        return (
+        line = (
             f"grouping={self.key} level={self.level.value} "
             f"taxonomy={provenance} members={self.member_count}"
         )
+        if not self.meets_minimum:
+            line += " BELOW-MINIMUM (ladder exhausted)"
+        return line
 
 
 def group_key(profile: CompanyProfile, level: TaxonomyLevel) -> str | None:
@@ -89,10 +97,13 @@ def resolve_grouping(
                 level=level,
                 is_gics=profile.taxonomy_is_gics,
                 member_count=count,
+                meets_minimum=True,
             )
 
-    # Nothing had enough members.  Return the finest rung that exists at all,
-    # so the caller can log a real label alongside the NOT_COMPUTABLE verdict.
+    # The ladder was exhausted without any rung reaching the minimum.  Return
+    # the finest rung that exists at all so the caller can log a real label,
+    # but mark it: A2 must report NOT_COMPUTABLE rather than fall back on the
+    # very median the escalation was meant to avoid.
     for level in FALLBACK_LADDER:
         key = group_key(profile, level)
         if key:
@@ -101,10 +112,15 @@ def resolve_grouping(
                 level=level,
                 is_gics=profile.taxonomy_is_gics,
                 member_count=member_counts.get(key, 0),
+                meets_minimum=False,
             )
 
     return Grouping(
-        key="<none>", level=TaxonomyLevel.UNAVAILABLE, is_gics=False, member_count=0
+        key="<none>",
+        level=TaxonomyLevel.UNAVAILABLE,
+        is_gics=False,
+        member_count=0,
+        meets_minimum=False,
     )
 
 

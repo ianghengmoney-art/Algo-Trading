@@ -1,0 +1,574 @@
+"""Gate arithmetic and scoring formulas, tested against the spec's own numbers.
+
+Where the spec states a value — D2's table, C5's penalties, D4's point scales —
+the test asserts that value rather than whatever the implementation produces.
+"""
+
+from __future__ import annotations
+
+from datetime import date, timedelta
+
+import pytest
+
+from gcfp.classification import Classification, Regime
+from gcfp.data.fixtures import make_multiple_series
+from gcfp.ledger import AuditLedger, Outcome
+from gcfp.modules import a_health, b_valuation, c_anchors, d_conviction, e_triggers
+from gcfp.types import (
+    AuditorEvent,
+    CorporateAction,
+    CorporateActionType,
+    TaxonomyLevel,
+)
+from tests.conftest import build_company, stable_profile
+
+
+# -- Module A -------------------------------------------------------------
+
+
+class TestModuleA:
+    def test_a1_negative_working_capital_is_not_an_automatic_fail(self, config):
+        """Structurally negative working capital is a feature in some
+        businesses, never an automatic fail."""
+        company = build_company(
+            quarterly_kw=dict(total_current_assets=6e9, total_current_liabilities=14e9)
+        )
+        result = a_health.gate_a1_solvency(company, config)
+        assert result.passed
+        assert result.branch == "operating_cash_flow"
+
+    def test_a1_fails_when_neither_branch_holds(self, config):
+        company = build_company(
+            quarterly_kw=dict(
+                total_current_assets=6e9,
+                total_current_liabilities=14e9,
+                operating_cash_flow=-500e6,
+            )
+        )
+        assert a_health.gate_a1_solvency(company, config).failed
+
+    def test_a2_escalates_when_the_grouping_is_thin(self, config, market):
+        """A grouping with too few computable members escalates to the next
+        rung, and the level used is logged."""
+        import dataclasses
+
+        thin = dataclasses.replace(
+            market,
+            group_member_counts={"Machinery": 3, "Industrials": 40},
+            group_net_debt_ebitda_median={"Machinery": 1.8, "Industrials": 2.2},
+        )
+        ledger = AuditLedger("STABLECO", date.today())
+        result, grouping = a_health.gate_a2_leverage(
+            build_company(), thin, config, ledger
+        )
+        assert grouping.level is TaxonomyLevel.SECTOR
+        assert grouping.meets_minimum
+        assert result.branch == "sector"
+        assert result.detail["group_median"] == 2.2, (
+            "escalating must also switch to the escalated grouping's median"
+        )
+        assert any("VENDOR-SUBSTITUTE" in n for n in ledger.notes)
+
+    def test_a2_refuses_when_every_rung_is_too_thin(self, config, market):
+        """Escalation exists because a thin grouping's median is untrustworthy.
+        Falling back on it when the ladder is exhausted would defeat that."""
+        import dataclasses
+
+        exhausted = dataclasses.replace(
+            market,
+            group_member_counts={"Machinery": 3, "Industrials": 4},
+            group_net_debt_ebitda_median={"Machinery": 1.8, "Industrials": 2.2},
+        )
+        result, grouping = a_health.gate_a2_leverage(
+            build_company(), exhausted, config
+        )
+        assert result.outcome is Outcome.NOT_COMPUTABLE
+        assert not grouping.meets_minimum
+
+    def test_a3_catches_profit_not_backed_by_cash(self, config):
+        """The unrealised-gains pattern: GAAP profit with weak operating cash."""
+        company = build_company(
+            quarterly_kw=dict(net_income=2e9, operating_cash_flow=1e9)
+        )
+        result = a_health.gate_a3_earnings_quality(company, config)
+        assert result.failed
+        assert result.branch == "profitable"
+        assert result.value == pytest.approx(0.5)
+        assert "unrealised" in (result.reason or "")
+
+    def test_a3_passes_at_exactly_the_threshold(self, config):
+        company = build_company(
+            quarterly_kw=dict(net_income=1e9, operating_cash_flow=800e6)
+        )
+        result = a_health.gate_a3_earnings_quality(company, config)
+        assert result.passed
+        assert result.value == pytest.approx(0.80)
+
+    def test_a3_pre_profit_branch_uses_runway(self, config):
+        company = build_company(
+            quarterly_kw=dict(
+                net_income=-500e6,
+                operating_cash_flow=-250e6,
+                cash_and_equivalents=3e9,
+            )
+        )
+        result = a_health.gate_a3_earnings_quality(company, config)
+        assert result.branch == "pre_profit_runway"
+        # 3e9 cash / (1e9 annual burn / 12) = 36 months.
+        assert result.value == pytest.approx(36.0, rel=0.01)
+        assert result.passed
+
+    def test_a4_missing_share_history_is_uncomputable_not_a_pass(self, config):
+        """No dilution and no data must not look alike."""
+        company = build_company(quarterly_kw=dict(shares=None))
+        result = a_health.gate_a4_red_flags(company, config)
+        assert result.outcome is Outcome.NOT_COMPUTABLE
+
+    def test_a4_flags_an_auditor_change_without_a_benign_reason(self, config):
+        company = build_company(
+            auditor_events=[
+                AuditorEvent(date.today() - timedelta(days=60), changed=True, benign=False)
+            ]
+        )
+        assert a_health.gate_a4_red_flags(company, config).failed
+
+    def test_a4_accepts_a_benign_auditor_change(self, config):
+        company = build_company(
+            auditor_events=[
+                AuditorEvent(
+                    date.today() - timedelta(days=60),
+                    changed=True,
+                    benign=True,
+                    stated_reason="mandatory rotation",
+                )
+            ]
+        )
+        assert a_health.gate_a4_red_flags(company, config).passed
+
+    def test_a5_never_imputes_a_missing_input(self, config):
+        company = build_company()
+        stale = company.__class__(
+            **{**company.__dict__, "source_notes": ("annual unavailable: no rows",)}
+        )
+        result = a_health.gate_a5_data_integrity(stale, config, growth_routed=False)
+        assert result.failed
+
+    def test_a6_ambiguity_rule_prefers_structure_over_profitability(self, config):
+        """A REIT's accounting makes the CORE-STABLE tests meaningless
+        regardless of its growth rate."""
+        company = build_company(profile=stable_profile(symbol="REITCO", is_reit=True))
+        tag, considered, _ = a_health.classify(company, config)
+        assert tag is Classification.REIT
+        assert Classification.CORE_STABLE in considered, (
+            "the test is only meaningful if both tags were genuinely available"
+        )
+
+    def test_a6_growth_routing_tightens_the_liquidity_floor(self, config):
+        thin = build_company(
+            profile=stable_profile(adv_3m_usd=3e6),
+            annual_kw=dict(revenue_growth=0.45),
+        )
+        assert a_health.gate_universe(thin, config, growth_routed=True).failed
+        assert a_health.gate_universe(thin, config, growth_routed=False).passed
+
+
+# -- Module B -------------------------------------------------------------
+
+
+class TestModuleB:
+    def test_b1_flags_a_terminal_value_above_75_percent(self, market, config):
+        """A model valuing a perpetuity assumption, not a business.
+
+        Under the default parameters this flag is structurally hard to trip:
+        a 10-year explicit period, a 2.5% terminal cap and a 9% discount floor
+        together hold the terminal share around 55-67% across any plausible
+        trailing growth rate. That is the constraints doing their job — but the
+        flag still has to work, so it is exercised against a shortened
+        projection, which is the parameter change that would reintroduce the
+        pathology.
+        """
+        import dataclasses
+
+        short = dataclasses.replace(
+            config,
+            valuation=dataclasses.replace(
+                config.valuation, b1_projection_years=5, b1_stage_one_years=2
+            ),
+        )
+        company = build_company(annual_kw=dict(revenue_growth=0.12))
+        result = b_valuation.value_b1_core_stable(company, market, short)
+        assert result.terminal_value_share > 0.75
+        assert any("TERMINAL VALUE" in f for f in result.flags)
+
+    def test_b1_default_parameters_keep_the_terminal_share_bounded(
+        self, market, config
+    ):
+        """The flag rarely fires because the other constraints already prevent
+        what it warns about. Asserting that keeps a future parameter change
+        from quietly reintroducing the pathology unnoticed."""
+        for growth in (0.05, 0.15, 0.30):
+            result = b_valuation.value_b1_core_stable(
+                build_company(annual_kw=dict(revenue_growth=growth)), market, config
+            )
+            assert result.terminal_value_share < 0.75, (
+                f"terminal share reached {result.terminal_value_share:.1%} at "
+                f"{growth:.0%} trailing growth under default parameters"
+            )
+
+    def test_b1_reports_the_half_growth_rerun(self, healthy_company, market, config):
+        result = b_valuation.value_b1_core_stable(healthy_company, market, config)
+        assert result.half_growth_fair_value is not None
+        assert result.half_growth_fair_value < result.fair_value_per_share
+
+    def test_discount_rate_never_assumes_beta_of_one(self, market, config):
+        """A missing beta is an A5 data gap, not an assumption."""
+        from gcfp.data.adapter import DataUnavailable
+        from gcfp.modules.b_discount import build_discount_rate
+
+        company = build_company(profile=stable_profile(beta=None))
+        with pytest.raises(DataUnavailable, match="1.0 is not assumed"):
+            build_discount_rate(company, market, config, Classification.CORE_STABLE)
+
+    def test_discount_rate_uses_a_group_median_beta_as_a_flagged_proxy(
+        self, market, config
+    ):
+        import dataclasses
+
+        from gcfp.modules.b_discount import build_discount_rate
+
+        with_median = dataclasses.replace(market, group_beta_median={"Machinery": 1.2})
+        company = build_company(profile=stable_profile(beta=None))
+        rate = build_discount_rate(
+            company, with_median, config, Classification.CORE_STABLE
+        )
+        assert rate.beta == 1.2
+        assert rate.beta_is_proxy
+        assert "BETA: PROXY" in rate.flags
+
+    def test_growth_floors_are_higher_and_never_lowered(self, market, config):
+        from gcfp.modules.b_discount import classification_floor
+
+        assert classification_floor(Classification.SPEC_GROWTH, config) == 0.12
+        assert classification_floor(Classification.CORE_GROWTH, config) == 0.10
+        assert classification_floor(Classification.CORE_STABLE, config) == 0.09
+
+    def test_b2_1_uses_the_lower_figure_when_sources_disagree(self, config):
+        from gcfp.types import TamSource
+
+        sources = [
+            TamSource("Analyst A", date(2026, 1, 1), 100e9),
+            TamSource("Analyst B", date(2026, 2, 1), 300e9),
+        ]
+        company = build_company()
+        assessment = b_valuation.assess_tam(company, config, sources, 20e9)
+        assert "TAM DISPUTED" in assessment.flags
+        assert assessment.tam == 100e9
+
+    def test_b2_1_refuses_an_uncited_tam(self, config):
+        company = build_company()
+        assessment = b_valuation.assess_tam(company, config, [], 20e9)
+        assert not assessment.computable
+        assert any("NOT COMPUTABLE" in f for f in assessment.flags)
+
+    def test_b2_1_proxy_is_flagged_as_indicative_only(self, config):
+        company = build_company()
+        assessment = b_valuation.assess_tam(
+            company, config, [], 20e9, industry_revenue=50e9, industry_cagr=0.08
+        )
+        assert assessment.is_proxy
+        assert any("TAM: PROXY" in f for f in assessment.flags)
+
+    def test_b2_1_flags_a_breached_ceiling(self, config):
+        from gcfp.types import TamSource
+
+        sources = [
+            TamSource("A", date(2026, 1, 1), 100e9),
+            TamSource("B", date(2026, 1, 1), 110e9),
+        ]
+        company = build_company()
+        assessment = b_valuation.assess_tam(company, config, sources, 60e9)
+        assert any("TAM CEILING BREACHED" in f for f in assessment.flags)
+
+    def test_b4_refuses_a_reit_without_ffo(self, market, config):
+        """P/E is banned on this path, so no FFO means no valuation."""
+        from gcfp.data.adapter import DataUnavailable
+
+        reit = build_company(profile=stable_profile(symbol="REITCO", is_reit=True))
+        with pytest.raises(DataUnavailable, match="P/E is banned"):
+            b_valuation.value_b4_reit(reit, market, config, peer_price_to_affo=16.0)
+
+
+# -- Module C -------------------------------------------------------------
+
+
+class TestModuleC:
+    def test_c1_1_truncates_at_a_spinoff(self, config):
+        company = build_company(
+            corporate_actions=[
+                CorporateAction(
+                    CorporateActionType.SPINOFF, date.today() - timedelta(days=400)
+                )
+            ]
+        )
+        reading = c_anchors.compute_c1(
+            company, config, Classification.CORE_STABLE, 14.0
+        )
+        assert not reading.computable
+        assert "C5" in (reading.reason or "")
+
+    def test_c1_1_ignores_a_small_acquisition(self, config):
+        """Only transformative events break the series."""
+        company = build_company(
+            corporate_actions=[
+                CorporateAction(
+                    CorporateActionType.ACQUISITION,
+                    date.today() - timedelta(days=400),
+                    market_cap_share=0.05,
+                )
+            ]
+        )
+        assert c_anchors.compute_c1(
+            company, config, Classification.CORE_STABLE, 14.0
+        ).computable
+
+    def test_c1_2_detects_a_sustained_re_rating(self, config):
+        """The Micron DRAM-to-HBM and Apple hardware-to-Services problem."""
+        stepped = [40, 41, 39, 42, 40, 41, 38, 40, 41, 39, 40, 42, 41, 40] + [
+            15, 16, 14, 15, 16, 15, 14, 16, 15, 15, 16, 14, 15, 16
+        ]
+        series = make_multiple_series("trailing_pe", stepped)
+        detected, message = c_anchors.detect_re_rating(series)
+        assert detected
+        assert "POSSIBLE RE-RATING" in message
+
+    def test_c1_2_does_not_fire_on_noise(self, config):
+        noisy = [20, 21, 19, 22, 18, 20, 21, 19, 20, 22, 18, 21, 19, 20] * 2
+        detected, _ = c_anchors.detect_re_rating(
+            make_multiple_series("trailing_pe", noisy)
+        )
+        assert not detected
+
+    def test_c2_logs_every_rejection_with_a_reason(self, config):
+        candidates = [
+            c_anchors.PeerCandidate("GOOD1", 19.0, 60e9, 0.05, "G"),
+            c_anchors.PeerCandidate("TOOBIG", 25.0, 500e9, 0.05, "G"),
+            c_anchors.PeerCandidate("FASTGROW", 40.0, 50e9, 0.45, "G"),
+            c_anchors.PeerCandidate("OTHERSECTOR", 30.0, 45e9, 0.05, "OTHER"),
+        ]
+        kept, decisions = c_anchors.select_peers(
+            "G", 80e9, 0.05, candidates, config
+        )
+        assert len(decisions) == 4, "every candidate must get a logged decision"
+        assert all(d.reason for d in decisions)
+        rejected = {d.candidate.symbol: d.reason for d in decisions if not d.included}
+        assert "market cap" in rejected["TOOBIG"]
+        assert "revenue growth" in rejected["FASTGROW"]
+        assert "different grouping" in rejected["OTHERSECTOR"]
+
+    def test_c2_uses_the_median_never_the_mean(self, healthy_company, config):
+        """One extreme peer must not drag the reference."""
+        candidates = [
+            c_anchors.PeerCandidate(f"P{i}", m, 60e9, 0.05, "G")
+            for i, m in enumerate([18.0, 19.0, 20.0, 21.0, 200.0])
+        ]
+        reading = c_anchors.compute_c2(
+            healthy_company, config, 15.0, candidates, "G", 0.05
+        )
+        assert reading.reference_multiple == pytest.approx(20.0)
+
+    def test_c3_pegy_is_never_imputed(self, config):
+        """Where undefined, log n/a — never substitute a number."""
+        company = build_company(forward_eps_growth=None)
+        pegy, flagged = c_anchors.compute_c3_pegy(company, config, 20.0)
+        assert pegy is None and not flagged
+
+    def test_c4_divergence_refuses_a_combined_verdict(self, healthy_company, config):
+        c1 = c_anchors.AnchorReading("C1", True, 14.0, 20.0, implied_discount=0.40)
+        c2 = c_anchors.AnchorReading("C2", True, 14.0, 15.0, implied_discount=0.05)
+        result = c_anchors.triangulate(healthy_company, config, c1, c2)
+        assert result.anchors_disagree
+        assert result.divergence == pytest.approx(0.35)
+
+    def test_c5_both_uncomputable_is_an_automatic_fail(self, healthy_company, config):
+        c1 = c_anchors.AnchorReading("C1", False, reason="no history")
+        c2 = c_anchors.AnchorReading("C2", False, reason="no peers")
+        result = c_anchors.triangulate(healthy_company, config, c1, c2)
+        assert result.mode is c_anchors.AnchorMode.NONE
+        assert not result.both_confirm_undervaluation
+
+    def test_c5_single_anchor_raises_the_buy_threshold_by_10pp(self, config):
+        """A CORE-STABLE name needs 35% instead of 25%."""
+        assert config.buy_threshold(Classification.CORE_STABLE, False) == 0.25
+        assert config.buy_threshold(Classification.CORE_STABLE, True) == pytest.approx(0.35)
+        assert config.buy_threshold(Classification.SPEC_GROWTH, True) == pytest.approx(0.50)
+
+
+# -- Module D -------------------------------------------------------------
+
+
+class TestModuleD:
+    @pytest.mark.parametrize(
+        "discount,expected",
+        [(0.25, 0.0), (0.30, 6.0), (0.35, 12.0), (0.40, 18.0), (0.45, 24.0), (0.50, 30.0)],
+    )
+    def test_d2_reproduces_the_specs_table(self, discount, expected, config):
+        score = d_conviction.score_valuation_excess(discount, 0.25, config)
+        assert score.points == pytest.approx(expected)
+
+    def test_d2_is_capped_at_full_marks(self, config):
+        assert d_conviction.score_valuation_excess(0.80, 0.25, config).points == 30.0
+
+    def test_d3_scores_the_conservative_anchor_not_the_agreement(
+        self, healthy_company, config
+    ):
+        """v3 gave 15 points for 'both anchors confirm', which the gate already
+        required, so every passer scored 15 and the component said nothing."""
+        barely = c_anchors.triangulate(
+            healthy_company,
+            config,
+            c_anchors.AnchorReading("C1", True, 14.0, 20.0, implied_discount=0.26),
+            c_anchors.AnchorReading("C2", True, 14.0, 20.0, implied_discount=0.30),
+        )
+        deeply = c_anchors.triangulate(
+            healthy_company,
+            config,
+            c_anchors.AnchorReading("C1", True, 10.0, 20.0, implied_discount=0.45),
+            c_anchors.AnchorReading("C2", True, 10.0, 20.0, implied_discount=0.50),
+        )
+        barely_points = d_conviction.score_anchor_conservatism(barely, config).points
+        deep_points = d_conviction.score_anchor_conservatism(deeply, config).points
+        assert deep_points > barely_points, (
+            "both pairs confirm; only the depth distinguishes them"
+        )
+
+    def test_d3_is_halved_in_single_anchor_mode(self, healthy_company, config):
+        """One anchor cannot corroborate itself."""
+        dual = c_anchors.triangulate(
+            healthy_company,
+            config,
+            c_anchors.AnchorReading("C1", True, 10.0, 20.0, implied_discount=0.40),
+            c_anchors.AnchorReading("C2", True, 10.0, 20.0, implied_discount=0.40),
+        )
+        single = c_anchors.triangulate(
+            healthy_company,
+            config,
+            c_anchors.AnchorReading("C1", True, 10.0, 20.0, implied_discount=0.40),
+            c_anchors.AnchorReading("C2", False, reason="only 2 peers"),
+        )
+        assert d_conviction.score_anchor_conservatism(dual, config).points == 15.0
+        assert d_conviction.score_anchor_conservatism(single, config).points == 7.5
+
+    def test_d5_awards_neutral_when_fewer_than_three_passers(self, config):
+        """Ranking a set of one or two is meaningless."""
+        for returns in ({"A": 0.2}, {"A": 0.2, "B": 0.1}):
+            score = d_conviction.score_momentum("A", returns, config)
+            assert score.points == 5.0
+            assert score.detail["neutral"] is True
+
+    def test_d5_ranks_once_three_passers_exist(self, config):
+        returns = {"A": 0.30, "B": 0.10, "C": 0.20}
+        assert d_conviction.score_momentum("A", returns, config).points == 10.0
+        assert d_conviction.score_momentum("B", returns, config).points == 0.0
+        assert d_conviction.score_momentum("C", returns, config).points == 5.0
+
+    def test_d4_share_count_scale_matches_the_spec(self, config, market):
+        """5 pts shrinking >=2%/yr · 3 pts flat to -2% · 1 pt growing <=3% · 0 above."""
+        from gcfp.modules.b_discount import build_discount_rate
+
+        expectations = [(-0.05, 5.0), (-0.01, 3.0), (0.02, 1.0), (0.10, 0.0)]
+        for growth, expected in expectations:
+            company = build_company(quarterly_kw=dict(share_growth=growth))
+            rate = build_discount_rate(
+                company, market, config, Classification.CORE_STABLE
+            )
+            score = d_conviction.score_business_quality(
+                company, market, config, Classification.CORE_STABLE, rate
+            )
+            assert score.detail["share_count"] == expected, f"at {growth:+.0%}"
+
+    def test_conviction_is_capped_at_70_in_single_anchor_mode(
+        self, market, config
+    ):
+        company = build_company()
+        ledger = AuditLedger("STABLECO", date.today())
+        health = a_health.run_module_a(company, market, config, ledger)
+        single = c_anchors.triangulate(
+            company,
+            config,
+            c_anchors.AnchorReading("C1", True, 8.0, 20.0, implied_discount=0.60),
+            c_anchors.AnchorReading("C2", False, reason="only 1 peer"),
+        )
+        score = d_conviction.score_conviction(
+            company, market, config, Classification.CORE_STABLE, health, single,
+            actual_discount=0.60, gate_threshold=0.35, discount_rate=None,
+            momentum_returns={"STABLECO": 0.5, "B": 0.1, "C": 0.2},
+        )
+        assert score.total <= 70.0
+        assert score.capped_at == 70.0
+
+
+# -- Module E -------------------------------------------------------------
+
+
+class TestModuleE:
+    def test_earnings_blackout_suppresses_the_alert_not_the_pass(self, config):
+        soon = date.today() + timedelta(days=5)
+        assert e_triggers.in_earnings_blackout(soon, config)
+        assert not e_triggers.in_earnings_blackout(
+            date.today() + timedelta(days=40), config
+        )
+        assert not e_triggers.in_earnings_blackout(None, config)
+
+    def test_buy_requires_all_three_conditions(self, config):
+        from gcfp.modules.c_anchors import AnchorMode, AnchorReading, TriangulationResult
+        from gcfp.modules.d_conviction import ConvictionScore
+
+        fv = b_valuation.FairValue(
+            symbol="X", classification=Classification.CORE_STABLE, method="B1",
+            fair_value_per_share=100.0, currency="USD",
+        )
+        confirming = TriangulationResult(
+            symbol="X",
+            c1=AnchorReading("C1", True, 14.0, 20.0, implied_discount=0.30),
+            c2=AnchorReading("C2", True, 14.0, 20.0, implied_discount=0.30),
+            c3_pegy=None, c3_flag=False, mode=AnchorMode.DUAL,
+            anchors_disagree=False, divergence=0.0, conservative_discount=0.30,
+        )
+        high = ConvictionScore("X", 75.0, [], "standard")
+        low = ConvictionScore("X", 55.0, [], "marginal")
+
+        # 30% discount, both anchors confirm, conviction 75 -> BUY.
+        assert e_triggers.evaluate_buy(
+            "X", Classification.CORE_STABLE, 70.0, fv, confirming, high, config
+        ).signal is e_triggers.SignalType.BUY
+
+        # Same, but conviction below 60 -> no action.
+        assert e_triggers.evaluate_buy(
+            "X", Classification.CORE_STABLE, 70.0, fv, confirming, low, config
+        ).signal is e_triggers.SignalType.NO_ACTION
+
+        # Same conviction, but only a 10% discount -> no action.
+        assert e_triggers.evaluate_buy(
+            "X", Classification.CORE_STABLE, 90.0, fv, confirming, high, config
+        ).signal is e_triggers.SignalType.NO_ACTION
+
+    def test_mixed_sell_signal_is_a_review_not_a_trigger(self, config):
+        from gcfp.modules.c_anchors import AnchorMode, AnchorReading, TriangulationResult
+
+        fv = b_valuation.FairValue(
+            symbol="X", classification=Classification.CORE_STABLE, method="B1",
+            fair_value_per_share=100.0, currency="USD",
+        )
+        # Price 30% above fair value, but anchors say undervalued.
+        mixed = TriangulationResult(
+            symbol="X",
+            c1=AnchorReading("C1", True, 14.0, 20.0, implied_discount=0.30),
+            c2=AnchorReading("C2", True, 14.0, 20.0, implied_discount=0.30),
+            c3_pegy=None, c3_flag=False, mode=AnchorMode.DUAL,
+            anchors_disagree=False, divergence=0.0, conservative_discount=0.30,
+        )
+        signal = e_triggers.evaluate_sell(
+            "X", Classification.CORE_STABLE, 130.0, fv, mixed, config,
+            module_a_failed=False,
+        )
+        assert signal.signal is e_triggers.SignalType.REVIEW
