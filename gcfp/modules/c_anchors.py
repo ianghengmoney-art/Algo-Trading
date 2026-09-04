@@ -159,6 +159,105 @@ class TriangulationResult:
         return lines
 
 
+# -- current multiple -----------------------------------------------------
+
+
+def compute_current_multiple(
+    data: CompanyData, multiple: str, price: float | None = None
+) -> float | None:
+    """The company's multiple *today*, on the measure C1 uses for its path.
+
+    Both anchors compare a current multiple to a reference, so it has to be
+    built the same way for the subject and for every peer — otherwise C2 is
+    comparing two different measures and calling the difference a valuation
+    signal.  Returns ``None`` whenever a leg is missing; never a substitute
+    measure.
+    """
+    price = price if price is not None else data.current_price
+    if price is None or price <= 0:
+        return None
+
+    latest_q = data.latest_quarter
+    latest_a = data.latest_annual
+    ttm = list(data.quarterly[:4])
+
+    def _ttm(attr: str) -> float | None:
+        if len(ttm) < 4:
+            return None
+        total = 0.0
+        for row in ttm:
+            value = getattr(row, attr)
+            if value is None:
+                return None
+            total += value
+        return total
+
+    shares = None
+    for row in (latest_q, latest_a):
+        if row is not None and (row.shares_diluted or row.shares_outstanding):
+            shares = row.shares_diluted or row.shares_outstanding
+            break
+    if not shares or shares <= 0:
+        return None
+
+    if multiple in ("trailing_pe", "forward_pe"):
+        net_income = _ttm("net_income")
+        if net_income is None or net_income <= 0:
+            # P/E on negative earnings is a first-order error, not a large
+            # number (Prime Directive 3).
+            return None
+        eps = net_income / shares
+        pe = price / eps
+        if multiple == "forward_pe" and data.forward_eps_growth is not None:
+            forward_eps = eps * (1.0 + data.forward_eps_growth)
+            return price / forward_eps if forward_eps > 0 else None
+        return pe
+
+    if multiple == "ev_revenue":
+        revenue = _ttm("revenue")
+        if revenue is None or revenue <= 0:
+            return None
+        market_cap = data.profile.market_cap or price * shares
+        net_debt = latest_q.net_debt if latest_q else None
+        if net_debt is None:
+            return None
+        return (market_cap + net_debt) / revenue
+
+    if multiple in ("p_b", "p_tbv"):
+        row = latest_q or latest_a
+        if row is None:
+            return None
+        book = row.tangible_book_value if multiple == "p_tbv" else row.total_equity
+        if book is None or book <= 0:
+            return None
+        return price / (book / shares)
+
+    if multiple == "p_affo":
+        row = latest_a or latest_q
+        if row is None:
+            return None
+        affo = row.adjusted_funds_from_operations or row.funds_from_operations
+        if affo is None or affo <= 0:
+            return None
+        return price / (affo / shares)
+
+    if multiple == "p_fcf":
+        fcf = _ttm("free_cash_flow")
+        if fcf is None or fcf <= 0:
+            return None
+        return price / (fcf / shares)
+
+    return None
+
+
+def revenue_growth_yoy(data: CompanyData) -> float | None:
+    """Trailing annual revenue growth, for C2's growth-band screen."""
+    rows = data.trailing_years(2)
+    if len(rows) < 2 or not rows[1].revenue or rows[0].revenue is None:
+        return None
+    return rows[0].revenue / rows[1].revenue - 1.0
+
+
 # -- C1.1 -----------------------------------------------------------------
 
 
@@ -699,6 +798,8 @@ __all__ = [
     "compute_c1",
     "compute_c2",
     "compute_c3_pegy",
+    "compute_current_multiple",
+    "revenue_growth_yoy",
     "select_peers",
     "triangulate",
 ]
