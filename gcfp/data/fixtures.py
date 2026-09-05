@@ -69,6 +69,14 @@ class FixtureAdapter(DataAdapter):
         self.companies[company.profile.symbol] = company
         return self
 
+    def all_tickers(self) -> dict[str, int]:
+        """Every symbol this fixture holds.
+
+        Mirrors :meth:`EdgarAdapter.all_tickers` so the universe builder can
+        enumerate a fixture set the same way it enumerates real filers.
+        """
+        return {symbol: i for i, symbol in enumerate(sorted(self.companies))}
+
     def _get(self, symbol: str) -> FixtureCompany:
         try:
             return self.companies[symbol]

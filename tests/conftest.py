@@ -23,12 +23,16 @@ from gcfp.data.fixtures import (
 from gcfp.types import CompanyProfile, MarketData, ReportingFrequency, TaxonomyLevel
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def config() -> Config:
+    """Immutable, so one instance serves the whole run.
+
+    Tests that need a variant use ``dataclasses.replace`` rather than mutating
+    this — Config is frozen, so an accidental mutation would fail loudly."""
     return DEFAULT_CONFIG
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def market() -> MarketData:
     return MarketData(
         risk_free_rate=0.042,

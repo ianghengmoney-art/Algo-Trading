@@ -51,15 +51,20 @@ def opening_block(
 
     # C5's portfolio-level cap.
     single_positions = len(portfolio.single_anchor_positions)
-    total_positions = max(len(portfolio.position_values), 1)
+    total_positions = len(portfolio.position_values)
     cap = config.anchors.single_anchor_portfolio_cap
-    rate = single_positions / total_positions
-    status = " — AT OR OVER CAP" if rate >= cap else ""
     lines.append("")
-    lines.append(
-        f"SINGLE-ANCHOR POSITIONS: {single_positions} of {total_positions} "
-        f"({rate:.0%}) against a {cap:.0%} cap{status}"
-    )
+    if total_positions == 0:
+        lines.append(
+            f"SINGLE-ANCHOR POSITIONS: none held (cap {cap:.0%} of positions)"
+        )
+    else:
+        rate = single_positions / total_positions
+        status = " — AT OR OVER CAP" if rate >= cap else ""
+        lines.append(
+            f"SINGLE-ANCHOR POSITIONS: {single_positions} of {total_positions} "
+            f"({rate:.0%}) against a {cap:.0%} cap{status}"
+        )
 
     if exposure is not None:
         lines.append("")

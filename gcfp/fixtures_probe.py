@@ -82,11 +82,18 @@ def _peer(symbol: str, industry: str, sector: str, market_cap: float,
                             total_debt=market_cap * 0.15,
                             cash_and_equivalents=market_cap * 0.05,
                             total_equity=market_cap * 0.3),
+        # EBITDA and the balance-sheet legs A2 needs: without them the peer
+        # contributes nothing to its grouping's median, and A2 refuses a
+        # grouping whose computable membership is too thin.
         quarterly=make_quarters(4, revenue=revenue / 4, net_income=net_income / 4,
                                 operating_cash_flow=net_income * 0.33, shares=shares,
                                 total_debt=market_cap * 0.15,
                                 cash_and_equivalents=market_cap * 0.05,
-                                total_equity=market_cap * 0.3),
+                                total_equity=market_cap * 0.3,
+                                ebitda=net_income * 0.42,
+                                gross_profit=revenue * 0.08,
+                                total_current_assets=market_cap * 0.20,
+                                total_current_liabilities=market_cap * 0.12),
         prices=make_prices(10, start_price=price),
     )
 

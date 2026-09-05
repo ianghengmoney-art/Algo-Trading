@@ -1,6 +1,6 @@
 ==============================================================================
 GCFP v4 — §18 DATA FEASIBILITY REPORT
-source: fixture (retail-source shaped) · generated 2026-09-04
+source: fixture (retail-source shaped) · generated 2026-09-05
 ==============================================================================
 
 ADAPTER CAPABILITIES
@@ -53,7 +53,7 @@ PER-TARGET COVERAGE
       [OK ] share_count_history = -0.025
       [OK ] filing_dates
     A5 data integrity:
-      [OK ] latest_filing_date = 2026-10-04
+      [OK ] latest_filing_date = 2026-10-05
       [OK ] current_price = 150
       [OK ] market_cap = 8e+10
     A6 classification:
@@ -78,15 +78,16 @@ PER-TARGET COVERAGE
       [OK ] peer_set = 6 — 6 survive C2's screen; 4 required
 
   NVDA (profitable fast-grower) — tests B2 scenario DCF, Rule of 40
-    coverage: 100% of attempted inputs
+    coverage: 93% of attempted inputs
     A6 routed to: CORE-GROWTH (matches)
     C1 usable history: 7.0 years
-    C2 genuine peers: 4
-      AMD: INCLUDED — meets grouping, size, and growth screen
-      INTC: INCLUDED — meets grouping, size, and growth screen
-      AVGO: excluded — revenue growth 10.0pp from subject, outside 10pp band
-      QCOM: INCLUDED — meets grouping, size, and growth screen
-      TXN: INCLUDED — meets grouping, size, and growth screen
+    C2 genuine peers: 0
+      AMD: excluded — multiple not computable or non-positive
+      INTC: excluded — multiple not computable or non-positive
+      AVGO: excluded — multiple not computable or non-positive
+      QCOM: excluded — multiple not computable or non-positive
+      TXN: excluded — multiple not computable or non-positive
+    -> SINGLE-ANCHOR MODE
     A1 solvency:
       [OK ] current_ratio = 1.429
       [OK ] ttm_operating_cash_flow = 2.74e+10
@@ -102,7 +103,7 @@ PER-TARGET COVERAGE
       [OK ] share_count_history = 0
       [OK ] filing_dates
     A5 data integrity:
-      [OK ] latest_filing_date = 2026-10-04
+      [OK ] latest_filing_date = 2026-10-05
       [OK ] current_price = 120
       [OK ] market_cap = 9e+11
     A6 classification:
@@ -123,8 +124,8 @@ PER-TARGET COVERAGE
     C2 peer set:
       [OK ] peer_candidates = 5 — 5 vendor candidates
       [OK ] peer_fundamentals_resolvable = 5
-      [OK ] peer_multiples_computable = 5 — 5/5 candidates had a computable forward_pe
-      [OK ] peer_set = 4 — 4 survive C2's screen; 4 required
+      [MISSING] peer_multiples_computable — 0/5 candidates had a computable forward_pe
+      [MISSING] peer_set — 0 survive C2's screen; 4 required
 
   RIVN (unprofitable grower) — tests A3 pre-profit branch, cash burn
     coverage: 64% of attempted inputs
@@ -146,7 +147,7 @@ PER-TARGET COVERAGE
       [MISSING] share_count_history — dilution flag cannot be enforced without this
       [OK ] filing_dates
     A5 data integrity:
-      [OK ] latest_filing_date = 2026-10-04
+      [OK ] latest_filing_date = 2026-10-05
       [OK ] current_price = 14
       [OK ] market_cap = 1.5e+10
     A6 classification:
@@ -196,7 +197,7 @@ PER-TARGET COVERAGE
       [OK ] share_count_history = -0.02
       [OK ] filing_dates
     A5 data integrity:
-      [OK ] latest_filing_date = 2026-10-04
+      [OK ] latest_filing_date = 2026-10-05
       [OK ] current_price = 210
       [OK ] market_cap = 6e+11
     A6 classification:
@@ -246,7 +247,7 @@ PER-TARGET COVERAGE
       [OK ] share_count_history = 0.04
       [OK ] filing_dates
     A5 data integrity:
-      [OK ] latest_filing_date = 2026-10-04
+      [OK ] latest_filing_date = 2026-10-05
       [OK ] current_price = 58
       [OK ] market_cap = 5e+10
     A6 classification:
@@ -295,7 +296,7 @@ PER-TARGET COVERAGE
       [OK ] share_count_history = 0
       [OK ] filing_dates
     A5 data integrity:
-      [OK ] latest_filing_date = 2026-10-04
+      [OK ] latest_filing_date = 2026-10-05
       [OK ] current_price = 240
       [OK ] market_cap = 1.4e+11
     A6 classification:
@@ -319,14 +320,14 @@ PER-TARGET COVERAGE
       [OK ] peer_set = 5 — 5 survive C2's screen; 4 required
 
   TSM (foreign ADR) — tests Module K — underlying currency exposure
-    coverage: 96% of attempted inputs
+    coverage: 93% of attempted inputs
     A6 routed to: CORE-GROWTH (EXPECTED n/a)
     C1 usable history: 7.0 years
-    C2 genuine peers: 3
-      INTC: excluded — revenue growth 25.0pp from subject, outside 10pp band
-      UMC: INCLUDED — meets grouping, size, and growth screen
-      GFS: INCLUDED — meets grouping, size, and growth screen
-      ASML: INCLUDED — meets grouping, size, and growth screen
+    C2 genuine peers: 0
+      INTC: excluded — multiple not computable or non-positive
+      UMC: excluded — multiple not computable or non-positive
+      GFS: excluded — multiple not computable or non-positive
+      ASML: excluded — multiple not computable or non-positive
     -> SINGLE-ANCHOR MODE
     A1 solvency:
       [OK ] current_ratio = 1.429
@@ -343,7 +344,7 @@ PER-TARGET COVERAGE
       [OK ] share_count_history = 0
       [OK ] filing_dates
     A5 data integrity:
-      [OK ] latest_filing_date = 2026-10-04
+      [OK ] latest_filing_date = 2026-10-05
       [OK ] current_price = 180
       [OK ] market_cap = 7e+11
     A6 classification:
@@ -364,8 +365,8 @@ PER-TARGET COVERAGE
     C2 peer set:
       [OK ] peer_candidates = 4 — 4 vendor candidates
       [OK ] peer_fundamentals_resolvable = 4
-      [OK ] peer_multiples_computable = 4 — 4/4 candidates had a computable forward_pe
-      [MISSING] peer_set — 3 survive C2's screen; 4 required
+      [MISSING] peer_multiples_computable — 0/4 candidates had a computable forward_pe
+      [MISSING] peer_set — 0 survive C2's screen; 4 required
 
   GE (spinoff in the last 7 years) — tests C1.1 series discontinuity
     coverage: 96% of attempted inputs
@@ -393,7 +394,7 @@ PER-TARGET COVERAGE
       [OK ] share_count_history = -0.03
       [OK ] filing_dates
     A5 data integrity:
-      [OK ] latest_filing_date = 2026-10-04
+      [OK ] latest_filing_date = 2026-10-05
       [OK ] current_price = 300
       [OK ] market_cap = 3.4e+11
     A6 classification:
@@ -440,7 +441,7 @@ PER-TARGET COVERAGE
       [OK ] share_count_history = 0
       [OK ] filing_dates
     A5 data integrity:
-      [OK ] latest_filing_date = 2026-10-04
+      [OK ] latest_filing_date = 2026-10-05
       [OK ] current_price = 1,300
       [OK ] market_cap = 3e+10
     A6 classification:
@@ -472,18 +473,18 @@ STOP CONDITIONS
     finding: cash runway not computable for none; share count history not computable for ['RIVN']
     DIRECTIVE: DISABLE SPEC-GROWTH ENTIRELY rather than building around the gap. Without A3's pre-profit branch and A4's dilution flag, SPEC-GROWTH is not a strategy, it is a way to buy companies shortly before they run out of money.
   [TRIPPED] Stop condition 2: seven years of historical multiples sourceable
-    finding: 1/9 targets: the source supplied under 6.75 years: ['RIVN']; separately, C1.1 truncated GE at 2025-04-22 — that is the gate working, not a sourcing gap
+    finding: 1/9 targets: the source supplied under 6.75 years: ['RIVN']; separately, C1.1 truncated GE at 2025-04-23 — that is the gate working, not a sourcing gap
     DIRECTIVE: REPORT BEFORE BUILDING — do not silently shorten the C1 window. C1 cannot function at full strength and the system degrades toward single-anchor operation, which C5 penalises but does not make free.
   [TRIPPED] Stop condition 3: GICS sub-industry codes available
     finding: GICS NOT available. Finest rung offered is industry from provider-defined taxonomy (profiles from NASDAQ, NYSE). A2 and C2 run against a substitute grouping — every result is logged VENDOR-SUBSTITUTE and the peer-gameability break criterion (Module I) applies with more force, not less.
     DIRECTIVE: REPORT WHICH FALLBACK LEVEL IS AVAILABLE BEFORE BUILDING. A2's sector-relative leverage and C2's peer matching both run at industry level against a vendor taxonomy, which is wider than the spec assumes. Every grouping is logged VENDOR-SUBSTITUTE, and Module I's peer-gameability break criterion applies with more force, not less.
   [TRIPPED] Stop condition 4: SINGLE-ANCHOR MODE below 40% of test companies
-    finding: 44% of reached targets fall into SINGLE-ANCHOR MODE
+    finding: 56% of reached targets fall into SINGLE-ANCHOR MODE
     DIRECTIVE: THIS IS A DESIGN-LEVEL FINDING, NOT A DATA GAP TO WORK AROUND. The dual-anchor premise does not hold for this data source and universe. Report it as such before proceeding.
 
 SUMMARY
   targets reached: 9/10
-  SINGLE-ANCHOR MODE rate: 44%
+  SINGLE-ANCHOR MODE rate: 56%
   point-in-time data: NOT AVAILABLE
 
 BUILD DIRECTIVES — these change what gets built:

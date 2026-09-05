@@ -10,7 +10,7 @@ function rather than being reassembled per caller.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date
 from typing import Sequence
 
@@ -59,6 +59,42 @@ class CandidateInputs:
     thesis_invalidation: str = ""
 
 
+def _ensure_anchor_series(
+    data: CompanyData,
+    adapter: DataAdapter | None,
+    classification: Classification,
+    config: Config,
+    ledger: AuditLedger,
+) -> CompanyData:
+    """Fetch C1's multiple series once the classification is known.
+
+    Which multiple C1 uses depends on the classification, and the
+    classification is not known until A6 has run — so the series cannot be
+    loaded up front with the rest of the company.  Fetching it here also means
+    a P/AFFO series is never pulled for a name that turns out to be an
+    industrial.
+
+    A caller that already supplied the series (a fixture, or a backtest
+    replaying cached data) keeps theirs untouched.
+    """
+    if data.multiples or adapter is None:
+        return data
+
+    multiple = c_anchors.anchor_multiple_for(classification, config)
+    try:
+        series = adapter.get_historical_multiples(
+            data.profile.symbol, multiple, config.anchors.history_window_years
+        )
+    except DataUnavailable as exc:
+        ledger.note(f"C1 series unavailable ({multiple}): {exc}")
+        return data
+    except Exception as exc:  # provider-specific transport failures
+        ledger.note(f"C1 series error ({multiple}): {type(exc).__name__}: {exc}")
+        return data
+
+    return replace(data, multiples=tuple(series))
+
+
 @dataclass
 class Evaluation:
     """Everything one pass over one company produced."""
@@ -99,6 +135,7 @@ def evaluate_candidate(
     portfolio: PortfolioState,
     fx: k_currency.FxTable,
     *,
+    adapter: DataAdapter | None = None,
     momentum_returns: dict[str, float | None] | None = None,
     as_of: date | None = None,
 ) -> Evaluation:
@@ -123,6 +160,10 @@ def evaluate_candidate(
 
     classification = health.classification
     evaluation.classification = classification
+
+    # C1's multiple depends on the classification A6 just assigned, so the
+    # series is fetched here rather than with the rest of the company data.
+    data = _ensure_anchor_series(data, adapter, classification, config, ledger)
 
     # -- Module B ---------------------------------------------------------
     try:
@@ -295,6 +336,7 @@ def run_screen(
                 inputs_by_symbol.get(symbol, CandidateInputs()),
                 portfolio,
                 fx,
+                adapter=adapter,
                 momentum_returns=momentum,
                 as_of=as_of,
             )

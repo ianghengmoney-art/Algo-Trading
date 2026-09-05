@@ -9,6 +9,37 @@ human reads them and decides. That is the intended and only supported mode, and
 
 ---
 
+## Running it costs nothing
+
+The default data stack is free and needs no API key:
+
+| Need | Source |
+|---|---|
+| Financial statements | **SEC EDGAR** XBRL company facts — official, no key |
+| Prices | **Stooq**, falling back to **Yahoo** |
+| Beta | **computed here** by regression, not bought |
+| Industry grouping | **SIC codes** from EDGAR |
+| Risk-free rate | 10-year Treasury yield via the price source |
+
+EDGAR is where the paid vendors get their fundamentals, and it carries one
+property none of them sell at retail: every fact arrives with the date it was
+**filed**. That satisfies §13.8's point-in-time requirement for free — and a
+backtest built on it is not quietly flattered by companies that have since
+delisted.
+
+```bash
+# SEC policy: identify yourself with contact details. They block anonymous scrapers.
+python scripts/run_screen.py --user-agent "your-name you@example.com" --limit 200
+```
+
+**What free costs instead of money:** the XBRL normalisation is fiddly (filers
+tag the same concept differently across eras), the price feeds are unofficial
+and will break eventually, and two paths stay blocked — REIT AFFO and insurer
+combined ratios are almost always custom XBRL extensions, so B4 and B5 cannot
+value from this source alone. Paying a vendor does not reliably fix those either.
+
+An `FMPAdapter` is included if you would rather pay for convenience.
+
 ## Read this first
 
 §18 of the spec makes the ordering explicit: **verify the data source can
@@ -17,19 +48,19 @@ supply what each classification path requires before building the gates.**
 That verification is [`docs/DATA_FEASIBILITY_FINDINGS.md`](docs/DATA_FEASIBILITY_FINDINGS.md).
 Its headline findings:
 
-- **GICS sub-industry codes are not available from FMP at any tier.** A2 and C2
-  cannot run as literally specified; they run at industry level against a
-  vendor taxonomy, logged `VENDOR-SUBSTITUTE` everywhere.
-- **No live probe run has been performed against a real provider** — this
-  environment's egress policy blocks market-data hosts. The probe is ready and
-  needs an environment with network access and an entitled API key.
+- **GICS sub-industry codes are not available from any free or retail source.**
+  A2 and C2 cannot run as literally specified; they run at industry level
+  against a substitute taxonomy, logged `VENDOR-SUBSTITUTE` everywhere.
+- **No live probe run has been performed** — the development environment's
+  egress policy blocks every market-data host, EDGAR included. The probe is
+  ready and needs a machine with network access.
 - Four stop conditions trip against a fixture modelled on a retail source's
   coverage. Three of them change what should be built.
 
-Run the probe yourself before trusting any output:
+Run the probe before trusting any output:
 
 ```bash
-python scripts/data_feasibility_probe.py --source fmp --api-key $FMP_API_KEY
+python scripts/data_feasibility_probe.py --source fixture   # offline demo
 ```
 
 It exits non-zero when a stop condition trips, so it can gate a build step.
@@ -60,7 +91,14 @@ It exits non-zero when a stop condition trips, so it can gate a build step.
 
 Supporting: `config.py` (every tunable parameter, in one place), `ledger.py`
 (the audit trail), `pipeline.py` (A→K in the order the spec fixes),
-`storage.py` (SQLite), `report.py`, `probe.py` (§18).
+`universe.py` (screening, group medians, peer finding), `monitor.py` (the
+holdings loop), `runner.py` (run assembly), `storage.py` (SQLite), `report.py`,
+`analytics.py` (beta), `probe.py` (§18).
+
+Data layer: `data/edgar.py` + `data/xbrl.py` (SEC filings), `data/prices.py`
+(Stooq/Yahoo), `data/composite.py` (pairs them, and reconstructs C1's multiple
+series on filing dates so it carries no lookahead), `data/fmp.py` (if you would
+rather pay), `data/fixtures.py` (offline testing).
 
 ---
 
@@ -76,6 +114,12 @@ not a large number. A DCF on negative cash flow raises `MethodRefused`. A
 missing beta raises rather than defaulting to 1.0 — that absence is an A5 data
 gap, and assuming 1.0 is the specific temptation the spec names.
 
+**No lookahead in the reconstructed history.** A company's December quarter is
+not knowable until it is filed in February, so C1's series observes each
+quarter on its filing date. Matching on period end instead would hand the model
+months of information it could not have had and flatter every backtest
+invisibly.
+
 **Every gate logs its arithmetic.** `GateResult` carries the computed value,
 the threshold, and which branch of a multi-branch rule applied. A bare
 `PASS`/`FAIL` is not an acceptable output.
@@ -86,7 +130,9 @@ spec's own table.
 
 **Two peer concepts, never substituted.** A2's universe-wide grouping median
 and C2's curated 4–8 peer set are different objects computed at different
-stages. Both are logged; neither stands in for the other.
+stages. Both are logged; neither stands in for the other. A2's ladder escalates
+on *computable* members and refuses outright when no rung reaches the minimum,
+rather than falling back on the very median the escalation existed to avoid.
 
 **Parameters live in one file with a fingerprint.** Every report and stored
 recommendation carries `Config.fingerprint`, so a result ties back to the
@@ -99,34 +145,30 @@ damage.
 
 ## Usage
 
+```bash
+# weekly screen — writes reports/YYYY-MM-DD-new-passers.txt
+python scripts/run_screen.py --user-agent "jane jane@example.com"
+
+# holdings monitor — cadence follows each holding's own reporting frequency,
+# so running this daily is cheap and correct
+python scripts/run_monitor.py --user-agent "jane jane@example.com"
+
+# offline, no network
+python scripts/run_screen.py --source fixture
+```
+
+The first screen builds the universe, which touches every filer once and is the
+slow step. It is cached for a week; `--limit 200` keeps things quick while you
+try it out.
+
+Programmatically:
+
 ```python
-from datetime import date
-from gcfp.config import DEFAULT_CONFIG
-from gcfp.data.fmp import FMPAdapter
-from gcfp.modules.f_sizing import PortfolioState
-from gcfp.modules.k_currency import FxTable
-from gcfp.pipeline import CandidateInputs, evaluate_candidate
-from gcfp.report import new_passer_report
+from gcfp.runner import build_free_adapter, free_stack_config, load_or_build_universe
 
-adapter = FMPAdapter(api_key="...")
-data = adapter.load_company("CAT", multiple="trailing_pe")
-market = adapter.get_market_data()
-
-evaluation = evaluate_candidate(
-    data, market, DEFAULT_CONFIG,
-    CandidateInputs(
-        current_multiple=13.0,
-        peer_candidates=[...],      # C2 screens and logs every one
-        subject_group="Machinery",
-        tam_sources=[...],          # B2.1 accepts no uncited figure
-        thesis_invalidation="ROIC-WACC spread below zero for two years",
-    ),
-    PortfolioState(total_value=1_000_000.0),
-    FxTable({"USDSGD": 1.29}, date.today()),
-)
-
-print(new_passer_report([evaluation], portfolio, fx, DEFAULT_CONFIG))
-print(evaluation.ledger.render())   # the full audit trail
+adapter = build_free_adapter("jane jane@example.com", cache_dir=".cache")
+config = free_stack_config()          # trailing anchor for CORE-GROWTH, logged
+universe = load_or_build_universe(adapter, config, ".cache/universe.json")
 ```
 
 Swapping data sources means implementing `DataAdapter`. No gate module imports
@@ -141,8 +183,10 @@ pip install -e ".[dev]"
 pytest
 ```
 
-126 tests. The prime directives get their own file; where the spec states a
+179 tests. The prime directives get their own file; where the spec states a
 number, the test asserts that number rather than whatever the code produces.
+The XBRL parser gets its own file too, since it is the code most likely to be
+quietly wrong and it cannot be checked against live EDGAR from a sandbox.
 
 ---
 
@@ -152,7 +196,8 @@ Repeated from §17 because it belongs at the front, not the back:
 
 - It **cannot detect a business changing in kind** rather than degree until
   enough post-change data exists. A6, C1.1 and C1.2 all lag a genuine
-  transformation by several quarters minimum.
+  transformation by several quarters minimum. On the free stack this is worse:
+  EDGAR carries no spinoff feed, so C1.1 sees splits but not separations.
 - It **cannot protect against an entire sector being mispriced together.** Both
   anchors can move the same wrong direction at once. This is the most important
   limitation here, and the reason human review of any divergence flag matters
@@ -166,3 +211,17 @@ Repeated from §17 because it belongs at the front, not the back:
 - **Its fair values are conditional on assumptions, not discovered facts.** B1's
   half-growth re-run and B2's three scenarios expose that sensitivity rather
   than hiding it — but exposure is not elimination.
+
+---
+
+## Status
+
+Built and tested: Modules A–K, the data layer, universe construction, the
+screen, the monitor, and the §18 probe.
+
+Not built: the §13 validation protocol — the 15-year backtest across the
+mandatory windows, the walk-forward split, and the seven benchmark comparisons.
+Until that exists, this system has not been shown to make money; it has only
+been shown to apply its own rules correctly. §13.11 also asks for 2–3 months of
+paper trading before real money, because backtests catch strategy flaws and
+paper trading catches pipeline flaws — different failure classes.
