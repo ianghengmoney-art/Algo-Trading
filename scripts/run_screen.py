@@ -25,7 +25,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from gcfp.config import DEFAULT_CONFIG
 from gcfp.modules.f_sizing import Bucket, PortfolioState
-from gcfp.pipeline import run_screen, sleeve_passer_counts
+from gcfp.pipeline import CandidateInputs, run_screen, sleeve_passer_counts
 from gcfp.report import new_passer_report, write_report
 from gcfp.runner import (
     assemble,
@@ -107,6 +107,46 @@ def main() -> int:
         adapter, symbols, context.market, config, inputs, portfolio, context.fx
     )
 
+    # Instrumentation: without it, "zero passers" is ambiguous between a
+    # disciplined screen and a broken parser.
+    from gcfp.diagnostics import ScreenDiagnostics
+    from gcfp.sensitivity import SensitivitySummary, analyse
+
+    diagnostics = ScreenDiagnostics()
+    for evaluation in evaluations:
+        diagnostics.record(evaluation, evaluation.peer_decisions, config)
+    for symbol in universe.unreachable:
+        diagnostics.rejections.record_unreachable(
+            symbol.split(":")[0], symbol
+        )
+
+    # Stress-test the valuations that actually produced a verdict.
+    sensitivity = SensitivitySummary()
+    for evaluation in evaluations:
+        if evaluation.fair_value is None or evaluation.classification is None:
+            continue
+        price = (
+            evaluation.signal.values.get("price") if evaluation.signal else None
+        )
+        try:
+            data = adapter.load_company(evaluation.symbol)
+        except Exception:
+            continue
+        sensitivity.record(
+            analyse(
+                data, context.market, config, evaluation.classification,
+                evaluation.fair_value, price=price,
+                valuation_kwargs={
+                    "sector_price_to_book": inputs.get(
+                        evaluation.symbol, CandidateInputs()
+                    ).sector_price_to_book,
+                    "peer_price_to_affo": inputs.get(
+                        evaluation.symbol, CandidateInputs()
+                    ).peer_price_to_affo,
+                },
+            )
+        )
+
     from gcfp.modules.k_currency import exposure_report
 
     # K4 exposure over the names that passed, weighted by intended size so the
@@ -118,7 +158,10 @@ def main() -> int:
     ]
     exposure = exposure_report(passers, config) if passers else None
 
-    text = new_passer_report(evaluations, portfolio, context.fx, config, exposure)
+    text = new_passer_report(
+        evaluations, portfolio, context.fx, config, exposure,
+        diagnostics=diagnostics, sensitivity=sensitivity,
+    )
     print(text)
 
     path = write_report(text, args.reports, "new-passers")

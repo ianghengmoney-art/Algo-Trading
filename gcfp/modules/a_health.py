@@ -451,14 +451,24 @@ def gate_a5_data_integrity(
     )
 
     gaps: list[str] = []
+    #: Machine-readable causes, so a screen over thousands of names can be
+    #: aggregated by *what* was missing rather than by prose.  A rejection
+    #: report that cannot say "1,890 names died on one absent tag" cannot tell
+    #: a parsing problem from a market with nothing cheap in it.
+    missing_fields: list[str] = []
+
+    def _gap(field: str, message: str) -> None:
+        missing_fields.append(field)
+        gaps.append(message)
+
     if not data.quarterly:
-        gaps.append("no quarterly financials")
+        _gap("quarterly_financials", "no quarterly financials")
     if not data.annual:
-        gaps.append("no annual financials")
+        _gap("annual_financials", "no annual financials")
     if data.current_price is None:
-        gaps.append("no current price")
+        _gap("current_price", "no current price")
     if data.profile.market_cap is None:
-        gaps.append("no market cap")
+        _gap("market_cap", "no market cap")
 
     age_months = None
     latest = data.latest_quarter
@@ -466,8 +476,9 @@ def gate_a5_data_integrity(
         reference = latest.filing_date or latest.period_end
         age_months = _months_between(reference, as_of)
         if age_months > limit:
-            gaps.append(
-                f"latest financials {age_months:.1f} months old (limit {limit})"
+            _gap(
+                "stale_financials",
+                f"latest financials {age_months:.1f} months old (limit {limit})",
             )
 
     # Source-level capability gaps are not per-company data gaps.  A source
@@ -482,7 +493,7 @@ def gate_a5_data_integrity(
         if "unavailable" not in note and "error" not in note:
             continue
         if any(note.startswith(kind) for kind in required_inputs):
-            gaps.append(note)
+            _gap(note.split()[0].rstrip(":"), note)
         else:
             capability_notes.append(note)
 
@@ -494,6 +505,7 @@ def gate_a5_data_integrity(
             reason="; ".join(gaps),
             detail={
                 "gap_count": len(gaps),
+                "missing_fields": missing_fields,
                 "growth_routed": growth_routed,
                 "source_capability_gaps": capability_notes,
             },

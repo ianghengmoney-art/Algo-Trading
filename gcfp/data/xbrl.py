@@ -29,29 +29,56 @@ from typing import Any, Iterable, Sequence
 #: a usable fact for the period wins, and the winner is logged so a reader can
 #: tell a ``Revenues`` filer from a ``RevenueFromContractWithCustomer`` one.
 TAG_CHAINS: dict[str, tuple[str, ...]] = {
+    # Revenue is the single most variably-tagged concept in XBRL: the tag a
+    # filer uses depends on its industry, its era, and its accountant. A miss
+    # here rejects the company at A5 before any judgement is made about it,
+    # which is why this chain is the longest.
     "revenue": (
         "RevenueFromContractWithCustomerExcludingAssessedTax",
         "RevenueFromContractWithCustomerIncludingAssessedTax",
         "Revenues",
         "SalesRevenueNet",
         "SalesRevenueGoodsNet",
+        "SalesRevenueServicesNet",
         "RevenuesNetOfInterestExpense",
+        "TotalRevenuesAndOtherIncomeNet",
+        "RegulatedAndUnregulatedOperatingRevenue",
+        "RealEstateRevenueNet",
+        "HealthCareOrganizationRevenue",
+        "InterestAndDividendIncomeOperating",
+        "RevenuesExcludingInterestAndDividends",
+        "ContractsRevenue",
+        "OperatingLeasesIncomeStatementLeaseRevenue",
     ),
     "net_income": (
         "NetIncomeLoss",
         "NetIncomeLossAvailableToCommonStockholdersBasic",
         "ProfitLoss",
+        "IncomeLossFromContinuingOperations",
+        "NetIncomeLossAllocatedToLimitedPartners",
     ),
     "operating_cash_flow": (
         "NetCashProvidedByUsedInOperatingActivities",
         "NetCashProvidedByUsedInOperatingActivitiesContinuingOperations",
+    ),
+    # Cost of revenue, so gross profit can be derived when GrossProfit itself
+    # is untagged — which is common, and which D4's margin-stability
+    # sub-component otherwise scores as zero.
+    "cost_of_revenue": (
+        "CostOfRevenue",
+        "CostOfGoodsAndServicesSold",
+        "CostOfGoodsSold",
+        "CostOfServices",
     ),
     "capital_expenditure": (
         "PaymentsToAcquirePropertyPlantAndEquipment",
         "PaymentsToAcquireProductiveAssets",
         "PaymentsForCapitalImprovements",
     ),
-    "operating_income": ("OperatingIncomeLoss",),
+    "operating_income": (
+        "OperatingIncomeLoss",
+        "IncomeLossFromContinuingOperationsBeforeInterestExpenseInterestIncomeIncomeTaxesExtraordinaryItemsNoncontrollingInterestsNet",
+    ),
     "gross_profit": ("GrossProfit",),
     "interest_expense": (
         "InterestExpense",
@@ -76,11 +103,16 @@ TAG_CHAINS: dict[str, tuple[str, ...]] = {
         "CashAndCashEquivalentsAtCarryingValue",
         "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents",
         "CashAndCashEquivalentsIncludingDiscontinuedOperations",
+        "CashCashEquivalentsAndShortTermInvestments",
+        "CashAndDueFromBanks",
     ),
     "short_term_investments": ("ShortTermInvestments", "OtherShortTermInvestments"),
     "total_equity": (
         "StockholdersEquity",
         "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest",
+        "PartnersCapital",
+        "MembersEquity",
+        "CommonStockholdersEquity",
     ),
     "goodwill": ("Goodwill",),
     "intangible_assets": (
@@ -90,6 +122,8 @@ TAG_CHAINS: dict[str, tuple[str, ...]] = {
     "long_term_debt_noncurrent": (
         "LongTermDebtNoncurrent",
         "LongTermDebt",
+        "LongTermDebtAndCapitalLeaseObligations",
+        "LongTermNotesPayable",
     ),
     "long_term_debt_current": (
         "LongTermDebtCurrent",
@@ -109,7 +143,11 @@ TAG_CHAINS: dict[str, tuple[str, ...]] = {
         "WeightedAverageNumberOfSharesOutstandingBasic",
         "WeightedAverageNumberOfSharesOutstanding",
     ),
-    "shares_outstanding": ("CommonStockSharesOutstanding",),
+    "shares_outstanding": (
+        "CommonStockSharesOutstanding",
+        "EntityCommonStockSharesOutstanding",
+        "CommonStockSharesIssued",
+    ),
     "dividends_paid": (
         "PaymentsOfDividendsCommonStock",
         "PaymentsOfDividends",
@@ -129,6 +167,7 @@ DURATION_FIELDS: frozenset[str] = frozenset(
         "net_income",
         "operating_cash_flow",
         "capital_expenditure",
+        "cost_of_revenue",
         "operating_income",
         "gross_profit",
         "interest_expense",

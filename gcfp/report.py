@@ -82,6 +82,8 @@ def new_passer_report(
     fx: FxTable,
     config: Config,
     exposure: ExposureReport | None = None,
+    diagnostics=None,
+    sensitivity=None,
 ) -> str:
     """The weekly new-passer report.
 
@@ -127,9 +129,35 @@ def new_passer_report(
             lines.append(f"  {ev.symbol}: stopped at Module {ev.stopped_at}")
             lines.append(f"    {ev.stop_reason}")
 
+    if diagnostics is not None:
+        lines.append(THIN)
+        lines.append("DIAGNOSTICS — why the screen produced what it produced")
+        lines.append(THIN)
+        lines.extend(f"  {l}" for l in diagnostics.as_report_lines(config))
+
+    if sensitivity is not None and sensitivity.reports:
+        lines.append(THIN)
+        lines.extend(f"  {l}" for l in sensitivity.as_report_lines())
+
     lines.append(RULE)
     lines.append("All output is files plus console. Nothing executes.")
     return "\n".join(lines)
+
+
+
+def _boundary_lines(ev: Evaluation, config: Config) -> list[str]:
+    """A6 boundary warnings, when the evaluation carries them."""
+    proximities = getattr(ev, "boundary_proximities", None)
+    if not proximities:
+        return []
+    from .boundaries import NEAR_MARGIN
+
+    lines = [
+        f"  ** NEAR CLASSIFICATION BOUNDARY — {len(proximities)} threshold(s) "
+        f"within {NEAR_MARGIN:.0%} **"
+    ]
+    lines.extend(p.as_report_line() for p in proximities)
+    return lines
 
 
 def _candidate_block(ev: Evaluation, config: Config) -> list[str]:
@@ -188,6 +216,18 @@ def _candidate_block(ev: Evaluation, config: Config) -> list[str]:
         if tam is not None:
             for line in tam.as_log_lines():
                 lines.append(f"  {line}")
+
+    if ev.signal is not None and ev.classification is not None:
+        discount = ev.signal.values.get("discount")
+        threshold = ev.signal.values.get("threshold")
+        if discount is not None and threshold is not None:
+            from .boundaries import RoundTripCost
+
+            lines.append(RoundTripCost(discount).as_report_line(threshold))
+
+    boundary = _boundary_lines(ev, config)
+    if boundary:
+        lines.extend(boundary)
 
     if ev.sizing:
         lines.append(f"  {ev.sizing.as_report_line()}")

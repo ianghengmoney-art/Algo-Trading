@@ -99,6 +99,9 @@ class AnchorReading:
     reason: str | None = None
     flags: list[str] = field(default_factory=list)
     detail: dict[str, object] = field(default_factory=dict)
+    #: C2's decision for every candidate considered, kept so a screen can be
+    #: aggregated by *which* screen rejected peers without re-running it.
+    peer_decisions: list = field(default_factory=list)
 
     @property
     def confirms_undervaluation(self) -> bool:
@@ -674,6 +677,7 @@ def compute_c2(
                 f"{cfg.peer_min}) — routed to C5"
             ),
             detail={"considered": len(decisions), "kept": len(kept)},
+            peer_decisions=list(decisions),
         )
 
     median = statistics.median([c.multiple for c in kept])  # type: ignore[misc]
@@ -691,6 +695,7 @@ def compute_c2(
             "considered": len(decisions),
             "excluded": len(decisions) - len(kept),
         },
+        peer_decisions=list(decisions),
     )
     if ledger is not None:
         ledger.note(

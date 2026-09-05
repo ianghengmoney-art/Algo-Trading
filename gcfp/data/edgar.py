@@ -35,6 +35,7 @@ from typing import Any, Sequence
 from ..types import (
     CompanyProfile,
     CorporateAction,
+    CorporateActionType,
     MarketData,
     MultipleObservation,
     PeriodFinancials,
@@ -333,7 +334,8 @@ class EdgarAdapter(DataAdapter):
             "revenue", "net_income", "operating_cash_flow", "capital_expenditure",
             "operating_income", "gross_profit", "interest_expense", "tax_expense",
             "pretax_income", "depreciation_amortization", "shares_diluted",
-            "shares_basic", "dividends_paid", "funds_from_operations",
+            "shares_basic", "dividends_paid", "cost_of_revenue",
+            "funds_from_operations",
             "adjusted_funds_from_operations",
         ]
         resolved = {
@@ -381,6 +383,16 @@ class EdgarAdapter(DataAdapter):
                 else None
             )
 
+            # GrossProfit is frequently untagged; deriving it from revenue
+            # less cost of revenue keeps D4's margin-stability sub-component
+            # scoreable instead of silently zero.
+            gross_profit = duration("gross_profit")
+            if gross_profit is None:
+                revenue = duration("revenue")
+                cost = duration("cost_of_revenue")
+                if revenue is not None and cost is not None:
+                    gross_profit = revenue - abs(cost)
+
             operating_income = duration("operating_income")
             da = duration("depreciation_amortization")
             ebitda = (
@@ -403,7 +415,7 @@ class EdgarAdapter(DataAdapter):
                     fiscal_year=end.year,
                     fiscal_period="FY" if annual else None,
                     revenue=duration("revenue"),
-                    gross_profit=duration("gross_profit"),
+                    gross_profit=gross_profit,
                     operating_income=operating_income,
                     net_income=duration("net_income"),
                     ebitda=ebitda,
@@ -472,18 +484,60 @@ class EdgarAdapter(DataAdapter):
     def get_corporate_actions(
         self, symbol: str, years: int
     ) -> Sequence[CorporateAction]:
-        """Not derivable from companyfacts.
+        """Disposals and acquisitions, from 8-K Item 2.01.
 
-        Splits show up in price feeds; spinoffs appear in 8-K narrative text
-        that this adapter does not parse.  Returning an empty tuple would read
-        as "no spinoffs occurred", which would defeat C1.1, so this raises.
+        C1.1 needs to know when a company stopped being the company its own
+        price history describes. EDGAR publishes no corporate-action feed, but
+        it does publish 8-K filings with standardised item numbers, and
+        **Item 2.01 — Completion of Acquisition or Disposition of Assets** is
+        the one that fires on a spinoff, a major divestiture, or a
+        transformative purchase.
+
+        This is deliberately imprecise in one direction and not the other. Item
+        2.01 also covers ordinary asset sales, so this over-reports rather than
+        under-reports: a false discontinuity costs a shortened C1 window and a
+        logged flag, while a missed spinoff leaves the anchor silently
+        comparing a company to a predecessor that no longer exists. Given the
+        choice, C1.1 should see too much rather than too little.
+
+        The returned actions carry ``market_cap_share=None``, because the 8-K
+        index does not size the transaction. C1.1 treats a SPINOFF as
+        transformative regardless of size, so the flag still lands; an
+        ACQUISITION without a size cannot clear the 25% test and is reported
+        for a human to judge.
         """
-        raise DataUnavailable(
-            "corporate_actions",
-            "EDGAR companyfacts carries no corporate-action feed; C1.1 cannot "
-            "detect spinoffs from this source and an empty list must not be "
-            "read as 'none occurred'",
-        )
+        subs = self._submissions(symbol)
+        recent = (subs.get("filings") or {}).get("recent") or {}
+        forms = recent.get("form") or []
+        dates = recent.get("filingDate") or []
+        items = recent.get("items") or []
+
+        cutoff_year = date.today().year - years
+        out: list[CorporateAction] = []
+        for index, form in enumerate(forms):
+            if str(form) not in ("8-K", "8-K/A"):
+                continue
+            filed = xbrl._parse_date(dates[index]) if index < len(dates) else None
+            if filed is None or filed.year < cutoff_year:
+                continue
+            if self.as_of is not None and filed > self.as_of:
+                continue
+            item_text = str(items[index]) if index < len(items) else ""
+            if "2.01" not in item_text:
+                continue
+            out.append(
+                CorporateAction(
+                    action_type=CorporateActionType.DIVESTITURE,
+                    effective_date=filed,
+                    market_cap_share=None,
+                    description=(
+                        f"8-K Item 2.01 filed {filed.isoformat()} — completion of "
+                        "acquisition or disposition of assets. Size not stated in "
+                        "the filing index; confirm whether this was transformative."
+                    ),
+                )
+            )
+        return tuple(out)
 
     def get_peer_symbols(self, symbol: str) -> Sequence[str]:
         raise DataUnavailable(
@@ -533,7 +587,17 @@ class EdgarAdapter(DataAdapter):
                         "logged as VENDOR-SUBSTITUTE wherever a grouping is used",
                     )
                 )
-            elif name in ("peer_group", "corporate_actions"):
+            elif name == "corporate_actions":
+                out.append(
+                    Capability(
+                        name, True,
+                        "8-K Item 2.01 disposals and acquisitions. Over-reports "
+                        "(Item 2.01 also covers ordinary asset sales) and does "
+                        "not size the transaction, so C1.1 sees candidates to "
+                        "judge rather than a clean feed",
+                    )
+                )
+            elif name == "peer_group":
                 out.append(
                     Capability(name, False, "built elsewhere; see gcfp.universe")
                 )

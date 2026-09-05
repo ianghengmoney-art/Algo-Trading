@@ -94,6 +94,11 @@ Backtest (`backtest/`): `engine.py` (the point-in-time walk-forward loop),
 benchmark suite), `accuracy.py` (§13.5), `sweep.py` (§13.7 with plateau
 detection), `report.py`, `fixtures.py` (a synthetic market for testing).
 
+Instrumentation: `diagnostics.py` (rejection taxonomy, peer availability,
+conviction independence), `sensitivity.py` (valuation stress test with the
+FRAGILE flag), `boundaries.py` (classification-cliff proximity, round-trip
+costs).
+
 Supporting: `config.py` (every tunable parameter, in one place), `ledger.py`
 (the audit trail), `pipeline.py` (A→K in the order the spec fixes),
 `universe.py` (screening, group medians, peer finding), `monitor.py` (the
@@ -138,6 +143,36 @@ and C2's curated 4–8 peer set are different objects computed at different
 stages. Both are logged; neither stands in for the other. A2's ladder escalates
 on *computable* members and refuses outright when no rung reaches the minimum,
 rather than falling back on the very median the escalation existed to avoid.
+
+**"Zero passers" is never ambiguous.** A screen that finds nothing means either
+the market is expensive and the gates are correctly refusing, or one unmapped
+XBRL tag killed four thousand companies before any of them reached a valuation.
+Those look identical without instrumentation and call for opposite responses, so
+every screen reports why each name died, aggregated by cause:
+
+```
+REJECTION TAXONOMY
+  screened 4,812 · passed 3 · rejected 4,809
+  A5             2,104  (43.7%)
+        1,890  missing: revenue
+  E                 14  (0.3%)
+           14  discount not met
+
+  DOMINANT CAUSE: A5 / missing: revenue — 1,890 names (39.3%)
+  ** More than a quarter of the universe died on a data problem, not a health
+     or valuation judgement. Fix this before reading anything else. **
+```
+
+**Fair values are labelled by how much they can be trusted.** Every valuation is
+re-run across defensible input changes — discount rate ±1pp, ERP ±0.5pp,
+terminal growth, projection length. A name whose buy case flips on any of them
+is flagged `VERDICT DOES NOT SURVIVE`; one that swings more than 25% on a 1pp
+discount-rate change is `FRAGILE`.
+
+**Classification cliffs are visible before you fall off one.** A company at
+19.9% growth is CORE-STABLE; at 20.1% it is CORE-GROWTH, with a different
+valuation method, a 35% gate instead of 25%, and different sizing. Any name
+within 10% of a threshold is flagged with what would change.
 
 **Parameters live in one file with a fingerprint.** Every report and stored
 recommendation carries `Config.fingerprint`, so a result ties back to the
@@ -197,7 +232,7 @@ pip install -e ".[dev]"
 pytest
 ```
 
-207 tests. The prime directives get their own file; where the spec states a
+236 tests. The prime directives get their own file; where the spec states a
 number, the test asserts that number rather than whatever the code produces.
 The XBRL parser gets its own file too, since it is the code most likely to be
 quietly wrong and it cannot be checked against live EDGAR from a sandbox.

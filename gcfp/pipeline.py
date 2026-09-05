@@ -113,6 +113,10 @@ class Evaluation:
     adr: k_currency.AdrExposure | None = None
     stopped_at: str | None = None
     stop_reason: str | None = None
+    #: A6 thresholds this name sits close to (see gcfp.boundaries). Populated
+    #: for names that reach classification; a cliff you cannot see is one you
+    #: fall off.
+    boundary_proximities: list = field(default_factory=list)
 
     @property
     def passed_health(self) -> bool:
@@ -125,6 +129,13 @@ class Evaluation:
     @property
     def anchor_mode(self) -> AnchorMode:
         return self.triangulation.mode if self.triangulation else AnchorMode.NONE
+
+    @property
+    def peer_decisions(self) -> list:
+        """C2's decision for every candidate, for the peer diagnostic."""
+        if self.triangulation is None:
+            return []
+        return list(self.triangulation.c2.peer_decisions)
 
 
 def evaluate_candidate(
@@ -165,6 +176,15 @@ def evaluate_candidate(
     # C1's multiple depends on the classification A6 just assigned, so the
     # series is fetched here rather than with the rest of the company data.
     data = _ensure_anchor_series(data, adapter, classification, config, ledger)
+
+    from .boundaries import near_boundaries
+
+    evaluation.boundary_proximities = near_boundaries(data, config, classification)
+    for proximity in evaluation.boundary_proximities:
+        ledger.note(
+            f"A6 near boundary · {proximity.criterion}={proximity.value:.4g} "
+            f"vs {proximity.threshold:.4g}"
+        )
 
     # -- Module B ---------------------------------------------------------
     try:
