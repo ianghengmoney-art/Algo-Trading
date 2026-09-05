@@ -89,6 +89,11 @@ It exits non-zero when a stop condition trips, so it can gate a build step.
 | J | `modules/j_tax.py` | Tax and jurisdiction (default: Singapore resident) |
 | K | `modules/k_currency.py` | Currency layer: dual reporting and ADR exposure |
 
+Backtest (`backtest/`): `engine.py` (the point-in-time walk-forward loop),
+`portfolio.py`, `metrics.py` (§13.6's distribution), `variants.py` (the
+benchmark suite), `accuracy.py` (§13.5), `sweep.py` (§13.7 with plateau
+detection), `report.py`, `fixtures.py` (a synthetic market for testing).
+
 Supporting: `config.py` (every tunable parameter, in one place), `ledger.py`
 (the audit trail), `pipeline.py` (A→K in the order the spec fixes),
 `universe.py` (screening, group medians, peer finding), `monitor.py` (the
@@ -155,7 +160,16 @@ python scripts/run_monitor.py --user-agent "jane jane@example.com"
 
 # offline, no network
 python scripts/run_screen.py --source fixture
+
+# §13 validation protocol
+python scripts/run_backtest.py --source synthetic          # offline demo
+python scripts/run_backtest.py --source edgar --sweep \
+    --user-agent "jane jane@example.com" \
+    --symbols AAPL MSFT CAT DE --start 2010-01-01 --end 2024-12-31
 ```
+
+The backtest exits non-zero when a Module I strategy-break criterion trips, so
+a broken system fails the run rather than producing a report nobody finishes.
 
 The first screen builds the universe, which touches every filer once and is the
 slow step. It is cached for a week; `--limit 200` keeps things quick while you
@@ -183,7 +197,7 @@ pip install -e ".[dev]"
 pytest
 ```
 
-179 tests. The prime directives get their own file; where the spec states a
+207 tests. The prime directives get their own file; where the spec states a
 number, the test asserts that number rather than whatever the code produces.
 The XBRL parser gets its own file too, since it is the code most likely to be
 quietly wrong and it cannot be checked against live EDGAR from a sandbox.
@@ -217,11 +231,20 @@ Repeated from §17 because it belongs at the front, not the back:
 ## Status
 
 Built and tested: Modules A–K, the data layer, universe construction, the
-screen, the monitor, and the §18 probe.
+screen, the monitor, the §18 probe, and the §13 backtest.
 
-Not built: the §13 validation protocol — the 15-year backtest across the
-mandatory windows, the walk-forward split, and the seven benchmark comparisons.
-Until that exists, this system has not been shown to make money; it has only
-been shown to apply its own rules correctly. §13.11 also asks for 2–3 months of
-paper trading before real money, because backtests catch strategy flaws and
-paper trading catches pipeline flaws — different failure classes.
+**The backtest has not been run on real data.** It runs end to end against a
+synthetic market — six benchmarks, walk-forward split, parameter sweep,
+classification accuracy, and the full return distribution — but this
+environment cannot reach EDGAR or any price feed. Run it on your own machine
+before believing any number it produces.
+
+Two §13 requirements this build cannot satisfy:
+
+- **§13.4's "vs old GCFP v2 rules"** — the v2 specification was not supplied.
+  v4 supersedes v2 without restating it, and a reconstructed v2 would be a
+  strawman. The report declares the gap rather than showing six of seven
+  benchmarks as though that were the full set.
+- **§13.11's paper trading** — 2–3 months of calendar time, which no amount of
+  code shortens. Backtests catch strategy flaws; paper trading catches pipeline
+  flaws. A clean backtest does not substitute.

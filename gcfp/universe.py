@@ -222,7 +222,16 @@ def build_universe(
         if progress and index % 100 == 0:
             print(f"  universe: {index}/{len(symbols)} ({symbol})", flush=True)
         try:
-            data = adapter.load_company(symbol)
+            # Pin the price window to the evaluation date. Without this the
+            # adapter's default window is relative to *today*, which silently
+            # returns no prices for any historical date — and a name with no
+            # price has no market cap, so a whole backtest would screen to
+            # nothing for a reason that looks like a data gap.
+            data = adapter.load_company(
+                symbol,
+                price_start=as_of - timedelta(days=730),
+                price_end=as_of,
+            )
         except DataUnavailable as exc:
             universe.unreachable.append(f"{symbol}: {exc}")
             continue
@@ -277,6 +286,7 @@ def find_peers(
     *,
     level: TaxonomyLevel = TaxonomyLevel.INDUSTRY,
     max_candidates: int = 40,
+    as_of: date | None = None,
 ) -> list[c_anchors.PeerCandidate]:
     """Assemble C2 candidates from the universe.
 
@@ -306,9 +316,14 @@ def find_peers(
     )
 
     candidates: list[c_anchors.PeerCandidate] = []
+    load_kwargs = (
+        {"price_start": as_of - timedelta(days=730), "price_end": as_of}
+        if as_of is not None
+        else {}
+    )
     for member in nearby[:max_candidates]:
         try:
-            peer_data = adapter.load_company(member.symbol)
+            peer_data = adapter.load_company(member.symbol, **load_kwargs)
         except Exception:
             continue
         candidates.append(

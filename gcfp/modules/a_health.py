@@ -470,9 +470,21 @@ def gate_a5_data_integrity(
                 f"latest financials {age_months:.1f} months old (limit {limit})"
             )
 
+    # Source-level capability gaps are not per-company data gaps.  A source
+    # with no corporate-action feed lacks it for every company, and failing
+    # every name on it would make the system produce nothing while looking
+    # like a health verdict.  Those gaps belong in the coverage report (§18)
+    # and are surfaced here as flags; only notes about inputs A5 itself
+    # requires are failures.
+    required_inputs = ("annual", "quarterly", "prices")
+    capability_notes: list[str] = []
     for note in data.source_notes:
-        if "unavailable" in note or "error" in note:
+        if "unavailable" not in note and "error" not in note:
+            continue
+        if any(note.startswith(kind) for kind in required_inputs):
             gaps.append(note)
+        else:
+            capability_notes.append(note)
 
     if gaps:
         return gate_fail(
@@ -480,13 +492,20 @@ def gate_a5_data_integrity(
             age_months,
             threshold=float(limit),
             reason="; ".join(gaps),
-            detail={"gap_count": len(gaps), "growth_routed": growth_routed},
+            detail={
+                "gap_count": len(gaps),
+                "growth_routed": growth_routed,
+                "source_capability_gaps": capability_notes,
+            },
         )
     return gate_pass(
         "A5",
         age_months,
         threshold=float(limit),
-        detail={"growth_routed": growth_routed},
+        detail={
+            "growth_routed": growth_routed,
+            "source_capability_gaps": capability_notes,
+        },
     )
 
 

@@ -36,6 +36,7 @@ from ..types import (
     TaxonomyLevel,
 )
 from .adapter import Capability, DataAdapter, DataUnavailable, REQUIRED_CAPABILITIES
+from .reconstruct import reconstruct_series
 from .prices import (
     BENCHMARK_SYMBOL,
     TEN_YEAR_YIELD_SYMBOL,
@@ -198,14 +199,16 @@ class CompositeAdapter(DataAdapter):
     ) -> Sequence[MultipleObservation]:
         """Rebuild C1's series from prices and per-share fundamentals.
 
-        One observation per quarter, taken on the day the quarter's figures
-        became public — so the multiple is the one an observer could actually
-        have computed that day.
+        The reconstruction itself lives in :mod:`gcfp.data.reconstruct` so that
+        every adapter pairing fundamentals with prices derives the series the
+        same way — including its lookahead discipline.
         """
         end = self.as_of or date.today()
         start = end - timedelta(days=int(365.25 * (years + 1)))
 
-        quarters = list(self.fundamentals.get_quarterly_financials(symbol, (years + 1) * 4))
+        quarters = list(
+            self.fundamentals.get_quarterly_financials(symbol, (years + 1) * 4)
+        )
         if not quarters:
             raise DataUnavailable(
                 "historical_multiples", f"no quarterly financials for {symbol}"
@@ -214,116 +217,15 @@ class CompositeAdapter(DataAdapter):
         if not history:
             raise DataUnavailable("historical_multiples", f"no prices for {symbol}")
 
-        by_date = {p.price_date: p for p in history}
-        ordered_dates = sorted(by_date)
-
-        observations: list[MultipleObservation] = []
-        for quarter in quarters:
-            # The observation sits on the filing date: that is when this
-            # quarter's numbers entered the public record.
-            observed_on = quarter.filing_date or quarter.period_end
-            if observed_on > end:
-                continue
-            price = self._price_on_or_after(ordered_dates, by_date, observed_on)
-            if price is None:
-                continue
-            value = self._multiple_at(symbol, multiple, quarters, observed_on, price)
-            if value is None:
-                continue
-            observations.append(
-                MultipleObservation(
-                    observation_date=observed_on, value=value, multiple=multiple
-                )
-            )
-
+        observations = reconstruct_series(
+            quarters, history, multiple, end=end, years=years
+        )
         if not observations:
             raise DataUnavailable(
                 "historical_multiples",
                 f"could not reconstruct a {multiple} series for {symbol}",
             )
-        return tuple(
-            sorted(observations, key=lambda o: o.observation_date, reverse=True)
-        )
-
-    @staticmethod
-    def _price_on_or_after(
-        ordered: Sequence[date], by_date: dict[date, PricePoint], target: date
-    ) -> float | None:
-        """The first close at or after a date, within a week.
-
-        A filing lands on a weekend or holiday often enough to matter; a gap
-        wider than a week means the series has a hole and the observation is
-        dropped rather than stretched.
-        """
-        for day in ordered:
-            if day >= target:
-                if (day - target).days > 7:
-                    return None
-                return by_date[day].close
-        return None
-
-    def _multiple_at(
-        self,
-        symbol: str,
-        multiple: str,
-        quarters: Sequence[PeriodFinancials],
-        observed_on: date,
-        price: float,
-    ) -> float | None:
-        """The multiple computable from what was filed by ``observed_on``.
-
-        Only quarters already filed count toward the trailing figures, which is
-        what keeps the reconstructed series free of lookahead.
-        """
-        known = [
-            q for q in quarters
-            if (q.filing_date or q.period_end) <= observed_on
-        ]
-        known.sort(key=lambda q: q.period_end, reverse=True)
-        if len(known) < 4:
-            return None
-        ttm = known[:4]
-        latest = known[0]
-
-        shares = latest.shares_diluted or latest.shares_outstanding
-        if not shares or shares <= 0:
-            return None
-
-        def total(attr: str) -> float | None:
-            values = [getattr(q, attr) for q in ttm]
-            return sum(values) if all(v is not None for v in values) else None
-
-        if multiple in ("trailing_pe", "forward_pe"):
-            earnings = total("net_income")
-            if earnings is None or earnings <= 0:
-                # P/E on negative earnings is meaningless, not large.
-                return None
-            return price / (earnings / shares)
-
-        if multiple == "ev_revenue":
-            revenue = total("revenue")
-            if revenue is None or revenue <= 0:
-                return None
-            net_debt = latest.net_debt
-            if net_debt is None:
-                return None
-            return (price * shares + net_debt) / revenue
-
-        if multiple in ("p_b", "p_tbv"):
-            book = (
-                latest.tangible_book_value if multiple == "p_tbv" else latest.total_equity
-            )
-            if book is None or book <= 0:
-                return None
-            return price / (book / shares)
-
-        if multiple == "p_affo":
-            affo = latest.adjusted_funds_from_operations or latest.funds_from_operations
-            if affo is None or affo <= 0:
-                return None
-            return price / (affo / shares)
-
-        return None
+        return tuple(observations)
 
     # -- introspection ----------------------------------------------------
     def capabilities(self) -> Sequence[Capability]:

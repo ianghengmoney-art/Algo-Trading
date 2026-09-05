@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
 from datetime import date
-from typing import Sequence
+from typing import Callable, Sequence
 
 from .classification import Classification, Regime, regime_of
 from .config import Config
@@ -137,6 +137,7 @@ def evaluate_candidate(
     *,
     adapter: DataAdapter | None = None,
     momentum_returns: dict[str, float | None] | None = None,
+    conviction_scorer: Callable[..., ConvictionScore] | None = None,
     as_of: date | None = None,
 ) -> Evaluation:
     """Run one candidate through the full stack.
@@ -229,7 +230,10 @@ def evaluate_candidate(
         evaluation.stop_reason = str(exc)
         return evaluation
 
-    conviction = d_conviction.score_conviction(
+    # §13.4 requires benchmarking the corrected scoring against v3's circular
+    # version, so the scorer is a seam.  Production always passes None.
+    score = conviction_scorer or d_conviction.score_conviction
+    conviction = score(
         data,
         market,
         config,
