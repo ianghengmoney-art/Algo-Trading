@@ -164,3 +164,40 @@ class TestCommandLine:
         result = self._run("run_screen.py", "--source", "edgar")
         assert result.returncode != 0
         assert "user-agent" in result.stderr.lower()
+
+    @pytest.mark.parametrize("script", [
+        "data_feasibility_probe.py", "run_screen.py", "run_monitor.py",
+    ])
+    def test_every_cli_accepts_the_edgar_source(self, script):
+        """The free stack is the documented default, so a CLI that does not
+        offer it sends the operator to a source they were told not to need.
+
+        This regressed once: the probe was written before the EDGAR adapter
+        existed and still listed only fmp and fixture, so following the README
+        produced an argparse error.
+        """
+        result = self._run(script, "--source", "edgar")
+        combined = (result.stdout + result.stderr).lower()
+        assert "invalid choice" not in combined, (
+            f"{script} does not accept --source edgar"
+        )
+        # Where the CLI actually proceeds it must ask for the user-agent.
+        # run_monitor legitimately exits first when the store is empty: there
+        # is no reason to demand credentials in order to do nothing.
+        assert "user-agent" in combined or "no open positions" in combined
+
+    @pytest.mark.parametrize("script", [
+        "data_feasibility_probe.py", "run_screen.py", "run_monitor.py",
+    ])
+    def test_every_cli_runs_offline(self, script, tmp_path):
+        """Every entry point must work with no network, so the install can be
+        verified before spending an hour on a live run."""
+        source = "fixture"
+        args = [script, "--source", source]
+        if script != "data_feasibility_probe.py":
+            args += ["--db", str(tmp_path / f"{script}.sqlite"),
+                     "--reports", str(tmp_path / "reports")]
+        result = self._run(*args)
+        combined = (result.stdout + result.stderr).lower()
+        assert "invalid choice" not in combined
+        assert "traceback" not in combined

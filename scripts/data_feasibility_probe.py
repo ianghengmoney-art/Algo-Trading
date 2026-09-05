@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """Run §18's critical first task and print the coverage report.
 
+    # the free stack — SEC EDGAR plus a free price feed, no key needed
+    python scripts/data_feasibility_probe.py --source edgar \
+        --user-agent "you@example.com"
+
     python scripts/data_feasibility_probe.py --source fmp --api-key $FMP_API_KEY
     python scripts/data_feasibility_probe.py --source fixture   # offline demo
 
@@ -22,7 +26,18 @@ from gcfp.config import DEFAULT_CONFIG
 from gcfp.probe import DEFAULT_TARGETS, run_probe
 
 
-def build_adapter(source: str, api_key: str | None):
+def build_adapter(source: str, api_key: str | None, user_agent: str | None,
+                  cache_dir: Path | None = None):
+    if source == "edgar":
+        from gcfp.runner import build_free_adapter
+
+        if not user_agent:
+            raise SystemExit(
+                "EDGAR requires --user-agent identifying you with a real email "
+                'address, e.g. --user-agent "you@example.com". The SEC blocks '
+                "anonymous requests."
+            )
+        return build_free_adapter(user_agent, cache_dir=cache_dir)
     if source == "fmp":
         from gcfp.data.fmp import FMPAdapter
 
@@ -40,13 +55,33 @@ def build_adapter(source: str, api_key: str | None):
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--source", default="fixture", choices=("fmp", "fixture"))
+    parser.add_argument(
+        "--source", default="fixture", choices=("edgar", "fmp", "fixture")
+    )
+    parser.add_argument(
+        "--user-agent",
+        help='required for EDGAR; SEC policy. e.g. "you@example.com"',
+    )
     parser.add_argument("--api-key", default=os.environ.get("FMP_API_KEY"))
+    parser.add_argument("--cache-dir", type=Path, default=Path(".cache"),
+                        help="cache SEC responses so a re-run is fast")
     parser.add_argument("--out", type=Path, help="also write the report here")
     args = parser.parse_args()
 
-    adapter = build_adapter(args.source, args.api_key)
-    report = run_probe(adapter, DEFAULT_CONFIG, DEFAULT_TARGETS)
+    adapter = build_adapter(
+        args.source, args.api_key, args.user_agent, args.cache_dir
+    )
+
+    # The free stack has no analyst estimates, so CORE-GROWTH anchors on a
+    # trailing multiple. Probing with the default config would test a multiple
+    # this source cannot compute and report a gap that is really a mismatch.
+    config = DEFAULT_CONFIG
+    if args.source == "edgar":
+        from gcfp.runner import free_stack_config
+
+        config = free_stack_config(DEFAULT_CONFIG)
+
+    report = run_probe(adapter, config, DEFAULT_TARGETS)
     text = report.render()
     print(text)
 
