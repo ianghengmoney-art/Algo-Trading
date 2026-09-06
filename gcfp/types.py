@@ -186,6 +186,11 @@ class CompanyProfile:
     industry: str | None = None
     sub_industry: str | None = None
     gics_sub_industry_code: str | None = None
+    #: The numeric code behind ``industry`` in whatever taxonomy supplied it
+    #: (SIC, from EDGAR).  Kept because a code is queryable — it is what lets
+    #: peer candidates be drawn from the same industry directly, rather than
+    #: sampled from the market and hoped over.
+    industry_code: str | None = None
     #: The finest rung the source could actually supply.
     taxonomy_level: TaxonomyLevel = TaxonomyLevel.UNAVAILABLE
     #: Whether the taxonomy is genuinely GICS or a vendor substitute.

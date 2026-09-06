@@ -629,6 +629,19 @@ def _path_inputs(
     ]
 
 
+def _could_route_to_spec_growth(coverage: TargetCoverage) -> bool:
+    """Whether SPEC-GROWTH is a path this target could actually take.
+
+    Either the roster says so, or A6 actually routed it there.  Both are
+    consulted because a router that disagrees with the roster is itself worth
+    catching, and because a target the router could not classify at all must
+    not silently drop out of the assessment.
+    """
+    expected = coverage.target.expected_classification
+    actual = coverage.actual_classification
+    return Classification.SPEC_GROWTH in (expected, actual)
+
+
 def _evaluate_stop_conditions(
     coverages: Sequence[TargetCoverage],
     taxonomy: TaxonomyAvailability,
@@ -639,26 +652,59 @@ def _evaluate_stop_conditions(
     reached = [c for c in coverages if c.reached]
 
     # 1. Cash-burn and share-count history.
-    burn_missing = []
-    share_missing = []
-    for c in reached:
-        for r in c.gate_inputs.get("A3 earnings quality", []):
-            if r.name == "cash_runway_months" and not r.available:
-                burn_missing.append(c.target.symbol)
-        for r in c.gate_inputs.get("A4 red flags", []):
-            if r.name == "share_count_history" and not r.available:
-                share_missing.append(c.target.symbol)
+    #
+    # Scoped to the targets that could actually take the SPEC-GROWTH path.
+    # A profitable industrial has no cash runway to compute, and counting it
+    # as a gap here would disable a strategy on evidence drawn from companies
+    # that would never use it.  Gaps elsewhere are still reported, as a note
+    # rather than as this kill switch.
+    spec_relevant = [c for c in reached if _could_route_to_spec_growth(c)]
+    scope = spec_relevant or reached
+
+    def _gap(rows, name):
+        return [
+            c.target.symbol
+            for c in rows
+            for r in c.gate_inputs.get(name[0], [])
+            if r.name == name[1] and not r.available
+        ]
+
+    burn_missing = _gap(scope, ("A3 earnings quality", "cash_runway_months"))
+    share_missing = _gap(scope, ("A4 red flags", "share_count_history"))
+    elsewhere = sorted(
+        set(_gap(reached, ("A3 earnings quality", "cash_runway_months")))
+        - set(burn_missing)
+    )
+
     cond1 = bool(burn_missing or share_missing)
+    if spec_relevant:
+        scope_note = (
+            f"assessed on the SPEC-GROWTH candidates among the targets "
+            f"({[c.target.symbol for c in spec_relevant]})"
+        )
+    else:
+        scope_note = (
+            "no target routed to SPEC-GROWTH, so this was assessed across all "
+            "reached targets and is weaker evidence than it looks"
+        )
+    finding1 = (
+        f"cash runway not computable for {burn_missing or 'none'}; "
+        f"share count history not computable for {share_missing or 'none'} "
+        f"— {scope_note}"
+        if cond1
+        else f"both computable — {scope_note}"
+    )
+    if elsewhere:
+        finding1 += (
+            f". Separately, cash runway was not computable for {elsewhere}, "
+            "which are not SPEC-GROWTH candidates: that is an A3 coverage gap "
+            "worth fixing, not grounds for disabling the path."
+        )
     stop1 = StopCondition(
         1,
         "cash-burn and share-count history computable",
         cond1,
-        (
-            f"cash runway not computable for {burn_missing or 'none'}; "
-            f"share count history not computable for {share_missing or 'none'}"
-            if cond1
-            else "both computable across all reached targets"
-        ),
+        finding1,
         "DISABLE SPEC-GROWTH ENTIRELY rather than building around the gap. "
         "Without A3's pre-profit branch and A4's dilution flag, SPEC-GROWTH is "
         "not a strategy, it is a way to buy companies shortly before they run "
@@ -748,6 +794,73 @@ def _evaluate_stop_conditions(
     return [stop1, stop2, stop3, stop4]
 
 
+def _industry_peers(adapter, symbol: str, limit: int) -> list[str]:
+    """Other filers sharing ``symbol``'s industry code, if the source can say."""
+    getter = getattr(adapter, "symbols_by_sic", None)
+    if getter is None:
+        inner = getattr(adapter, "fundamentals", None)
+        getter = getattr(inner, "symbols_by_sic", None) if inner else None
+    if getter is None:
+        return []
+    try:
+        code = adapter.get_profile(symbol).industry_code
+    except Exception:
+        return []
+    if not code:
+        return []
+    try:
+        return [s for s in getter(code, limit=limit) if s.upper() != symbol.upper()]
+    except Exception:
+        return []
+
+
+def _peer_pool(
+    adapter,
+    targets: Sequence[ProbeTarget],
+    budget: int,
+    *,
+    progress: bool = False,
+) -> list[str]:
+    """The names C2 will be offered as candidates.
+
+    Drawn from each target's *own industry* rather than sampled from the
+    market. A slice of a few hundred tickers taken alphabetically contains no
+    second oil royalty trader and no second construction-machinery maker, so
+    C2 reports "no peers" for a reason that is about the sample and not about
+    the market — and stop condition 4 then reads as a design finding when it
+    is an artefact of how the pool was built.
+
+    Falls back to a plain market slice when the source cannot enumerate an
+    industry, so the probe still runs; the report says which happened.
+    """
+    wanted = [t.symbol for t in targets]
+    pool: list[str] = list(wanted)
+    seen = {s.upper() for s in pool}
+
+    per_target = max(4, budget // max(len(targets), 1))
+    for target in targets:
+        if progress:
+            print(f"  peers: {target.symbol} (SIC lookup)", flush=True)
+        for symbol in _industry_peers(adapter, target.symbol, per_target):
+            if symbol.upper() in seen:
+                continue
+            seen.add(symbol.upper())
+            pool.append(symbol)
+
+    if len(pool) <= len(wanted):
+        # No industry listing available. Fall back to a market slice so the
+        # probe still produces a peer finding, honestly labelled.
+        from .universe import default_symbol_list
+
+        try:
+            rest = default_symbol_list(adapter)
+        except Exception:
+            rest = []
+        pool.extend(s for s in rest if s.upper() not in seen)
+
+    return pool[: max(budget, len(wanted))]
+
+
 def run_probe(
     adapter: DataAdapter,
     config: Config,
@@ -770,16 +883,9 @@ def run_probe(
     # "this universe has no comparables" from "nobody handed me candidates".
     peer_universe = None
     if peer_sample:
-        from .universe import build_universe, default_symbol_list
+        from .universe import build_universe
 
-        try:
-            pool = default_symbol_list(adapter)
-        except Exception:
-            pool = []
-        wanted = [t.symbol for t in targets]
-        # Deterministic sample, with the targets always included so each one
-        # can find its own grouping.
-        sampled = wanted + [s for s in pool if s not in wanted][:peer_sample]
+        sampled = _peer_pool(adapter, targets, peer_sample, progress=progress)
         peer_universe = build_universe(adapter, sampled, config, progress=progress)
 
     coverages = [

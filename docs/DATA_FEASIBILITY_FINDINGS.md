@@ -387,3 +387,86 @@ python scripts/data_feasibility_probe.py --source edgar \
 ```
 
 Only the second run's stop conditions are evidence about the data.
+
+---
+
+## Part 5 — the second live run: one serious bug, and better questions
+
+**2026-09-06, second run**, with `--peer-sample 200`. Coverage rose (CAT 68% →
+82%, NVDA 71% → 82%), TPL's A2 leverage now computes, and 8-K corporate
+actions are being read (TPL 2, GE 8, where the first run saw none). Four stop
+conditions still tripped, and the reasons had changed — which is the point of
+re-running.
+
+### The fourth quarter was missing from every company, every year
+
+Not a coverage gap. A correctness bug, and the worst one found so far.
+
+A 10-K states the fiscal year. **It does not state Q4** — no filer reports
+that quarter on its own; it exists only as the year minus the nine months
+already reported. Nothing in EDGAR fills the gap, and this parser did not
+derive it, so Q4 was absent from every company in every year.
+
+The damage was not a sparse series. `trailing_quarters(4)` reaches back past
+the hole, so every TTM figure was **Q1+Q2+Q3 of one year plus Q3 of the year
+before** — one quarter double-counted, another dropped. Trailing earnings,
+trailing cash flow, EBITDA, and every multiple built on them were wrong by
+that difference, for every company, in both anchors.
+
+`xbrl._with_derived_fourth_quarter` now recovers it. The regression test that
+matters: **the four quarters must sum to the reported fiscal year.** Derived
+quarters are dated by the 10-K's filing date, not the year end, so a backtest
+does not get six weeks of advance notice; a filer that does tag its own Q4
+keeps it.
+
+This is also most of stop condition 2. Losing one quarter in four cost the C1
+reconstruction about a year of usable span at the front, which is why eight of
+nine targets came back under 6.75 years.
+
+### The peer pool was built by alphabetical slice
+
+`0 same-grouping names in a 72-name universe sample` — the peer failure was
+real, but it belonged to the sampler. `default_symbol_list` returns tickers
+sorted alphabetically, so `--peer-sample 200` took the first 200 tickers in
+the alphabet, 72 of which survived the size and liquidity filters. The chance
+that four of them are oil royalty traders, or construction-machinery makers,
+is approximately zero.
+
+Peers are now drawn from each target's **own SIC code** via EDGAR's
+company-by-SIC listing (`EdgarAdapter.symbols_by_sic`), not sampled from the
+market and hoped over. Until this run, stop condition 4 was measuring the
+sampler.
+
+### Stop condition 1 was asking the wrong companies
+
+It disabled SPEC-GROWTH because cash runway was not computable for **CAT and
+TSM** — a profitable industrial and a profitable chipmaker, neither of which
+could ever route to SPEC-GROWTH. A profitable company has no cash runway to
+compute. The condition is now assessed on the targets that could actually take
+that path; gaps elsewhere are reported as the A3 coverage gaps they are,
+rather than as grounds for deleting a strategy.
+
+### Delisted companies are invisible, and that is a survivorship problem
+
+`SIVBQ not in the SEC ticker index` is correct and important.
+`company_tickers.json` lists **currently registered** tickers only. A company
+that delisted is absent from it while its filings remain on EDGAR in full. A
+universe built from that index therefore contains survivors and nothing else,
+and a backtest over survivors reports the returns of the companies that made
+it — the most flattering error a backtest can make.
+
+Filings stay addressable by CIK forever, so `ticker_to_cik` now accepts
+`CIK0000719739` directly and takes a `cik_overrides` map. The escape hatch
+exists; **populating it for the delisted names in a historical universe is
+still manual work, and until it is done the backtest is survivor-biased.**
+That is a live limitation, not a fixed one.
+
+### Still real, still unfixed
+
+- **GICS** — permanent. SIC is the finest official rung.
+- **REIT AFFO, insurer combined ratio** — permanent. Custom XBRL extensions.
+- **NVDA's interest expense** — the chain covers eight tags and still misses
+  it. `EdgarAdapter.field_coverage("NVDA")` will name the tag NVDA actually
+  uses; until then this is an open gap, not a diagnosis.
+- **TSM** — improved by IFRS support, and will not reach a domestic filer's
+  coverage. IFRS statements genuinely differ.

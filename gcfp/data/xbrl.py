@@ -23,7 +23,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import Any, Iterable, Sequence
+from typing import Any, Callable, Iterable, Sequence
 
 #: Ordered fallback chains.  Earlier tags are preferred; the first that yields
 #: a usable fact for the period wins, and the winner is logged so a reader can
@@ -353,6 +353,16 @@ def _facts_for_tag(payload: dict[str, Any], tag: str) -> list[Fact]:
 #: fiscal year.  A fourth would be the annual figure.
 YTD_DAYS = (75, 290)
 
+#: A three-quarter cumulation is ~273 days.  Widened for 52/53-week filers and
+#: for the odd fiscal calendar; the band must not reach ANNUAL_DAYS or a full
+#: year would be mistaken for nine months and Q4 would come out near zero.
+NINE_MONTH_DAYS = (240, 300)
+
+
+def _in_range(fact: Fact, band: tuple[int, int]) -> bool:
+    days = fact.duration_days
+    return days is not None and band[0] <= days <= band[1]
+
 
 def _matches_period(fact: Fact, annual: bool, field: str) -> bool:
     """Whether a fact covers the period length being asked for."""
@@ -430,12 +440,30 @@ def select_facts(
     sees only what had actually been filed by 2015, restatements included or
     excluded on their real dates.
     """
+    chosen = _resolve(
+        payload, field, lambda f: _matches_period(f, annual, field), as_of=as_of
+    )
+    if annual:
+        return chosen
+    chosen = _to_quarterly(chosen, field)
+    return _with_derived_fourth_quarter(payload, field, chosen, as_of=as_of)
+
+
+def _resolve(
+    payload: dict[str, Any],
+    field: str,
+    keep: Callable[[Fact], bool],
+    *,
+    as_of: date | None,
+) -> dict[date, Fact]:
+    """Best fact per period end among those ``keep`` admits."""
     chosen: dict[date, Fact] = {}
-    for tag in TAG_CHAINS.get(field, ()):
+    chain = TAG_CHAINS.get(field, ())
+    for tag in chain:
         for fact in _facts_for_tag(payload, tag):
             if as_of is not None and fact.filed > as_of:
                 continue
-            if not _matches_period(fact, annual, field):
+            if not keep(fact):
                 continue
             existing = chosen.get(fact.period_end)
             if existing is None:
@@ -443,15 +471,81 @@ def select_facts(
                 continue
             # Prefer the tag earlier in the chain; within a tag, the latest
             # filing wins, so an amendment supersedes what it restated.
-            chain = TAG_CHAINS[field]
             if chain.index(fact.tag) < chain.index(existing.tag):
                 chosen[fact.period_end] = fact
             elif fact.tag == existing.tag and fact.filed > existing.filed:
                 chosen[fact.period_end] = fact
-
-    if not annual:
-        chosen = _to_quarterly(chosen, field)
     return chosen
+
+
+def _with_derived_fourth_quarter(
+    payload: dict[str, Any],
+    field: str,
+    quarters: dict[date, Fact],
+    *,
+    as_of: date | None,
+) -> dict[date, Fact]:
+    """Add the fourth quarter, which no filer reports on its own.
+
+    A 10-K states the full year.  It does not state Q4 — that quarter exists
+    only as the year minus the nine months already reported.  Nothing in EDGAR
+    fills the gap, so without this every fourth quarter is simply absent, and
+    the damage is not merely a sparse series: ``trailing_quarters(4)`` reaches
+    back past the hole and sums Q1+Q2+Q3 of one year with Q3 of the year
+    before, double-counting one quarter and dropping another.  Every TTM
+    figure in the system — earnings, cash flow, EBITDA, and every multiple
+    built on them — is wrong by that much until Q4 is recovered.
+
+    Derived facts are dated by the 10-K's filing date, not the year end, so
+    the point-in-time rule holds: Q4 becomes knowable when the annual report
+    lands, not when the quarter closes.
+    """
+    if field not in DURATION_FIELDS:
+        return quarters
+
+    annuals = _resolve(
+        payload, field, lambda f: _in_range(f, ANNUAL_DAYS), as_of=as_of
+    )
+    if not annuals:
+        return quarters
+    nine_months = _resolve(
+        payload, field, lambda f: _in_range(f, NINE_MONTH_DAYS), as_of=as_of
+    )
+    if not nine_months:
+        return quarters
+
+    out = dict(quarters)
+    by_start: dict[date, list[Fact]] = {}
+    for fact in nine_months.values():
+        if fact.period_start is not None:
+            by_start.setdefault(fact.period_start, []).append(fact)
+
+    for year_end, full_year in annuals.items():
+        if year_end in out:
+            # The filer reported this quarter itself, or it was already
+            # differenced out of a cumulation.  Never overwrite a real fact.
+            continue
+        if full_year.period_start is None:
+            continue
+        for ytd in by_start.get(full_year.period_start, ()):
+            gap = (year_end - ytd.period_end).days
+            low, high = QUARTER_DAYS
+            if not (low <= gap <= high):
+                continue
+            out[year_end] = Fact(
+                value=full_year.value - ytd.value,
+                period_end=year_end,
+                period_start=ytd.period_end,
+                # The subtraction is only known once both halves are filed.
+                filed=max(full_year.filed, ytd.filed),
+                form=full_year.form,
+                tag=full_year.tag,
+                fiscal_year=full_year.fiscal_year,
+                fiscal_period="Q4",
+            )
+            break
+
+    return out
 
 
 def latest_instant(
@@ -517,6 +611,7 @@ __all__ = [
     "QUARTER_DAYS",
     "ANNUAL_DAYS",
     "YTD_DAYS",
+    "NINE_MONTH_DAYS",
     "YTD_FIELDS",
     "select_facts",
     "has_any_fact",

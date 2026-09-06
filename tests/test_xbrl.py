@@ -166,6 +166,85 @@ class TestMalformedInput:
         assert xbrl.select_facts(payload(), "revenue", annual=True) == {}
 
 
+class TestFourthQuarter:
+    """No filer reports Q4 on its own. It has to be derived or it is lost.
+
+    The damage from losing it is not a sparse series. ``trailing_quarters(4)``
+    reaches back past the hole and sums Q1+Q2+Q3 of one year with Q3 of the
+    year before — double-counting one quarter and dropping another. Every TTM
+    figure in the system is wrong by that difference until Q4 is recovered.
+    """
+
+    @staticmethod
+    def two_years():
+        """Three 10-Qs a year (3-month and YTD facts) and a 10-K stating only
+        the full year, which is how filers actually report."""
+        return payload(Revenues=[
+            fact(100, "2024-03-31", "2024-01-01", filed="2024-04-25", form="10-Q"),
+            fact(110, "2024-06-30", "2024-04-01", filed="2024-07-25", form="10-Q"),
+            fact(210, "2024-06-30", "2024-01-01", filed="2024-07-25", form="10-Q"),
+            fact(120, "2024-09-30", "2024-07-01", filed="2024-10-25", form="10-Q"),
+            fact(330, "2024-09-30", "2024-01-01", filed="2024-10-25", form="10-Q"),
+            fact(500, "2024-12-31", "2024-01-01", filed="2025-02-14", form="10-K"),
+        ])
+
+    def test_the_fourth_quarter_is_recovered_from_the_annual_report(self):
+        quarters = xbrl.select_facts(self.two_years(), "revenue", annual=False)
+        assert date(2024, 12, 31) in quarters, "Q4 was lost"
+        assert quarters[date(2024, 12, 31)].value == 170, "500 FY less 330 nine-month"
+
+    def test_the_four_quarters_sum_to_the_reported_year(self):
+        """The one check that catches a double-counted or dropped quarter."""
+        quarters = xbrl.select_facts(self.two_years(), "revenue", annual=False)
+        annual = xbrl.select_facts(self.two_years(), "revenue", annual=True)
+        assert sum(f.value for f in quarters.values()) == annual[date(2024, 12, 31)].value
+
+    def test_the_derived_quarter_is_dated_by_the_10k_not_the_year_end(self):
+        """Q4 becomes knowable when the annual report lands, not when the
+        quarter closes. Dating it 31 December would hand a backtest six weeks
+        of information it could not have had."""
+        quarters = xbrl.select_facts(self.two_years(), "revenue", annual=False)
+        assert quarters[date(2024, 12, 31)].filed == date(2025, 2, 14)
+
+    def test_it_is_invisible_before_the_annual_report_is_filed(self):
+        early = xbrl.select_facts(
+            self.two_years(), "revenue", annual=False, as_of=date(2025, 1, 15)
+        )
+        assert date(2024, 12, 31) not in early
+
+    def test_a_reported_fourth_quarter_is_never_overwritten(self):
+        """A few filers do tag Q4. A real fact always beats a derived one."""
+        data = payload(Revenues=[
+            fact(330, "2024-09-30", "2024-01-01", filed="2024-10-25", form="10-Q"),
+            fact(175, "2024-12-31", "2024-10-01", filed="2025-02-14", form="10-K"),
+            fact(500, "2024-12-31", "2024-01-01", filed="2025-02-14", form="10-K"),
+        ])
+        quarters = xbrl.select_facts(data, "revenue", annual=False)
+        assert quarters[date(2024, 12, 31)].value == 175
+
+    def test_a_missing_nine_month_figure_yields_no_quarter_rather_than_a_year(self):
+        """Without the nine months to subtract there is no Q4 to be had.
+        Falling back on the full year would report a 4x quarter."""
+        data = payload(Revenues=[
+            fact(100, "2024-03-31", "2024-01-01", filed="2024-04-25", form="10-Q"),
+            fact(500, "2024-12-31", "2024-01-01", filed="2025-02-14", form="10-K"),
+        ])
+        quarters = xbrl.select_facts(data, "revenue", annual=False)
+        assert date(2024, 12, 31) not in quarters
+
+    def test_cash_flow_fourth_quarter_comes_off_the_cumulative_series(self):
+        """Cash-flow statements are year-to-date all the way through, so Q4 is
+        the full year less the nine months, same as the income statement."""
+        data = payload(NetCashProvidedByUsedInOperatingActivities=[
+            fact(90, "2024-03-31", "2024-01-01", filed="2024-04-25", form="10-Q"),
+            fact(200, "2024-06-30", "2024-01-01", filed="2024-07-25", form="10-Q"),
+            fact(310, "2024-09-30", "2024-01-01", filed="2024-10-25", form="10-Q"),
+            fact(450, "2024-12-31", "2024-01-01", filed="2025-02-14", form="10-K"),
+        ])
+        quarters = xbrl.select_facts(data, "operating_cash_flow", annual=False)
+        assert [quarters[e].value for e in sorted(quarters)] == [90, 110, 110, 140]
+
+
 class TestDebtAssembly:
     """Total debt, and the difference between "no debt" and "no reading".
 
@@ -264,3 +343,106 @@ class TestDebtAssembly:
         }
         value, basis = self.adapter()._total_debt(data, date(2024, 12, 31))
         assert (value, basis) == (240, "summed")
+
+
+class TestDelistedCompanies:
+    """The SEC ticker index lists current registrants only.
+
+    A universe built from it contains survivors and nothing else, and a
+    backtest over survivors reports the returns of companies that made it.
+    Filings stay addressable by CIK forever, so the escape hatch has to exist.
+    """
+
+    @staticmethod
+    def adapter(**kw):
+        from unittest.mock import Mock
+
+        from gcfp.data.edgar import EdgarAdapter
+
+        a = EdgarAdapter(user_agent="t t@example.com", session=Mock(), **kw)
+        a._ticker_map = {"AAPL": 320193}
+        return a
+
+    def test_a_cik_can_be_used_directly(self):
+        a = self.adapter()
+        assert a.ticker_to_cik("CIK0000719739") == 719739
+        assert a.ticker_to_cik("CIK:719739") == 719739
+
+    def test_an_override_pins_a_delisted_ticker(self):
+        a = self.adapter(cik_overrides={"SIVBQ": 719739})
+        assert a.ticker_to_cik("SIVBQ") == 719739
+
+    def test_a_normal_ticker_still_resolves_through_the_index(self):
+        assert self.adapter().ticker_to_cik("aapl") == 320193
+
+    def test_the_failure_names_the_survivorship_consequence(self):
+        from gcfp.data.adapter import DataUnavailable
+
+        with pytest.raises(DataUnavailable) as exc:
+            self.adapter().ticker_to_cik("SIVBQ")
+        assert "delisted" in str(exc.value)
+        assert "survivors" in str(exc.value)
+
+
+class TestIndustryPeerDiscovery:
+    """C2 needs four comparable names. They have to be found, not stumbled on.
+
+    A few hundred tickers sliced off the market alphabetically contain no
+    second oil royalty trader, so C2 reports "no peers" for a reason that is
+    about the sample rather than about the market — and stop condition 4 then
+    reads as a design finding when it is an artefact of the pool.
+    """
+
+    @staticmethod
+    def adapter(atom: str):
+        from unittest.mock import Mock
+
+        from gcfp.data.edgar import EdgarAdapter
+
+        a = EdgarAdapter(user_agent="t t@example.com", session=Mock())
+        a._ticker_map = {"CAT": 18230, "DE": 315189, "TEX": 97216, "AGCO": 880266}
+        a._get_text = lambda url, cache_key=None: atom
+        return a
+
+    ATOM = """<feed>
+      <entry><title>DEERE &amp; CO</title>
+        <link href="/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0000315189"/></entry>
+      <entry><title>TEREX CORP</title>
+        <link href="/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0000097216"/></entry>
+      <entry><title>CATERPILLAR INC</title>
+        <link href="/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0000018230"/></entry>
+    </feed>"""
+
+    def test_an_industry_listing_becomes_tickers(self):
+        found = self.adapter(self.ATOM).symbols_by_sic(3531, limit=10)
+        assert set(found) == {"DE", "TEX", "CAT"}
+
+    def test_filers_with_no_ticker_are_skipped_not_guessed(self):
+        """A private filer has a CIK and no ticker. It cannot be priced, so it
+        cannot be a peer, and inventing a symbol for it would be worse."""
+        atom = self.ATOM.replace("0000097216", "0009999999")
+        found = self.adapter(atom).symbols_by_sic(3531, limit=10)
+        assert "TEX" not in found and len(found) == 2
+
+    def test_the_limit_is_respected(self):
+        assert len(self.adapter(self.ATOM).symbols_by_sic(3531, limit=2)) == 2
+
+    def test_a_transport_failure_yields_no_peers_rather_than_raising(self):
+        """An empty peer set is a finding C2 knows how to report. A raised
+        exception would take down the whole screen instead."""
+        from unittest.mock import Mock
+
+        from gcfp.data.edgar import EdgarAdapter
+
+        a = EdgarAdapter(user_agent="t t@example.com", session=Mock())
+        a._ticker_map = {"CAT": 18230}
+
+        def boom(url, cache_key=None):
+            raise RuntimeError("network")
+
+        a._get_text = boom
+        assert a.symbols_by_sic(3531) == []
+
+    def test_a_missing_sic_code_is_not_an_error(self):
+        assert self.adapter(self.ATOM).symbols_by_sic(None) == []
+        assert self.adapter(self.ATOM).symbols_by_sic("") == []

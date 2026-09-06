@@ -26,6 +26,7 @@ asks for no more than ten requests a second.  Both are enforced here.
 from __future__ import annotations
 
 import json
+import re
 import time
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
@@ -47,6 +48,15 @@ from . import xbrl
 from .adapter import Capability, DataAdapter, DataUnavailable, REQUIRED_CAPABILITIES
 
 SUBMISSIONS_URL = "https://data.sec.gov/submissions/CIK{cik:010d}.json"
+#: Company lists by SIC code.  The only free way to ask "who else is in this
+#: industry" without fetching every filer's submissions one at a time.  It
+#: serves Atom rather than JSON, and the shape is not contractual, so the
+#: parser below is deliberately tolerant and a failure degrades to no
+#: candidates rather than raising.
+SIC_BROWSE_URL = (
+    "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&SIC={sic}"
+    "&type=10-K&dateb=&owner=include&count={count}&start={start}&output=atom"
+)
 COMPANYFACTS_URL = "https://data.sec.gov/api/xbrl/companyfacts/CIK{cik:010d}.json"
 TICKERS_URL = "https://www.sec.gov/files/company_tickers.json"
 
@@ -136,6 +146,9 @@ class EdgarAdapter(DataAdapter):
     as_of: date | None = None
     name: str = "edgar"
     _last_request: float = field(default=0.0, repr=False)
+    #: Symbols this adapter should resolve without consulting the SEC ticker
+    #: index — the escape hatch for delisted companies, which the index drops.
+    cik_overrides: dict[str, int] = field(default_factory=dict)
     _ticker_map: dict[str, int] | None = field(default=None, repr=False)
     _facts_cache: dict[int, dict[str, Any]] = field(default_factory=dict, repr=False)
     _submissions_cache: dict[int, dict[str, Any]] = field(default_factory=dict, repr=False)
@@ -199,6 +212,30 @@ class EdgarAdapter(DataAdapter):
 
     # -- identity ---------------------------------------------------------
     def ticker_to_cik(self, symbol: str) -> int:
+        """Resolve a symbol to its CIK.
+
+        Three routes, in order: an operator-supplied override, a CIK written
+        directly (``CIK0000719739`` or ``CIK:719739``), then the SEC ticker
+        index.
+
+        The first two exist because of a limitation with real consequences:
+        ``company_tickers.json`` lists **currently registered** tickers only.
+        A company that delisted is not in it, even though its filings remain
+        on EDGAR in full.  A universe built from that index therefore contains
+        only survivors, and a backtest run over it will report the returns of
+        companies that made it — which is the single most flattering error a
+        backtest can make.  Filings are addressable by CIK forever, so a
+        delisted name stays reachable if it is addressed that way.
+        """
+        raw = symbol.strip().upper()
+        override = {k.upper(): v for k, v in (self.cik_overrides or {}).items()}
+        if raw in override:
+            return int(override[raw])
+
+        direct = re.fullmatch(r"CIK[:\-_]?0*(\d{1,10})", raw)
+        if direct:
+            return int(direct.group(1))
+
         if self._ticker_map is None:
             payload = self._get_json(TICKERS_URL, cache_key="company_tickers")
             rows = payload.values() if isinstance(payload, dict) else payload
@@ -207,10 +244,95 @@ class EdgarAdapter(DataAdapter):
                 for r in rows
                 if r.get("ticker") and r.get("cik_str") is not None
             }
-        cik = self._ticker_map.get(symbol.upper())
+        cik = self._ticker_map.get(raw)
         if cik is None:
-            raise DataUnavailable("cik", f"{symbol} not in the SEC ticker index")
+            raise DataUnavailable(
+                "cik",
+                f"{symbol} not in the SEC ticker index. That index lists "
+                "currently registered tickers only, so a delisted company is "
+                "absent from it while its filings remain on EDGAR. Address it "
+                "by CIK instead (e.g. 'CIK0000719739') or pass a cik_overrides "
+                "entry. Building a universe from the index alone gives a "
+                "survivors-only backtest.",
+            )
         return cik
+
+    def _get_text(self, url: str, cache_key: str | None = None) -> str:
+        """Fetch a non-JSON document, sharing the throttle and the cache."""
+        if cache_key and self.cache_dir:
+            cached = self.cache_dir / f"{cache_key}.txt"
+            if cached.exists():
+                return cached.read_text()
+        self._throttle()
+        resp = self.session.get(
+            url,
+            headers={
+                "User-Agent": self.user_agent,
+                "Accept-Encoding": "gzip, deflate",
+            },
+            timeout=self.timeout,
+        )
+        resp.raise_for_status()
+        if cache_key and self.cache_dir:
+            (self.cache_dir / f"{cache_key}.txt").write_text(resp.text)
+        return resp.text
+
+    def cik_to_ticker(self) -> dict[int, str]:
+        """The ticker index, inverted.
+
+        A CIK can carry several tickers (share classes).  The alphabetically
+        first is taken so the mapping is deterministic run to run.
+        """
+        out: dict[int, str] = {}
+        for ticker, cik in sorted(self.all_tickers().items()):
+            out.setdefault(cik, ticker)
+        return out
+
+    def symbols_by_sic(self, sic: str | int, limit: int = 80) -> list[str]:
+        """Tickers of other filers sharing an SIC code.
+
+        This is what makes C2 workable on EDGAR.  Sampling the market and
+        hoping four names land in the same industry does not work: an
+        alphabetical or random slice of a few hundred tickers will contain no
+        other oil royalty trader, no other construction-machinery maker, and
+        C2 reports "no peers" for a reason that is about the sample rather
+        than about the market.  Asking the industry directly removes the
+        guesswork.
+
+        Returns ``[]`` rather than raising when the listing cannot be had:
+        an empty peer set is a finding C2 already knows how to report, and a
+        transport failure here must not take down a whole screen.
+        """
+        try:
+            code = int(str(sic).strip())
+        except (TypeError, ValueError):
+            return []
+
+        by_cik = self.cik_to_ticker()
+        found: list[str] = []
+        seen: set[int] = set()
+        page = 100
+        for start in range(0, max(limit, 1), page):
+            try:
+                body = self._get_text(
+                    SIC_BROWSE_URL.format(sic=code, count=page, start=start),
+                    cache_key=f"sic_{code}_{start}",
+                )
+            except Exception:
+                break
+            ciks = [int(m) for m in re.findall(r"CIK=(\d{1,10})", body)]
+            if not ciks:
+                break
+            for cik in ciks:
+                if cik in seen:
+                    continue
+                seen.add(cik)
+                ticker = by_cik.get(cik)
+                if ticker:
+                    found.append(ticker)
+                if len(found) >= limit:
+                    return found
+        return found
 
     def all_tickers(self) -> dict[str, int]:
         """Every ticker the SEC indexes — the raw material for the universe."""
@@ -261,6 +383,7 @@ class EdgarAdapter(DataAdapter):
             industry=(subs.get("sicDescription") or None),
             sub_industry=None,
             gics_sub_industry_code=None,
+            industry_code=str(sic) if sic is not None else None,
             # SIC is an official classification but it is not GICS, and the
             # difference is logged everywhere a grouping is used.
             taxonomy_level=(
