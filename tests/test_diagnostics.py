@@ -331,3 +331,81 @@ class TestXbrlCoverage:
 
         assert "cost_of_revenue" in TAG_CHAINS
         assert "cost_of_revenue" in DURATION_FIELDS
+
+
+class TestUniversePeerAvailability:
+    """Stop condition 4 asks whether the dual-anchor premise holds for a
+    universe. It was answering from the §18 roster — nine companies chosen
+    for being extreme, none of which has a size-matched peer for reasons that
+    are about those companies rather than about the market.
+    """
+
+    @staticmethod
+    def member(symbol, cap, industry):
+        from gcfp.universe import UniverseMember
+
+        return UniverseMember(
+            symbol=symbol, name=symbol, market_cap=cap, adv_3m_usd=50e6,
+            sector="Sector", industry=industry, sub_industry=None,
+            net_debt_to_ebitda=1.0, gross_margin_stdev=0.02,
+            revenue_growth=0.05, beta=1.0,
+        )
+
+    def universe(self, members):
+        from gcfp.universe import Universe
+
+        u = Universe(as_of=date(2026, 1, 1), source="test")
+        u.members.extend(members)
+        return u
+
+    def measure(self, members):
+        from gcfp.config import Config
+        from gcfp.diagnostics import measure_universe_peer_availability
+
+        return measure_universe_peer_availability(self.universe(members), Config())
+
+    def test_a_crowded_industry_has_peers_for_everyone(self):
+        members = [self.member(f"M{i}", 20e9 + i * 1e9, "Machinery") for i in range(6)]
+        result = self.measure(members)
+        assert result.rate == 0.0
+        assert result.would_be_single_anchor == 0
+
+    def test_a_company_with_nobody_its_size_has_none(self):
+        """NVDA is worth several trillion. C2 wants peers between 0.3x and 3x
+        of that, and there are not four such companies on earth."""
+        members = [
+            self.member("GIANT", 5_000e9, "Semis"),
+            *[self.member(f"S{i}", 2e9 + i * 1e8, "Semis") for i in range(8)],
+        ]
+        result = self.measure(members)
+        giant_only = [c for m, c in zip(members, result.counts) if m.symbol == "GIANT"]
+        assert giant_only == [0]
+
+    def test_a_lone_filer_in_its_industry_is_counted_separately(self):
+        """No same-industry name at all is a sampling result, not a structural
+        one, and conflating the two makes the directive unearned."""
+        members = [
+            self.member("ALONE", 10e9, "Rare"),
+            *[self.member(f"M{i}", 20e9, "Machinery") for i in range(6)],
+        ]
+        assert self.measure(members).no_industry_peers == 1
+
+    def test_the_rate_is_over_the_whole_sample_not_the_extremes(self):
+        members = [
+            *[self.member(f"M{i}", 20e9 + i * 1e9, "Machinery") for i in range(8)],
+            self.member("GIANT", 5_000e9, "Semis"),
+            self.member("TINY", 1e8, "Semis"),
+        ]
+        result = self.measure(members)
+        assert result.assessed == 10
+        assert result.would_be_single_anchor == 2, "only the two extremes"
+        assert result.rate == pytest.approx(0.2)
+
+    def test_it_is_reported_as_an_upper_bound(self):
+        """Grouping and size are computable from a universe row; the growth
+        band and the multiple test are not. Claiming otherwise would overstate
+        how many peer sets will really form."""
+        lines = " ".join(
+            self.measure([self.member("M", 10e9, "Machinery")]).report_lines()
+        )
+        assert "upper bound" in lines

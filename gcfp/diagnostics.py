@@ -28,6 +28,7 @@ from .classification import Classification
 from .config import Config
 from .ledger import Outcome
 from .modules.c_anchors import PeerDecision
+from .types import TaxonomyLevel
 from .pipeline import Evaluation
 
 # -- 0.1 rejection taxonomy ----------------------------------------------
@@ -454,7 +455,99 @@ class ScreenDiagnostics:
         return lines
 
 
+@dataclass
+class UniversePeerAvailability:
+    """How many names in the whole universe could form a C2 peer set.
+
+    Stop condition 4 asks whether the dual-anchor premise holds for a data
+    source and universe.  It has been answering that from the §18 roster —
+    nine companies chosen precisely because they are extreme.  The largest
+    chipmaker on earth has no size-matched peer; neither does the largest US
+    bank, nor a near-monopoly land trust.  A high single-anchor rate across
+    that roster is expected and says nothing about the market.
+
+    This measures the same question across every name in the universe sample,
+    using market caps and industries already fetched, so it costs no requests.
+    It is an *upper bound* on peer availability: it applies C2's grouping and
+    size screens, which are the ones computable from a universe row, and not
+    the growth band or the multiple test, which need fundamentals.  A name
+    counted here as having peers may still fail C2; a name counted as having
+    none cannot pass it.
+    """
+
+    #: Names assessed — every included universe member with a market cap.
+    assessed: int = 0
+    #: How many same-industry names inside the size band each one has.
+    counts: list[int] = field(default_factory=list)
+    #: Names with no same-industry company at all in the sample.
+    no_industry_peers: int = 0
+
+    @property
+    def would_be_single_anchor(self) -> int:
+        return sum(1 for c in self.counts if c < self._minimum)
+
+    @property
+    def rate(self) -> float | None:
+        if not self.assessed:
+            return None
+        return self.would_be_single_anchor / self.assessed
+
+    _minimum: int = 4
+
+    def report_lines(self) -> list[str]:
+        if not self.assessed:
+            return ["  universe peer availability: not measured"]
+        pct = (self.rate or 0.0) * 100
+        median = sorted(self.counts)[len(self.counts) // 2] if self.counts else 0
+        return [
+            f"  assessed {self.assessed} universe names (not just the roster)",
+            f"  would fall into SINGLE-ANCHOR MODE: {pct:.0f}%",
+            f"  median size-band peers available: {median}",
+            f"  no same-industry name at all: {self.no_industry_peers}",
+            "  upper bound — grouping and size only; the growth band and the "
+            "multiple test can only reduce these counts further",
+        ]
+
+
+def measure_universe_peer_availability(
+    universe: "Universe", config: Config
+) -> UniversePeerAvailability:
+    """Apply C2's computable screens to every universe member.
+
+    Costs nothing: market cap and industry are already on each row.
+    """
+    out = UniversePeerAvailability(_minimum=config.anchors.peer_min)
+    low = config.anchors.peer_market_cap_low
+    high = config.anchors.peer_market_cap_high
+
+    members = [m for m in universe.included if m.market_cap]
+    by_group: dict[str, list[float]] = {}
+    for m in members:
+        key = m.grouping_at(TaxonomyLevel.INDUSTRY) or m.sector
+        if key:
+            by_group.setdefault(key, []).append(m.market_cap)
+
+    for m in members:
+        key = m.grouping_at(TaxonomyLevel.INDUSTRY) or m.sector
+        caps = by_group.get(key or "", [])
+        if len(caps) <= 1:
+            out.no_industry_peers += 1
+            out.counts.append(0)
+            out.assessed += 1
+            continue
+        in_band = sum(
+            1
+            for cap in caps
+            if cap is not m.market_cap and low <= cap / m.market_cap <= high
+        )
+        out.counts.append(in_band)
+        out.assessed += 1
+    return out
+
+
 __all__ = [
+    "UniversePeerAvailability",
+    "measure_universe_peer_availability",
     "ConvictionIndependence",
     "PeerDiagnostic",
     "Rejection",

@@ -613,3 +613,61 @@ Both shapes are now read. More importantly, **the fallback announces itself**:
 A silent fallback produced a whole run of peer findings that looked like
 evidence about the market. That is the failure mode worth engineering against,
 more than the regex itself.
+
+---
+
+## Part 8 — stop condition 4 was measuring the wrong population
+
+The single-anchor rate would not come down: 78%, then 89%, then 89% again
+after the candidate-ordering fix. That persistence was the clue.
+
+**Stop condition 4 asks whether the dual-anchor premise holds for a data
+source and universe. It was answering from the §18 roster** — nine companies
+chosen precisely because they are extreme:
+
+| Target | Market cap | Peers C2 wants (0.3–3.0×) | How many exist |
+|---|---|---|---|
+| NVDA | ~$5.6tn | $1.7tn – $16.8tn | one or two, worldwide |
+| JPM | ~$966bn | $290bn – $2.9tn — among banks | very few |
+| CAT | ~$376bn | $113bn – $1.1tn — construction machinery | one |
+| TPL | ~$25bn | oil royalty traders, near-monopoly | none, by design |
+
+Every one of those has no size-matched peer for reasons about that company,
+not about the market. **SINGLE-ANCHOR MODE is the correct behaviour here — C5
+exists for exactly this case.** A high rate across that roster is expected and
+proves nothing about whether the strategy works, yet the condition was issuing
+a directive to abandon the dual-anchor premise on the strength of it.
+
+Two changes:
+
+**The universe is now measured directly.** `measure_universe_peer_availability`
+applies C2's grouping and size screens to every member of the universe sample.
+It costs no extra requests — market cap and industry are already on each row —
+and it reports honestly as an **upper bound**, since the growth band and the
+multiple test need fundamentals and can only reduce the counts further. Stop
+condition 4 uses this figure when a universe was built, and says plainly that
+the roster's own rate is higher by design.
+
+**The rate is broken down by cause.** "89% single-anchor" hid three findings
+that call for three different responses:
+
+- *no candidates in their industry at all* — a sampling problem, fix the pool
+- *candidates, all outside the size or growth bands* — the genuine structural
+  result, and the only one that earns the directive
+- *candidates whose multiples would not compute* — a data gap, fix the parser
+
+Lumping them together made the directive unearned. It now reads, for example:
+
+> Roster breakdown: 3 had candidates whose multiples would not compute; 1 had
+> candidates rejected for mixed reasons; 1 had candidates, all outside the size
+> or growth bands
+
+Note what that ordering says on the fixture: **the largest single cause is
+uncomputable multiples, which is a parser problem, not a design finding.**
+
+### What this does not fix
+
+If the universe rate also comes back above 40%, that is a real design finding
+and the directive stands. The point is not to make the number smaller — it is
+to make sure the number is measuring the thing the condition is about. A
+roster of nine deliberate outliers never was.

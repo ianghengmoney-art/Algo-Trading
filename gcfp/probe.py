@@ -26,6 +26,10 @@ from typing import Sequence
 
 from .classification import Classification
 from .config import Config
+from .diagnostics import (
+    UniversePeerAvailability,
+    measure_universe_peer_availability,
+)
 from .data.adapter import Capability, DataAdapter, DataUnavailable
 from .data.taxonomy import TaxonomyAvailability, assess_taxonomy
 from .modules import a_health, c_anchors
@@ -213,6 +217,9 @@ class CoverageReport:
     stop_conditions: list[StopCondition]
     point_in_time_available: bool
     notes: list[str] = field(default_factory=list)
+    #: Peer availability across the universe sample, when one was built.
+    #: The §18 roster cannot answer stop condition 4 on its own.
+    peer_availability: UniversePeerAvailability | None = None
 
     @property
     def reached(self) -> list[TargetCoverage]:
@@ -270,11 +277,23 @@ class CoverageReport:
                 "",
                 "SUMMARY",
                 f"  targets reached: {len(self.reached)}/{len(self.coverages)}",
-                f"  SINGLE-ANCHOR MODE rate: "
+                f"  SINGLE-ANCHOR MODE rate (§18 roster): "
                 + (f"{rate:.0%}" if rate is not None else "not measurable"),
                 f"  point-in-time data: {'available' if self.point_in_time_available else 'NOT AVAILABLE'}",
             ]
         )
+
+        if self.peer_availability is not None:
+            lines.extend(
+                [
+                    "",
+                    "PEER AVAILABILITY ACROSS THE UNIVERSE",
+                    "  The roster above is nine companies chosen for being "
+                    "extreme, so its single-anchor rate is not evidence about "
+                    "the market. This is:",
+                ]
+            )
+            lines.extend(self.peer_availability.report_lines())
 
         directives = self.build_directives()
         if directives:
@@ -665,6 +684,7 @@ def _evaluate_stop_conditions(
     taxonomy: TaxonomyAvailability,
     config: Config,
     point_in_time: bool,
+    availability: "UniversePeerAvailability | None" = None,
 ) -> list[StopCondition]:
     """The four stop conditions, computed rather than left to judgement."""
     reached = [c for c in coverages if c.reached]
@@ -791,25 +811,89 @@ def _evaluate_stop_conditions(
     )
 
     # 4. SINGLE-ANCHOR MODE rate.
-    rate = (
+    #
+    # Measured across the universe where one was built, and only across the
+    # roster otherwise.  The roster is nine companies chosen for being
+    # extreme — the largest chipmaker on earth, the largest US bank, a
+    # near-monopoly land trust — and none of them has a size-matched peer for
+    # reasons that are about those companies, not about the market.  Reading a
+    # design finding off that sample would condemn the dual-anchor premise on
+    # evidence that never tested it.
+    roster_rate = (
         sum(1 for c in reached if c.single_anchor) / len(reached) if reached else None
     )
+    rate = availability.rate if availability is not None else roster_rate
     cond4 = rate is not None and rate > config.expectations.single_anchor_rate_break
+
+    if availability is not None and roster_rate is not None:
+        finding4 = (
+            f"{availability.rate:.0%} of {availability.assessed} universe names "
+            f"could not reach {config.anchors.peer_min} size-band peers "
+            f"(grouping and size only — an upper bound). "
+            f"The §18 roster's own rate is {roster_rate:.0%}, which is higher "
+            f"by design: those targets were chosen for being extreme, and the "
+            f"universe figure is the one this condition is asking about"
+        )
+    elif roster_rate is not None:
+        finding4 = (
+            f"{roster_rate:.0%} of reached targets fall into SINGLE-ANCHOR "
+            "MODE — measured on the §18 roster only, which is nine "
+            "deliberately extreme companies. Pass --peer-sample to measure "
+            "this across a universe, which is what the condition is about"
+        )
+    else:
+        finding4 = "not measurable — no targets reached"
+
+    causes = _single_anchor_causes(reached)
+    if causes:
+        finding4 += ". Roster breakdown: " + "; ".join(
+            f"{count} {cause}" for cause, count in causes.items()
+        )
+
     stop4 = StopCondition(
         4,
         "SINGLE-ANCHOR MODE below 40% of test companies",
         cond4,
-        (
-            f"{rate:.0%} of reached targets fall into SINGLE-ANCHOR MODE"
-            if rate is not None
-            else "not measurable — no targets reached"
-        ),
+        finding4,
         "THIS IS A DESIGN-LEVEL FINDING, NOT A DATA GAP TO WORK AROUND. The "
         "dual-anchor premise does not hold for this data source and universe. "
         "Report it as such before proceeding.",
     )
 
     return [stop1, stop2, stop3, stop4]
+
+
+def _single_anchor_causes(reached: Sequence[TargetCoverage]) -> dict[str, int]:
+    """Why each single-anchor target ended up there.
+
+    "89% single-anchor" hides three different findings and only one of them is
+    a design finding: an industry with no other names in the sample is a
+    sampling problem, candidates rejected on the size band is the genuine
+    structural result, and candidates whose multiples would not compute is a
+    data gap.  Lumping them together makes the directive unearned.
+    """
+    causes: dict[str, int] = {}
+
+    def bump(label: str) -> None:
+        causes[label] = causes.get(label, 0) + 1
+
+    for c in reached:
+        if not c.single_anchor:
+            continue
+        decisions = list(c.peer_decisions)
+        if not decisions:
+            bump("had no candidates in their industry at all")
+            continue
+        reasons = [d.reason for d in decisions if not d.included]
+        if any("market cap" in r for r in reasons) and all(
+            "market cap" in r or "growth" in r for r in reasons
+        ):
+            bump("had candidates, all outside the size or growth bands")
+        elif any("not computable" in r or "non-positive" in r for r in reasons):
+            bump("had candidates whose multiples would not compute")
+        else:
+            bump("had candidates rejected for mixed reasons")
+    return causes
 
 
 def _industry_peers(adapter, symbol: str, limit: int) -> list[str]:
@@ -919,6 +1003,13 @@ def run_probe(
         )
         peer_universe = build_universe(adapter, sampled, config, progress=progress)
 
+    # Costs no requests: market cap and industry are already on each row.
+    availability = (
+        measure_universe_peer_availability(peer_universe, config)
+        if peer_universe is not None
+        else None
+    )
+
     coverages = [
         _probe_target(adapter, t, market, config, peer_universe) for t in targets
     ]
@@ -927,7 +1018,9 @@ def run_probe(
     taxonomy = assess_taxonomy(profiles)
 
     point_in_time = adapter.supports("point_in_time")
-    stops = _evaluate_stop_conditions(coverages, taxonomy, config, point_in_time)
+    stops = _evaluate_stop_conditions(
+        coverages, taxonomy, config, point_in_time, availability
+    )
 
     notes: list[str] = []
     if peer_warning:
@@ -955,6 +1048,7 @@ def run_probe(
         stop_conditions=stops,
         point_in_time_available=point_in_time,
         notes=notes,
+        peer_availability=availability,
     )
 
 
