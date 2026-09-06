@@ -409,3 +409,60 @@ class TestUniversePeerAvailability:
             self.measure([self.member("M", 10e9, "Machinery")]).report_lines()
         )
         assert "upper bound" in lines
+
+
+class TestSampleLimitedDetection:
+    """The same market reads 96% single-anchor at eight names per industry and
+    0% at forty-five. Without a way to tell those apart, stop condition 4
+    condemns the dual-anchor premise on the sample size.
+    """
+
+    @staticmethod
+    def market(per_industry, seed=7):
+        """One market — identical size distribution — sampled at two depths."""
+        import random
+
+        from gcfp.config import Config
+        from gcfp.diagnostics import measure_universe_peer_availability
+        from gcfp.universe import Universe, UniverseMember
+
+        rng = random.Random(seed)
+        u = Universe(as_of=date(2026, 1, 1), source="test")
+        for industry in range(9):
+            for i in range(per_industry):
+                u.members.append(
+                    UniverseMember(
+                        symbol=f"I{industry}N{i}", name="x",
+                        market_cap=10 ** rng.uniform(8.5, 12.5),
+                        adv_3m_usd=50e6, sector="S", industry=f"Ind{industry}",
+                        sub_industry=None, net_debt_to_ebitda=1.0,
+                        gross_margin_stdev=0.02, revenue_growth=0.05, beta=1.0,
+                    )
+                )
+        result = measure_universe_peer_availability(u, Config())
+        result.requested = per_industry * 9
+        return result
+
+    def test_a_thin_sample_is_flagged(self):
+        assert self.market(8).sample_limited
+
+    def test_a_deep_sample_of_the_same_market_is_not(self):
+        assert not self.market(45).sample_limited
+
+    def test_the_headline_rate_swings_on_depth_alone(self):
+        """This is the whole reason the flag has to exist."""
+        thin, deep = self.market(8), self.market(45)
+        assert thin.rate > 0.9 and deep.rate < 0.1
+
+    def test_the_required_industry_size_barely_moves(self):
+        """Unlike the rate, this is sample-independent — it measures the
+        market's size dispersion, which is what the design question is about."""
+        thin, deep = self.market(8), self.market(45)
+        assert abs(thin.industry_size_needed - deep.industry_size_needed) < 12
+
+    def test_a_thin_sample_suggests_a_bigger_one(self):
+        suggested = self.market(8).suggested_peer_sample
+        assert suggested and suggested > 8 * 9
+
+    def test_a_deep_sample_suggests_nothing(self):
+        assert self.market(45).suggested_peer_sample is None

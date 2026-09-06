@@ -671,3 +671,65 @@ If the universe rate also comes back above 40%, that is a real design finding
 and the directive stands. The point is not to make the number smaller — it is
 to make sure the number is measuring the thing the condition is about. A
 roster of nine deliberate outliers never was.
+
+---
+
+## Part 9 — 51%, and why it still is not the answer
+
+The universe measurement came back:
+
+```
+assessed 75 universe names (not just the roster)
+would fall into SINGLE-ANCHOR MODE: 51%
+median size-band peers available: 3
+no same-industry name at all: 0
+```
+
+Median 3 peers against a required 4. Tantalisingly close, and **still not
+evidence about the market.**
+
+75 names across 9 industries is about 8 names per industry. C2 wants 4 peers
+inside a 0.3–3.0× band — a band that, at realistic size dispersion, contains
+maybe a fifth of an industry. Four peers out of eight candidates is close to
+impossible regardless of what the market looks like.
+
+This is demonstrable rather than arguable. Sampling **one market** — a single
+fixed size distribution — at three depths:
+
+| Names per industry | Single-anchor rate | Industry size needed |
+|---|---|---|
+| 8 | **96%** | 28 |
+| 20 | **37%** | 19 |
+| 45 | **0%** | 18 |
+
+The rate swings from 96% to 0% with the market held constant. It was never
+measuring the market.
+
+The right-hand column is. **"How many listed names does an industry need
+before a 4-name peer set is available"** is sample-independent — it converges
+on ~18 across all three depths, because it measures size dispersion rather
+than sample depth. At the observed dispersion, roughly a fifth of an
+industry's members fall inside any one member's size band, so about 18–20
+listed names are needed. Real SIC industries typically have far more than
+that, which is why the sampled rate rather than the market is doing the work
+here.
+
+The report now says all of this, and **stop condition 4 will no longer trip on
+a sample-limited measurement.** Firing a design-level directive — "the
+dual-anchor premise does not hold, abandon it" — off a number that moves 96
+points on sample size alone would have been the worst error in this whole
+build. It reports loudly instead, and names the sample size that would settle
+the question:
+
+> SAMPLE-LIMITED — this sample carries about 8 names per industry where
+> roughly 28 are needed for any peer set to form, so this rate is a property
+> of the sample. The identical market reads 96% single-anchor at eight names
+> per industry and 0% at forty-five; re-run with --peer-sample 1400
+
+### What would make it a finding
+
+A run at the suggested depth, coming back above 40% *without* the
+sample-limited flag. Then the directive is earned and the premise really does
+not hold for this universe. Until then, four stop conditions have tripped
+across this whole exercise and **not one of them has yet been shown to be
+about the data rather than about the code or the sample.**

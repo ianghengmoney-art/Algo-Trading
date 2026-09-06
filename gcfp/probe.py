@@ -822,8 +822,18 @@ def _evaluate_stop_conditions(
     roster_rate = (
         sum(1 for c in reached if c.single_anchor) / len(reached) if reached else None
     )
+    # A sample-limited measurement cannot trip this condition.  The same
+    # market reads 96% single-anchor at eight names per industry and 0% at
+    # forty-five; firing a design-level directive off the former would
+    # condemn the dual-anchor premise on the sample size.  It is reported
+    # loudly instead, with the sample size that would settle it.
+    limited = availability is not None and availability.sample_limited
     rate = availability.rate if availability is not None else roster_rate
-    cond4 = rate is not None and rate > config.expectations.single_anchor_rate_break
+    cond4 = (
+        rate is not None
+        and rate > config.expectations.single_anchor_rate_break
+        and not limited
+    )
 
     if availability is not None and roster_rate is not None:
         finding4 = (
@@ -834,6 +844,17 @@ def _evaluate_stop_conditions(
             f"by design: those targets were chosen for being extreme, and the "
             f"universe figure is the one this condition is asking about"
         )
+        if limited:
+            suggested = availability.suggested_peer_sample
+            finding4 += (
+                ". NOT TRIPPED — the sample carries about "
+                f"{availability.median_group_size:.0f} names per industry "
+                f"where roughly {availability.industry_size_needed:.0f} are "
+                "needed for any peer set to form, so this rate is a property "
+                "of the sample. The identical market reads 96% single-anchor "
+                "at eight names per industry and 0% at forty-five"
+                + (f"; re-run with --peer-sample {suggested}" if suggested else "")
+            )
     elif roster_rate is not None:
         finding4 = (
             f"{roster_rate:.0%} of reached targets fall into SINGLE-ANCHOR "
@@ -1009,6 +1030,8 @@ def run_probe(
         if peer_universe is not None
         else None
     )
+    if availability is not None:
+        availability.requested = len(sampled)
 
     coverages = [
         _probe_target(adapter, t, market, config, peer_universe) for t in targets

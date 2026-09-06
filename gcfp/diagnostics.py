@@ -481,6 +481,20 @@ class UniversePeerAvailability:
     counts: list[int] = field(default_factory=list)
     #: Names with no same-industry company at all in the sample.
     no_industry_peers: int = 0
+    #: How many names the sample holds in each industry.  Without this the
+    #: headline rate cannot be trusted: a sample carrying eight names per
+    #: industry cannot produce four size-band peers for anyone, and would
+    #: report scarcity that belongs to the sample rather than the market.
+    group_sizes: dict[str, int] = field(default_factory=dict)
+    #: Each subject's in-band peers as a share of its industry's sampled
+    #: members.  This is the sample-independent quantity — it estimates what
+    #: fraction of an industry sits within the size band of a given member,
+    #: and does not shrink just because fewer names were fetched.
+    in_band_shares: list[float] = field(default_factory=list)
+    #: How many symbols were handed to the universe build, so the report can
+    #: say what ``--peer-sample`` would actually settle the question rather
+    #: than leaving the reader to guess.
+    requested: int = 0
 
     @property
     def would_be_single_anchor(self) -> int:
@@ -494,19 +508,95 @@ class UniversePeerAvailability:
 
     _minimum: int = 4
 
+    @staticmethod
+    def _median(values: Sequence[float]) -> float:
+        return statistics.median(values) if values else 0.0
+
+    @property
+    def median_group_size(self) -> float:
+        return self._median(list(self.group_sizes.values()))
+
+    @property
+    def median_in_band_share(self) -> float:
+        return self._median(self.in_band_shares)
+
+    @property
+    def industry_size_needed(self) -> float | None:
+        """How many listed names an industry needs before a peer set forms.
+
+        The sample-independent answer to stop condition 4.  At the observed
+        size dispersion, a member finds ``share`` of its industry inside the
+        band, so it needs ``peer_min / share`` industry members to reach the
+        minimum.  Compare that against how many names a real industry has —
+        not against how many this sample happened to fetch.
+        """
+        share = self.median_in_band_share
+        if share <= 0:
+            return None
+        return self._minimum / share
+
+    @property
+    def suggested_peer_sample(self) -> int | None:
+        """The ``--peer-sample`` that would make this measurement meaningful.
+
+        Scales the sample that was actually requested by how far short the
+        per-industry depth fell.  Most fetched names never reach the universe
+        because they fail the size or liquidity floors, so this works from the
+        observed survival rate rather than assuming one.
+        """
+        needed = self.industry_size_needed
+        if not needed or not self.requested or self.median_group_size <= 0:
+            return None
+        if self.median_group_size >= needed:
+            return None
+        scale = needed / self.median_group_size
+        return int(round(self.requested * scale / 50.0) * 50) or None
+
+    @property
+    def sample_limited(self) -> bool:
+        """Whether the sample is too thin for the headline rate to mean much."""
+        needed = self.industry_size_needed
+        return needed is not None and self.median_group_size < needed
+
     def report_lines(self) -> list[str]:
         if not self.assessed:
             return ["  universe peer availability: not measured"]
         pct = (self.rate or 0.0) * 100
-        median = sorted(self.counts)[len(self.counts) // 2] if self.counts else 0
-        return [
+        median_peers = self._median([float(c) for c in self.counts])
+        lines = [
             f"  assessed {self.assessed} universe names (not just the roster)",
             f"  would fall into SINGLE-ANCHOR MODE: {pct:.0f}%",
-            f"  median size-band peers available: {median}",
+            f"  median size-band peers available: {median_peers:.0f}",
             f"  no same-industry name at all: {self.no_industry_peers}",
-            "  upper bound — grouping and size only; the growth band and the "
-            "multiple test can only reduce these counts further",
+            f"  median names sampled per industry: {self.median_group_size:.0f}",
         ]
+        needed = self.industry_size_needed
+        if needed is not None:
+            lines.append(
+                f"  size dispersion: {self.median_in_band_share:.0%} of an "
+                f"industry's members fall inside one member's size band, so an "
+                f"industry needs about {needed:.0f} listed names before a "
+                f"{self._minimum}-name peer set is available"
+            )
+        if self.sample_limited:
+            lines.append(
+                "  SAMPLE-LIMITED — this sample carries fewer names per "
+                "industry than that, so the rate above measures the sample, "
+                "not the market, and must not be read as a design finding."
+            )
+            suggested = self.suggested_peer_sample
+            if suggested:
+                lines.append(f"  re-run with --peer-sample {suggested}")
+        else:
+            lines.append(
+                "  the sample carries enough names per industry for this rate "
+                "to describe the market rather than the sample"
+            )
+        lines.append(
+            "  upper bound — grouping and size only; the growth band and the "
+            "multiple test can only reduce these counts further"
+        )
+        return lines
 
 
 def measure_universe_peer_availability(
@@ -541,7 +631,10 @@ def measure_universe_peer_availability(
             if cap is not m.market_cap and low <= cap / m.market_cap <= high
         )
         out.counts.append(in_band)
+        out.in_band_shares.append(in_band / (len(caps) - 1))
         out.assessed += 1
+
+    out.group_sizes = {k: len(v) for k, v in by_group.items()}
     return out
 
 
