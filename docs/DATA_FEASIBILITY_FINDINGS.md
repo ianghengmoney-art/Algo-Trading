@@ -470,3 +470,77 @@ That is a live limitation, not a fixed one.
   uses; until then this is an open gap, not a diagnosis.
 - **TSM** — improved by IFRS support, and will not reach a domestic filer's
   coverage. IFRS statements genuinely differ.
+
+---
+
+## Part 6 — the rest of run 2: a misclassification that mattered
+
+The remaining targets (TSM, PGR, O) surfaced one bug with real consequences
+and three structural facts about non-industrial filers.
+
+### TSM was classified SPEC-GROWTH
+
+A profitable, trillion-dollar chipmaker was routed to the single riskiest
+classification the system has. The cause was two lines deep.
+
+TSM files 20-F, not 10-Q, so it has **no quarterly facts at all**.
+`trailing_quarters(4)` therefore returned an empty list — and `_sum` of an
+empty list is `0.0`. Zero is a number. TTM net income read as zero, `0 > 0` is
+false, so the company read as *unprofitable* rather than *unmeasured*, and the
+SPEC-GROWTH branch is the one that wants an unprofitable grower.
+
+Two things were wrong and both are fixed:
+
+- **`_sum` now refuses an empty or short sequence.** It also takes an
+  `expected` count, and every trailing-twelve-month call site goes through a
+  `_ttm` helper that demands exactly four quarters. Nine of the eleven call
+  sites had no count check at all, so a three-quarter total could be presented
+  as a year — the precise failure the function's own docstring warned about.
+- **The SPEC-GROWTH branch is asymmetrically easy to reach**, and now says so
+  in a comment that explains why it must stay that way. CORE-GROWTH and
+  CORE-STABLE each demand multi-year evidence; SPEC-GROWTH needs one year of
+  revenue and one negative signal. A company with thin data can satisfy that
+  test and no other, and so lands in the riskiest bucket for want of
+  information rather than on its merits. Both negative signals are now
+  required to be *measured*, never inferred from absence.
+
+A6's refusal message also names the inputs that were unavailable. "Satisfied
+no classification's criteria" reads as a verdict on the company when it is
+usually a verdict on the data, and the two call for different responses.
+
+### Realty Income's debt read as $0.8bn
+
+O's A2 passed on `net_debt = 8.474e+08`. Realty Income carries roughly $20bn.
+
+REITs present an **unclassified balance sheet** — debt is split by security
+(secured / unsecured), not by maturity — so none of the three maturity buckets
+resolved and only a fragment was picked up. A fourth bucket now reads debt by
+security, used when the maturity buckets come up empty.
+
+More importantly: **a partial debt read is more dangerous than a missing one.**
+A chain that reads nothing refuses the gate. A chain that reads a fragment
+hands A2 a plausible number and nothing downstream can tell. There is now a
+plausibility check — a company whose liabilities are a real share of its
+assets, but almost none of which reads as debt, is flagged in the ledger and
+in A2's detail. It reports rather than blocks, because the figure may be
+right; a genuinely debt-free company has small liabilities too and does not
+trip it.
+
+### Three structural facts, not bugs
+
+- **20-F filers have no quarterly data at all.** Every TTM gate and the whole
+  C1 series are structurally unavailable for them, not merely unread, and no
+  tag-widening changes that. The adapter now says this explicitly instead of
+  reporting it as a parser gap. TSM's `C1 usable history: 0.0 years` is
+  correct and not fixable from this source.
+- **Insurers have no current ratio and no meaningful EBITDA.** PGR shows both
+  missing. Insurers do not present a classified balance sheet, and EBITDA is
+  not a measure anyone applies to an underwriter. A1 and A2 are asking
+  questions that do not apply to this classification — a Module A design
+  question, not a data gap, and it is **open**.
+- **O's share count grew 14.8% a year.** That is real: issuing equity is how a
+  REIT funds acquisitions. A4's dilution flag will fire on essentially every
+  REIT, which makes it noise on that path rather than a signal. Also **open**.
+
+PGR reached 6.7 years of C1 history — the closest any target has come to the
+full seven-year window.

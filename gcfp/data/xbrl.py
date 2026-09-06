@@ -173,6 +173,22 @@ TAG_CHAINS: dict[str, tuple[str, ...]] = {
         "DebtLongtermAndShorttermCombinedAmount",
         "Borrowings",
     ),
+    #: REITs, and others presenting an unclassified balance sheet, split debt
+    #: by security rather than by maturity, so none of the three buckets above
+    #: resolves.  These two are disjoint from each other by definition and each
+    #: already includes current maturities, so they are summed together and
+    #: used only when the maturity buckets came up empty.
+    "unclassified_secured_debt": (
+        "SecuredDebt",
+        "SecuredDebtOtherThanRealEstate",
+        "MortgageLoansOnRealEstateCommercialAndConsumerNetAmount",
+    ),
+    "unclassified_unsecured_debt": (
+        "UnsecuredDebt",
+        "UnsecuredLongTermDebt",
+        "SeniorLongTermNotes",
+        "LineOfCreditFacilityAmountOutstanding",
+    ),
     #: us-gaap's ``LongTermDebt`` includes current maturities, and IFRS
     #: ``BorrowingsNoncurrent`` filers often tag only this.  Used as a whole
     #: only when the non-current bucket is empty, never added to it.

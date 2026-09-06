@@ -472,10 +472,27 @@ class EdgarAdapter(DataAdapter):
             set(resolved["revenue"]) | set(resolved["net_income"]), reverse=True
         )
         if not ends:
+            detail = ""
+            if not annual and xbrl.select_facts(
+                payload, "revenue", annual=True, as_of=self.as_of
+            ):
+                # Annual facts exist and quarterly ones do not.  That is the
+                # signature of a foreign private issuer: 20-F once a year and
+                # 6-K in between, with no 10-Q ever.  Saying so matters,
+                # because every quarterly gate — TTM earnings, TTM cash flow,
+                # the C1 series — is structurally unavailable for this filer
+                # rather than merely unread, and no amount of tag-widening
+                # will change that.
+                detail = (
+                    " — annual facts exist but no quarterly ones, which is how "
+                    "a foreign private issuer filing 20-F reports. Every TTM "
+                    "gate and the C1 series are structurally unavailable for "
+                    "this filer, not merely unread"
+                )
             raise DataUnavailable(
                 "financials",
                 f"no revenue or net-income facts for {symbol} "
-                f"({'annual' if annual else 'quarterly'})",
+                f"({'annual' if annual else 'quarterly'}){detail}",
             )
 
         out: list[PeriodFinancials] = []
@@ -588,6 +605,9 @@ class EdgarAdapter(DataAdapter):
             non-current, current and short-term parts added together.  The
             three buckets are disjoint by construction (see ``TAG_CHAINS``),
             so nothing is counted twice.
+        ``by_security``
+            secured plus unsecured, for a filer presenting an unclassified
+            balance sheet (REITs, mostly).
         ``long_term_only``
             only a total-including-current tag resolved.
         ``inferred_zero``
@@ -618,6 +638,14 @@ class EdgarAdapter(DataAdapter):
         present = [p.value for p in parts if p is not None]
         if present:
             return sum(present), "summed"
+
+        unclassified = [
+            xbrl.latest_instant(payload, name, end, as_of=self.as_of)
+            for name in ("unclassified_secured_debt", "unclassified_unsecured_debt")
+        ]
+        present = [p.value for p in unclassified if p is not None]
+        if present:
+            return sum(present), "by_security"
 
         whole = xbrl.latest_instant(
             payload, "long_term_debt_including_current", end, as_of=self.as_of

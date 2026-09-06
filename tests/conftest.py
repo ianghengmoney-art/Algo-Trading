@@ -118,10 +118,14 @@ def build_company(
         20, 21, 19, 22, 18, 20, 21, 19, 20, 22, 18, 21, 19, 20, 21,
         20, 19, 22, 20, 18, 21, 19, 20, 20, 21, 19, 20, 22, 19, 21,
     ]
+    # Period counts are knobs too: a filer with no quarterly reports at all
+    # (a 20-F foreign private issuer, say) is a case the gates must survive.
+    n_annual = annual_defaults.pop("count", 8)
+    n_quarters = quarterly_defaults.pop("count", 12)
     fixture = FixtureCompany(
         profile=profile,
-        annual=make_annuals(8, **annual_defaults),
-        quarterly=make_quarters(12, **quarterly_defaults),
+        annual=make_annuals(n_annual, **annual_defaults),
+        quarterly=make_quarters(n_quarters, **quarterly_defaults),
         prices=make_prices(500, start_price=price, daily_drift=0.0004),
         multiples={multiple: make_multiple_series(multiple, values)},
         corporate_actions=corporate_actions or [],

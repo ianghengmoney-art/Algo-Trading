@@ -613,3 +613,86 @@ class TestDebtFreeDiscountRate:
             data, MarketData(risk_free_rate=0.04), Config(), Classification.CORE_STABLE
         )
         assert any("BY INFERENCE" in f for f in dr.flags)
+
+
+class TestClassificationOnThinData:
+    """Absence of evidence must not become evidence of unprofitability.
+
+    TSM is profitable, trillion-dollar, and files 20-F rather than 10-Q, so it
+    has no quarterly facts at all. The probe routed it to SPEC-GROWTH — the
+    single riskiest classification — because an empty quarter list summed to
+    zero, and zero is not greater than zero.
+    """
+
+    def test_an_empty_quarter_list_is_not_a_zero_ttm(self):
+        data = build_company(quarterly_kw={"count": 0})
+        assert a_health._ttm(data, "net_income") is None
+        assert a_health.is_profitable_ttm(data) is None
+
+    def test_a_partial_year_is_not_a_trailing_twelve_months(self):
+        """Three quarters summed and called TTM understates a year by a
+        quarter, and nothing downstream can tell."""
+        data = build_company(quarterly_kw={"count": 3})
+        assert a_health._ttm(data, "net_income") is None
+
+    def test_a_profitable_filer_with_no_quarterly_data_is_not_spec_growth(self):
+        data = build_company(quarterly_kw={"count": 0})
+        tag, considered, reasons = a_health.classify(data, Config())
+        assert Classification.SPEC_GROWTH not in considered, reasons
+        assert tag is not Classification.SPEC_GROWTH
+
+    def test_refusing_to_classify_names_the_missing_inputs(self):
+        """"Satisfied no criteria" reads as a verdict on the company. It is
+        usually a verdict on the data, and the two need different responses."""
+        data = build_company(quarterly_kw={"count": 0}, annual_kw={"count": 0})
+        _, _, reasons = a_health.classify(data, Config())
+        assert "data gap" in " ".join(reasons)
+
+
+class TestUnderstatedDebt:
+    """A partial debt read is worse than a missing one.
+
+    A chain that reads none of a filer's debt refuses the gate. A chain that
+    reads *some* of it hands A2 a plausible number, and nothing downstream can
+    tell it is a fraction of the real figure. Realty Income came back with
+    $0.8bn of debt against roughly $20bn of liabilities, and passed.
+    """
+
+    @staticmethod
+    def company(debt, assets, equity):
+        bs = {"total_debt": debt, "total_assets": assets, "total_equity": equity}
+        return build_company(annual_kw=dict(bs), quarterly_kw=dict(bs))
+
+    def test_a_leveraged_company_reading_almost_no_debt_is_flagged(self):
+        flag = a_health._debt_looks_understated(
+            self.company(0.85e9, 60e9, 40e9)
+        )
+        assert flag is not None and "part of the balance sheet" in flag
+
+    def test_a_genuinely_debt_free_company_is_not_flagged(self):
+        """Its liabilities are small too, so there is nothing for the debt to
+        be a suspicious fraction of."""
+        assert a_health._debt_looks_understated(
+            self.company(0.0, 10e9, 9.5e9)
+        ) is None
+
+    def test_a_normally_leveraged_company_is_not_flagged(self):
+        assert a_health._debt_looks_understated(
+            self.company(15e9, 60e9, 40e9)
+        ) is None
+
+    def test_the_flag_reports_and_does_not_block(self):
+        """A2 must still return its verdict — this is a note on the record,
+        not a refusal, because the debt figure may simply be right."""
+        ledger = AuditLedger("TEST", date(2026, 1, 1))
+        result, _ = a_health.gate_a2_leverage(
+            self.company(0.85e9, 60e9, 40e9),
+            MarketData(
+                group_net_debt_ebitda_median={"Machinery": 2.0},
+                group_member_counts={"Machinery": 22},
+            ),
+            Config(),
+            ledger,
+        )
+        assert result.outcome is not Outcome.NOT_COMPUTABLE
+        assert any("UNDERSTATED" in n for n in ledger.notes)

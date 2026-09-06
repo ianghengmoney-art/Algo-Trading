@@ -59,12 +59,25 @@ class HealthAssessment:
 # -- helpers -------------------------------------------------------------
 
 
-def _sum(rows: Sequence[PeriodFinancials], attr: str) -> float | None:
-    """Sum a field across periods, or ``None`` if any period is missing it.
+def _sum(
+    rows: Sequence[PeriodFinancials], attr: str, *, expected: int | None = None
+) -> float | None:
+    """Sum a field across periods, or ``None`` if the sum would be a fiction.
 
     Partial sums are how a four-quarter test quietly becomes a three-quarter
-    test.  Missing means missing.
+    test.  Missing means missing — including the case that looks like nothing
+    is wrong: **an empty sequence sums to zero**, and zero is a number.  A
+    company with no quarterly filings at all then reads as having earned
+    exactly nothing, which is not "unknown", it is "unprofitable", and A6
+    routes it accordingly.  TSM — profitable, trillion-dollar, and filing 20-F
+    rather than 10-Q — was classified SPEC-GROWTH on precisely that.
+
+    Pass ``expected`` wherever the period count is part of the meaning.
     """
+    if not rows:
+        return None
+    if expected is not None and len(rows) != expected:
+        return None
     total = 0.0
     for row in rows:
         value = getattr(row, attr)
@@ -72,6 +85,11 @@ def _sum(rows: Sequence[PeriodFinancials], attr: str) -> float | None:
             return None
         total += value
     return total
+
+
+def _ttm(data: CompanyData, attr: str) -> float | None:
+    """A trailing-twelve-month sum, or ``None`` — never a partial year."""
+    return _sum(data.trailing_quarters(4), attr, expected=4)
 
 
 def _months_between(earlier: date, later: date) -> float:
@@ -91,7 +109,7 @@ def gate_a1_solvency(data: CompanyData, config: Config) -> GateResult:
     latest = data.latest_quarter
 
     current_ratio = latest.current_ratio if latest else None
-    ttm_ocf = _sum(quarters, "operating_cash_flow") if len(quarters) == 4 else None
+    ttm_ocf = _sum(quarters, "operating_cash_flow", expected=4)
 
     if current_ratio is None and ttm_ocf is None:
         return gate_uncomputable(
@@ -137,10 +155,44 @@ def net_debt_to_ebitda(data: CompanyData) -> float | None:
     if latest is None:
         return None
     net_debt = latest.net_debt
-    ebitda = _sum(data.trailing_quarters(4), "ebitda")
+    ebitda = _ttm(data, "ebitda")
     if net_debt is None or ebitda is None or ebitda <= 0:
         return None
     return net_debt / ebitda
+
+
+def _debt_looks_understated(data: CompanyData) -> str | None:
+    """Whether the debt figure is too small for the balance sheet around it.
+
+    A tag chain that reads *some* of a filer's debt is more dangerous than one
+    that reads none: the gate gets a number, the number looks reasonable, and
+    nothing downstream can tell it is a fraction of the real figure.  Realty
+    Income came back with $0.8bn of debt against roughly $20bn of liabilities.
+
+    The test is deliberately loose — it fires only when a company is plainly
+    leveraged (liabilities are a real share of assets) yet almost none of that
+    leverage reads as debt.  A genuinely debt-free company has small
+    liabilities too, so it does not trip this.  It reports; it does not block.
+    """
+    latest = data.latest_quarter
+    if latest is None or latest.total_debt is None:
+        return None
+    assets, equity = latest.total_assets, latest.total_equity
+    if assets is None or equity is None or assets <= 0:
+        return None
+    liabilities = assets - equity
+    if liabilities <= 0 or liabilities / assets < 0.20:
+        # Not meaningfully leveraged; there is nothing for debt to be a
+        # suspicious fraction of.
+        return None
+    if latest.total_debt >= 0.15 * liabilities:
+        return None
+    return (
+        f"total debt {latest.total_debt/1e9:,.2f}bn is only "
+        f"{latest.total_debt / liabilities:.1%} of {liabilities/1e9:,.1f}bn in "
+        "liabilities; the debt tag chain has probably read part of the balance "
+        "sheet, not all of it"
+    )
 
 
 def _a2_missing_leg(data: CompanyData) -> str:
@@ -158,7 +210,7 @@ def _a2_missing_leg(data: CompanyData) -> str:
                        "not be safely inferred)")
     if latest.cash_and_equivalents is None:
         missing.append("cash and equivalents")
-    ebitda = _sum(data.trailing_quarters(4), "ebitda")
+    ebitda = _ttm(data, "ebitda")
     if ebitda is None:
         missing.append("TTM EBITDA (fewer than 4 quarters carry it)")
     elif ebitda <= 0:
@@ -211,11 +263,18 @@ def gate_a2_leverage(
     ratio = net_debt_to_ebitda(data)
     median = market.group_net_debt_ebitda_median.get(grouping.key)
 
+    # A2 is only as good as the debt figure behind it, and a partial tag read
+    # produces a *plausible-looking* number rather than a missing one — which
+    # then passes the gate.  Say so on the record.
+    implausible = _debt_looks_understated(data)
+
     # An inferred zero is a defensible reading of a debt-free balance sheet,
     # not a measured figure.  It flatters this gate — net debt goes negative
     # by the whole cash balance — so it is stated on the record either way.
     latest = data.latest_quarter
     debt_basis = latest.debt_basis if latest is not None else None
+    if implausible and ledger is not None:
+        ledger.note(f"A2 leverage may be UNDERSTATED — {implausible}")
     if debt_basis == "inferred_zero" and ledger is not None:
         ledger.note(
             "A2 total debt INFERRED ZERO: no debt tag appears anywhere in this "
@@ -275,6 +334,7 @@ def gate_a2_leverage(
                 "group": grouping.key,
                 "group_median": median,
                 "debt_basis": debt_basis,
+                "debt_plausibility": implausible or "not questioned",
                 "taxonomy": "GICS" if grouping.is_gics else "VENDOR-SUBSTITUTE",
             },
         ),
@@ -286,7 +346,7 @@ def gate_a2_leverage(
 
 
 def is_profitable_ttm(data: CompanyData) -> bool | None:
-    net_income = _sum(data.trailing_quarters(4), "net_income")
+    net_income = _ttm(data, "net_income")
     if net_income is None:
         return None
     return net_income > 0
@@ -302,7 +362,7 @@ def cash_runway_months(data: CompanyData) -> float | None:
     latest = data.latest_quarter
     if latest is None or latest.cash_and_equivalents is None:
         return None
-    ttm_ocf = _sum(data.trailing_quarters(4), "operating_cash_flow")
+    ttm_ocf = _ttm(data, "operating_cash_flow")
     if ttm_ocf is None:
         return None
     if ttm_ocf >= 0:
@@ -327,12 +387,12 @@ def gate_a3_earnings_quality(data: CompanyData, config: Config) -> GateResult:
     if profitable is None:
         return gate_uncomputable("A3", "TTM net income not computable")
 
-    ttm_ocf = _sum(quarters, "operating_cash_flow")
+    ttm_ocf = _sum(quarters, "operating_cash_flow", expected=4)
     if ttm_ocf is None:
         return gate_uncomputable("A3", "TTM operating cash flow not computable")
 
     if profitable:
-        net_income = _sum(quarters, "net_income")
+        net_income = _sum(quarters, "net_income", expected=4)
         ratio = ttm_ocf / net_income if net_income else None
         if ratio is None:
             return gate_uncomputable("A3", "TTM net income is zero")
@@ -412,7 +472,7 @@ def gate_a4_red_flags(
     # Negative shareholder equity with negative OCF.
     checked.append("negative_equity_with_negative_ocf")
     latest = data.latest_quarter
-    ttm_ocf = _sum(data.trailing_quarters(4), "operating_cash_flow")
+    ttm_ocf = _ttm(data, "operating_cash_flow")
     if (
         latest is not None
         and latest.total_equity is not None
@@ -763,6 +823,18 @@ def classify(data: CompanyData, config: Config) -> tuple[Classification | None, 
         fcf_negative = fcf is not None and fcf < 0
 
     # SPEC-GROWTH: revenue >= $50M and growing, unprofitable or FCF-negative.
+    #
+    # This branch is asymmetrically easy to reach.  CORE-GROWTH and CORE-STABLE
+    # both demand multi-year evidence — three profitable years, five years of
+    # FCF, a Rule of 40 — while this one needs a single year's revenue and one
+    # negative signal.  A company whose data is thin can therefore satisfy this
+    # test and nothing else, and so falls into the riskiest classification for
+    # want of information rather than on its merits.
+    #
+    # Both negative signals below are therefore *measured*, never inferred from
+    # absence: ``ttm_profitable is False`` excludes the unknown case, and
+    # ``fcf_negative`` is only ever set from a free cash flow that resolved.
+    # Keep it that way.
     if (
         revenue is not None
         and revenue >= 50_000_000
@@ -808,6 +880,28 @@ def classify(data: CompanyData, config: Config) -> tuple[Classification | None, 
         )
 
     if not considered:
+        # Name the inputs that were unavailable.  "Satisfied no criteria" reads
+        # as a verdict on the company when it is usually a verdict on the data,
+        # and the two call for completely different responses.
+        absent = [
+            name
+            for name, value in (
+                ("annual revenue", revenue),
+                ("revenue growth", growth_yoy),
+                ("2yr revenue CAGR", cagr_2y),
+                ("TTM profitability", ttm_profitable),
+                ("3yr profitability", profitable_3y),
+                ("5yr positive-FCF count", positive_fcf),
+                ("Rule of 40", rule40),
+            )
+            if value is None
+        ]
+        if absent:
+            return None, [], [
+                "could not be classified — these inputs were unavailable: "
+                + ", ".join(absent)
+                + ". This is a data gap, not a judgement about the company"
+            ]
         return None, [], ["satisfied no classification's criteria"]
 
     for tag in AMBIGUITY_PRIORITY:
