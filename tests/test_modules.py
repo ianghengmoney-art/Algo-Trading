@@ -14,10 +14,12 @@ from gcfp.classification import Classification, Regime
 from gcfp.data.fixtures import make_multiple_series
 from gcfp.ledger import AuditLedger, Outcome
 from gcfp.modules import a_health, b_valuation, c_anchors, d_conviction, e_triggers
+from gcfp.config import Config
 from gcfp.types import (
     AuditorEvent,
     CorporateAction,
     CorporateActionType,
+    MarketData,
     TaxonomyLevel,
 )
 from tests.conftest import build_company, stable_profile
@@ -572,3 +574,42 @@ class TestModuleE:
             module_a_failed=False,
         )
         assert signal.signal is e_triggers.SignalType.REVIEW
+
+
+def _debt_free_company(basis: str = "summed"):
+    """A company with no debt at all — total_debt 0.0, no interest expense."""
+    return build_company(
+        annual_kw={
+            "total_debt": 0.0,
+            "debt_basis": basis,
+            "interest_expense": None,
+        },
+        quarterly_kw={"total_debt": 0.0, "debt_basis": basis},
+    )
+
+
+class TestDebtFreeDiscountRate:
+    """A company with no debt has no cost of debt — that is an answer, not a gap."""
+
+    def test_debt_free_wacc_is_cost_of_equity_and_is_not_flagged_as_missing(self):
+        from gcfp.modules import b_discount
+
+        data = _debt_free_company()
+        dr = b_discount.build_discount_rate(
+            data, MarketData(risk_free_rate=0.04), Config(), Classification.CORE_STABLE
+        )
+        assert dr.method == "cost_of_equity_debt_free"
+        assert dr.rate == pytest.approx(dr.cost_of_equity)
+        assert not any("NOT COMPUTABLE" in f for f in dr.flags), (
+            "a debt-free balance sheet is not a data gap"
+        )
+        assert any("DEBT-FREE" in f for f in dr.flags)
+
+    def test_an_inferred_zero_says_so_in_the_flag(self):
+        from gcfp.modules import b_discount
+
+        data = _debt_free_company(basis="inferred_zero")
+        dr = b_discount.build_discount_rate(
+            data, MarketData(risk_free_rate=0.04), Config(), Classification.CORE_STABLE
+        )
+        assert any("BY INFERENCE" in f for f in dr.flags)

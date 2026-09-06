@@ -164,3 +164,103 @@ class TestMalformedInput:
 
     def test_an_absent_concept_yields_an_empty_result_not_an_error(self):
         assert xbrl.select_facts(payload(), "revenue", annual=True) == {}
+
+
+class TestDebtAssembly:
+    """Total debt, and the difference between "no debt" and "no reading".
+
+    Texas Pacific Land carries no debt at all.  A parser that cannot read a
+    filer's debt tags produces the same ``None``.  A2 treats those two
+    identically unless the adapter distinguishes them, and it must.
+    """
+
+    @staticmethod
+    def adapter(as_of=None):
+        from unittest.mock import Mock
+
+        from gcfp.data.edgar import EdgarAdapter
+
+        return EdgarAdapter(user_agent="t t@example.com", session=Mock(), as_of=as_of)
+
+    @staticmethod
+    def balance_sheet(**tags):
+        """A payload that always reads cleanly, plus whatever debt tags."""
+        base = {
+            "Assets": [fact(1000, "2024-12-31")],
+            "StockholdersEquity": [fact(600, "2024-12-31")],
+        }
+        base.update(tags)
+        return payload(**base)
+
+    def test_parts_are_summed_without_double_counting(self):
+        data = self.balance_sheet(
+            LongTermDebtNoncurrent=[fact(300, "2024-12-31")],
+            LongTermDebtCurrent=[fact(50, "2024-12-31")],
+            CommercialPaper=[fact(25, "2024-12-31")],
+        )
+        value, basis = self.adapter()._total_debt(data, date(2024, 12, 31))
+        assert (value, basis) == (375, "summed")
+
+    def test_long_term_debt_is_not_added_to_its_own_current_portion(self):
+        """us-gaap ``LongTermDebt`` already includes current maturities.
+
+        Summing it with ``LongTermDebtCurrent`` counts that portion twice and
+        overstates leverage, which fails A2 on companies that should pass.
+        """
+        data = self.balance_sheet(
+            LongTermDebt=[fact(350, "2024-12-31")],
+            LongTermDebtCurrent=[fact(50, "2024-12-31")],
+        )
+        value, basis = self.adapter()._total_debt(data, date(2024, 12, 31))
+        assert value == 50, "the non-current bucket must not absorb LongTermDebt"
+        assert basis == "summed"
+
+    def test_long_term_debt_alone_is_used_whole(self):
+        data = self.balance_sheet(LongTermDebt=[fact(350, "2024-12-31")])
+        value, basis = self.adapter()._total_debt(data, date(2024, 12, 31))
+        assert (value, basis) == (350, "long_term_only")
+
+    def test_a_genuinely_debt_free_filer_reads_as_zero(self):
+        data = self.balance_sheet()
+        value, basis = self.adapter()._total_debt(data, date(2024, 12, 31))
+        assert (value, basis) == (0.0, "inferred_zero")
+
+    def test_an_unreadable_balance_sheet_refuses_rather_than_inventing_zero(self):
+        """No equity tag means the statement did not resolve.  Silence about
+        debt is then the parser's, not the filer's."""
+        data = payload(Assets=[fact(1000, "2024-12-31")])
+        assert self.adapter()._total_debt(data, date(2024, 12, 31)) == (None, None)
+
+    def test_evidence_of_debt_elsewhere_blocks_the_zero(self):
+        """Repaying debt proves the filer had some.  Reading none at this
+        period end is then a miss, and must not become a zero."""
+        data = self.balance_sheet(
+            RepaymentsOfLongTermDebt=[
+                fact(100, "2023-12-31", "2023-01-01", filed="2024-02-01")
+            ]
+        )
+        assert self.adapter()._total_debt(data, date(2024, 12, 31)) == (None, None)
+
+    def test_evidence_filed_after_the_cutoff_is_not_visible(self):
+        """The point-in-time rule holds here too: a 2024 evaluation cannot be
+        told about debt first disclosed in 2026."""
+        data = self.balance_sheet(
+            RepaymentsOfLongTermDebt=[
+                fact(100, "2026-12-31", "2026-01-01", filed="2027-02-01")
+            ]
+        )
+        cut = self.adapter(as_of=date(2025, 1, 1))
+        assert cut._total_debt(data, date(2024, 12, 31)) == (0.0, "inferred_zero")
+
+    def test_ifrs_borrowings_are_read(self):
+        data = {
+            "cik": 1, "entityName": "IFRSCO",
+            "facts": {"ifrs-full": {
+                "Assets": {"units": {"USD": [fact(1000, "2024-12-31")]}},
+                "Equity": {"units": {"USD": [fact(600, "2024-12-31")]}},
+                "NoncurrentBorrowings": {"units": {"USD": [fact(200, "2024-12-31")]}},
+                "CurrentBorrowings": {"units": {"USD": [fact(40, "2024-12-31")]}},
+            }},
+        }
+        value, basis = self.adapter()._total_debt(data, date(2024, 12, 31))
+        assert (value, basis) == (240, "summed")

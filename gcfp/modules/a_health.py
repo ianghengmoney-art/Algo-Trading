@@ -143,6 +143,32 @@ def net_debt_to_ebitda(data: CompanyData) -> float | None:
     return net_debt / ebitda
 
 
+def _a2_missing_leg(data: CompanyData) -> str:
+    """Which half of net debt / EBITDA could not be built.
+
+    "not computable" tells a reader nothing about what to go and fix; naming
+    the leg turns a dead end into a data-sourcing task.
+    """
+    latest = data.latest_quarter
+    if latest is None:
+        return "no quarterly filing available"
+    missing: list[str] = []
+    if latest.total_debt is None:
+        missing.append("total debt (no debt tag resolved, and a zero could "
+                       "not be safely inferred)")
+    if latest.cash_and_equivalents is None:
+        missing.append("cash and equivalents")
+    ebitda = _sum(data.trailing_quarters(4), "ebitda")
+    if ebitda is None:
+        missing.append("TTM EBITDA (fewer than 4 quarters carry it)")
+    elif ebitda <= 0:
+        missing.append(f"TTM EBITDA is not positive ({ebitda:,.0f}); the "
+                       "ratio has no meaning against a negative denominator")
+    if not missing:
+        return "legs present but the ratio did not resolve"
+    return "missing " + "; ".join(missing)
+
+
 def gate_a2_leverage(
     data: CompanyData,
     market: MarketData,
@@ -185,12 +211,29 @@ def gate_a2_leverage(
     ratio = net_debt_to_ebitda(data)
     median = market.group_net_debt_ebitda_median.get(grouping.key)
 
+    # An inferred zero is a defensible reading of a debt-free balance sheet,
+    # not a measured figure.  It flatters this gate — net debt goes negative
+    # by the whole cash balance — so it is stated on the record either way.
+    latest = data.latest_quarter
+    debt_basis = latest.debt_basis if latest is not None else None
+    if debt_basis == "inferred_zero" and ledger is not None:
+        ledger.note(
+            "A2 total debt INFERRED ZERO: no debt tag appears anywhere in this "
+            "filer's history and the balance sheet reads cleanly, so it is "
+            "treated as debt-free.  The gate passes on an inference, not on a "
+            "reported number."
+        )
+
     if ratio is None:
         return (
             gate_uncomputable(
                 "A2",
-                "net debt or TTM EBITDA not computable",
-                detail={"grouping": grouping.key, "level": grouping.level.value},
+                f"leverage not computable — {_a2_missing_leg(data)}",
+                detail={
+                    "grouping": grouping.key,
+                    "level": grouping.level.value,
+                    "debt_basis": debt_basis,
+                },
             ),
             grouping,
         )
@@ -231,6 +274,7 @@ def gate_a2_leverage(
             detail={
                 "group": grouping.key,
                 "group_median": median,
+                "debt_basis": debt_basis,
                 "taxonomy": "GICS" if grouping.is_gics else "VENDOR-SUBSTITUTE",
             },
         ),
@@ -414,8 +458,63 @@ def gate_a4_red_flags(
     )
 
 
-def share_count_cagr(data: CompanyData, years: int = 2) -> float | None:
-    """Annualised diluted share count growth over ``years``.
+#: A quarter-on-quarter share-count ratio outside this band is a split, not
+#: dilution.  Real issuance moves a share count by low single-digit percents a
+#: quarter; a 3-for-1 split moves it by 200% overnight.  The band is wide
+#: enough to leave a large secondary offering alone and narrow enough to catch
+#: the smallest common split (5-for-4).
+SPLIT_RATIO_LOW = 0.80
+SPLIT_RATIO_HIGH = 1.20
+
+
+def normalise_share_counts(
+    quarters: Sequence[PeriodFinancials],
+) -> tuple[list[float], list[str]]:
+    """Put a share-count series on one basis by undoing splits.
+
+    A stock split multiplies the share count without diluting anyone, and A4
+    cannot tell the difference from the raw series: a 3-for-1 split reads as
+    +200% issuance and disqualifies the company on a corporate action that
+    took nothing from shareholders.
+
+    Splits are detected from the series itself rather than from a corporate
+    action feed, because the free stack has no reliable split feed and a
+    missing one would silently reintroduce the bug. The trade-off is stated
+    rather than hidden: a genuine single-quarter capital raise above 20% is
+    treated as a split and its dilution is not counted. That is the safer
+    error — A4 exists to catch *sustained* dilution, and a one-off raise that
+    large is visible in A5's filings and in the price.
+
+    Returns the normalised series (newest first) and a note per adjustment.
+    """
+    counts = [q.shares_diluted for q in quarters if q.shares_diluted]
+    if len(counts) < 2:
+        return counts, []
+
+    notes: list[str] = []
+    # Walk oldest to newest, carrying a cumulative factor that puts every
+    # earlier observation on the newest basis.
+    oldest_first = list(reversed(counts))
+    normalised = [oldest_first[0]]
+    factor = 1.0
+
+    for previous, current in zip(oldest_first, oldest_first[1:]):
+        ratio = current / previous if previous else 1.0
+        if ratio > SPLIT_RATIO_HIGH or ratio < SPLIT_RATIO_LOW:
+            factor *= ratio
+            notes.append(
+                f"share-count step of {ratio:.2f}x treated as a split, not "
+                "dilution"
+            )
+        normalised.append(current / factor if factor else current)
+
+    return list(reversed(normalised)), notes
+
+
+def share_count_cagr(
+    data: CompanyData, years: int = 2, ledger: AuditLedger | None = None
+) -> float | None:
+    """Annualised diluted share count growth over ``years``, split-adjusted.
 
     Uses quarterly data so a recent raise shows up without waiting for the
     annual.  Returns ``None`` — never 0.0 — when the history is absent, since
@@ -425,8 +524,15 @@ def share_count_cagr(data: CompanyData, years: int = 2) -> float | None:
     needed = 4 * years + 1
     if len(quarters) < needed:
         return None
-    newest = quarters[0].shares_diluted
-    oldest = quarters[needed - 1].shares_diluted
+
+    counts, notes = normalise_share_counts(quarters)
+    if ledger is not None:
+        for note in notes:
+            ledger.note(f"A4 · {note}")
+    if len(counts) < needed:
+        return None
+
+    newest, oldest = counts[0], counts[needed - 1]
     if not newest or not oldest or oldest <= 0:
         return None
     return (newest / oldest) ** (1.0 / years) - 1.0
@@ -807,5 +913,6 @@ __all__ = [
     "net_debt_to_ebitda",
     "cash_runway_months",
     "share_count_cagr",
+    "normalise_share_counts",
     "is_profitable_ttm",
 ]

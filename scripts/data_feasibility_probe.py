@@ -66,6 +66,16 @@ def main() -> int:
     parser.add_argument("--cache-dir", type=Path, default=Path(".cache"),
                         help="cache SEC responses so a re-run is fast")
     parser.add_argument("--out", type=Path, help="also write the report here")
+    parser.add_argument(
+        "--peer-sample", type=int, default=0, metavar="N",
+        help=(
+            "build a universe of N extra companies so C2's peer screen can "
+            "actually be tested. Without it the probe cannot tell 'no "
+            "comparables exist' from 'nobody supplied candidates'. 200 is a "
+            "reasonable start; it adds a few minutes."
+        ),
+    )
+    parser.add_argument("--progress", action="store_true")
     args = parser.parse_args()
 
     adapter = build_adapter(
@@ -81,7 +91,10 @@ def main() -> int:
 
         config = free_stack_config(DEFAULT_CONFIG)
 
-    report = run_probe(adapter, config, DEFAULT_TARGETS)
+    report = run_probe(
+        adapter, config, DEFAULT_TARGETS,
+        peer_sample=args.peer_sample, progress=args.progress,
+    )
     text = report.render()
     print(text)
 

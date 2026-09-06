@@ -294,11 +294,26 @@ class CoverageReport:
 # -- the probe ------------------------------------------------------------
 
 
+def _debt_basis_note(period) -> str:
+    """Say how total debt was arrived at, so a zero is never read as measured."""
+    basis = getattr(period, "debt_basis", None) if period is not None else None
+    return {
+        "tagged": "",
+        "summed": "summed from non-current, current and short-term parts",
+        "long_term_only": "only a total-including-current tag resolved; "
+                          "short-term borrowings may be understated",
+        "inferred_zero": "INFERRED ZERO — no debt tag anywhere in this filer's "
+                         "history and the balance sheet reads cleanly",
+        None: "no debt tag resolved, and a zero could not be safely inferred",
+    }.get(basis, "")
+
+
 def _probe_target(
     adapter: DataAdapter,
     target: ProbeTarget,
     market: MarketData,
     config: Config,
+    peer_universe=None,
 ) -> TargetCoverage:
     """Attempt every input one target needs."""
     try:
@@ -394,7 +409,8 @@ def _probe_target(
         InputResult("interest_expense", latest_a is not None and latest_a.interest_expense is not None,
                     latest_a.interest_expense if latest_a else None),
         InputResult("total_debt", latest_a is not None and latest_a.total_debt is not None,
-                    latest_a.total_debt if latest_a else None),
+                    latest_a.total_debt if latest_a else None,
+                    _debt_basis_note(latest_a)),
         InputResult("risk_free_rate", market.risk_free_rate is not None, market.risk_free_rate),
     ]
 
@@ -455,12 +471,41 @@ def _probe_target(
     ]
 
     # C2: a full peer set.
-    try:
-        peer_symbols = list(adapter.get_peer_symbols(target.symbol))
-        peers_detail = f"{len(peer_symbols)} vendor candidates"
-    except Exception as exc:
-        peer_symbols = []
-        peers_detail = f"{type(exc).__name__}: {exc}"
+    #
+    # Peers come from the universe, screened by grouping, size and growth —
+    # the same way the live screen builds them.  Asking the adapter for a
+    # vendor peer list instead is how an earlier version of this probe
+    # reported every target as SINGLE-ANCHOR MODE: EDGAR publishes no such
+    # list, so every candidate set was empty and the headline finding measured
+    # the probe rather than the data.
+    peer_symbols: list[str] = []
+    peers_detail = ""
+    if peer_universe is not None:
+        member = peer_universe.by_symbol(target.symbol)
+        if member is not None:
+            group = member.grouping_at(TaxonomyLevel.INDUSTRY) or member.sector
+            peer_symbols = [
+                m.symbol
+                for m in peer_universe.included
+                if m.symbol != target.symbol
+                and (m.grouping_at(TaxonomyLevel.INDUSTRY) or m.sector) == group
+            ]
+            peers_detail = (
+                f"{len(peer_symbols)} same-grouping names in a "
+                f"{len(peer_universe.included)}-name universe sample"
+            )
+        else:
+            peers_detail = "target not in the universe sample"
+    else:
+        try:
+            peer_symbols = list(adapter.get_peer_symbols(target.symbol))
+            peers_detail = f"{len(peer_symbols)} vendor candidates"
+        except Exception as exc:
+            peers_detail = (
+                f"no vendor peer list ({type(exc).__name__}) and no universe "
+                "sample supplied — C2 cannot be tested in isolation. Pass "
+                "--peer-sample to build one."
+            )
 
     # Build each candidate the way C2 will: the same multiple as the subject,
     # computed from the peer's own fundamentals.  Passing nulls in here would
@@ -471,7 +516,7 @@ def _probe_target(
     peer_multiples_available = 0
     unresolved_peers: list[str] = []
     candidates: list[c_anchors.PeerCandidate] = []
-    for peer in peer_symbols[:12]:
+    for peer in peer_symbols[:24]:
         try:
             peer_data = adapter.load_company(peer, multiple=None)
         except Exception:
@@ -708,6 +753,9 @@ def run_probe(
     config: Config,
     targets: Sequence[ProbeTarget] = DEFAULT_TARGETS,
     market: MarketData | None = None,
+    *,
+    peer_sample: int = 0,
+    progress: bool = False,
 ) -> CoverageReport:
     """Run §18's critical first task against one adapter."""
     if market is None:
@@ -717,7 +765,26 @@ def run_probe(
             market = MarketData()
 
     capabilities = list(adapter.capabilities())
-    coverages = [_probe_target(adapter, t, market, config) for t in targets]
+
+    # C2 needs a universe to screen. Without one the probe cannot distinguish
+    # "this universe has no comparables" from "nobody handed me candidates".
+    peer_universe = None
+    if peer_sample:
+        from .universe import build_universe, default_symbol_list
+
+        try:
+            pool = default_symbol_list(adapter)
+        except Exception:
+            pool = []
+        wanted = [t.symbol for t in targets]
+        # Deterministic sample, with the targets always included so each one
+        # can find its own grouping.
+        sampled = wanted + [s for s in pool if s not in wanted][:peer_sample]
+        peer_universe = build_universe(adapter, sampled, config, progress=progress)
+
+    coverages = [
+        _probe_target(adapter, t, market, config, peer_universe) for t in targets
+    ]
 
     profiles = [c.profile for c in coverages if c.profile is not None]
     taxonomy = assess_taxonomy(profiles)

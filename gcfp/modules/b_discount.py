@@ -172,6 +172,21 @@ def build_discount_rate(
         debt_weight = total_debt / enterprise
         rate = equity_weight * cost_of_equity + debt_weight * after_tax_kd
         method = "wacc"
+    elif total_debt == 0.0 and not avg_debt:
+        # A debt-free balance sheet has no cost of debt to compute.  Cost of
+        # equity is not a fallback here, it is the whole of the WACC, and
+        # flagging it as a gap would send a reader hunting for data that does
+        # not exist.  The basis of the zero still matters, so it is carried.
+        rate = cost_of_equity
+        method = "cost_of_equity_debt_free"
+        basis = getattr(latest, "debt_basis", None) if latest else None
+        if basis == "inferred_zero":
+            flags.append(
+                "DEBT-FREE BY INFERENCE — no debt tag appears anywhere in this "
+                "filer's history; cost of equity is the whole discount rate"
+            )
+        else:
+            flags.append("DEBT-FREE — cost of equity is the whole discount rate")
     else:
         rate = cost_of_equity
         flags.append("COST OF DEBT NOT COMPUTABLE — using cost of equity")

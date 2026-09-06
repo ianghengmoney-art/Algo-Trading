@@ -161,7 +161,29 @@ class CompositeAdapter(DataAdapter):
         """
         end = self.as_of or date.today()
         start = end - timedelta(days=int(365.25 * years))
-        return self.prices.get_splits(symbol, start, end)
+
+        actions: list[CorporateAction] = []
+        # Splits from the price feed.
+        try:
+            actions.extend(self.prices.get_splits(symbol, start, end))
+        except Exception:
+            pass
+        # Disposals and acquisitions from the fundamentals source's filings.
+        # Returning only splits here would drop EDGAR's 8-K Item 2.01 feed,
+        # which is the half C1.1 actually needs: a split is adjustable, a
+        # separation changes what the company is.
+        try:
+            actions.extend(self.fundamentals.get_corporate_actions(symbol, years))
+        except Exception:
+            pass
+
+        if not actions:
+            raise DataUnavailable(
+                "corporate_actions",
+                "neither the price feed nor the filings reported any action; "
+                "an empty list must not be read as 'none occurred'",
+            )
+        return tuple(sorted(actions, key=lambda a: a.effective_date, reverse=True))
 
     def get_peer_symbols(self, symbol: str) -> Sequence[str]:
         raise DataUnavailable(

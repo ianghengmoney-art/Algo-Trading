@@ -336,3 +336,54 @@ that decides whether a backtest means anything — it is **better**.
 - **Whether SPEC-GROWTH survives.** Stop condition 1 depends on cash-burn and
   share-count history being computable across real filers. If it is not, the
   spec is explicit: disable the path rather than build around the gap.
+
+---
+
+## Part 4 — the first live run, and what it actually measured
+
+**2026-09-06.** The probe was run against real EDGAR for the first time, on a
+machine with egress. Targets: CAT, GE, NVDA, TSM, PGR, O, JPM, RIVN, TPL.
+
+It tripped four of the stop conditions in §18. **Three of the four were
+defects in this parser, not properties of the data.** They are listed here
+because the distinction is the entire point of a feasibility probe: a stop
+condition that fires on a bug tells you to disable a working strategy path.
+
+| What the run reported | Cause | Status |
+|---|---|---|
+| TTM operating cash flow missing on every target | 10-Q cash-flow statements are cumulative within the fiscal year. Q3 reports nine months, not three. The parser read them as quarters, then failed the duration check. | Fixed — `xbrl._to_quarterly` differences consecutive facts sharing a period start, and respects the fiscal-year boundary. |
+| Every target had 0 peers → 78% routed to SINGLE-ANCHOR | The probe asked the adapter for a vendor peer list. EDGAR has none. C2 was never given the universe-built peers the screen actually uses. | Fixed — `run_probe(peer_sample=N)` builds a universe sample first. Re-run with `--peer-sample 200`. |
+| A4 read a 3-for-1 split as 73%/yr dilution | Share counts are as-reported, so a split is a step change in the series. | Fixed — `a_health.normalise_share_counts` walks the series oldest-first, detects ratio jumps outside 0.80–1.20, and carries a cumulative factor. Genuine ~19%/yr issuance still trips the flag. |
+| TSM: 21% coverage, almost nothing computable | **Real.** Foreign private issuers file 20-F under the `ifrs-full` namespace; the parser only read `us-gaap`. Partly fixed — `NAMESPACES` now covers `ifrs-full` and `dei`, and the tag chains carry IFRS names. Coverage will improve but will not reach a domestic filer's: IFRS statements genuinely differ. |
+| REIT AFFO and insurer combined ratio absent | **Real, and permanent.** Both are custom XBRL extensions, not `us-gaap` tags. These two paths cannot be valued from EDGAR alone. |
+| GICS sub-industry unavailable | **Real, and permanent.** SIC is the finest official rung. Every A2 and C2 result that uses it is logged `VENDOR-SUBSTITUTE`. |
+
+Two further problems the run exposed, neither of which had tripped a stop
+condition:
+
+- **Zero debt and unreadable debt looked identical.** `total_debt` returned
+  `None` for both a genuinely debt-free filer (TPL) and one whose debt tags
+  this parser could not resolve. A2 refused in both cases. `_total_debt` now
+  returns a value *and a basis* — `tagged`, `summed`, `long_term_only`, or
+  `inferred_zero`. A zero is inferred only when the balance sheet reads
+  cleanly *and* no debt tag, nor any evidence of debt activity (interest paid,
+  borrowings repaid), appears anywhere in the filing history visible at the
+  as-of date. The inference is logged in A2 and named in the probe, so it is
+  never mistaken for a measured figure.
+- **`LongTermDebt` was being added to its own current portion.** The `us-gaap`
+  concept already includes current maturities. Summing it with
+  `LongTermDebtCurrent` double-counted that portion and overstated leverage,
+  which fails A2 on companies that should pass. The three debt buckets are now
+  disjoint by construction and `LongTermDebt` is used only as a whole.
+
+### What this means for the §18 BUILD DIRECTIVES
+
+The directives the first run emitted should be **ignored**. They were
+measuring the parser. Re-run after pulling these fixes:
+
+```
+python scripts/data_feasibility_probe.py --source edgar \
+    --user-agent "your@email.com" --peer-sample 200
+```
+
+Only the second run's stop conditions are evidence about the data.

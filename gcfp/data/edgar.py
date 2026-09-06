@@ -401,6 +401,8 @@ class EdgarAdapter(DataAdapter):
                 else None
             )
 
+            debt_value, debt_basis = self._total_debt(payload, end)
+
             equity = instant("total_equity")
             goodwill = instant("goodwill") or 0.0
             intangibles = instant("intangible_assets") or 0.0
@@ -428,7 +430,8 @@ class EdgarAdapter(DataAdapter):
                     total_assets=instant("total_assets"),
                     total_current_assets=instant("total_current_assets"),
                     total_current_liabilities=instant("total_current_liabilities"),
-                    total_debt=self._total_debt(payload, end),
+                    total_debt=debt_value,
+                    debt_basis=debt_basis,
                     cash_and_equivalents=instant("cash_and_equivalents"),
                     total_equity=equity,
                     tangible_book_value=tangible_book,
@@ -444,27 +447,93 @@ class EdgarAdapter(DataAdapter):
             )
         return tuple(out)
 
-    def _total_debt(self, payload: dict[str, Any], end: date) -> float | None:
-        """Debt, summed from its parts when no combined tag exists.
+    #: Fields whose presence proves the parser can read this filer's balance
+    #: sheet.  Without them an absent debt tag is uninformative — the whole
+    #: statement may simply have failed to resolve.
+    _BALANCE_SHEET_PROOF: tuple[str, ...] = ("total_assets", "total_equity")
 
-        Returns ``None`` rather than 0.0 when nothing is tagged: a company with
-        no debt and a company whose debt could not be read must not look alike
-        to A2.
+    def _total_debt(
+        self, payload: dict[str, Any], end: date
+    ) -> tuple[float | None, str | None]:
+        """Debt at a period end, with the basis on which it was arrived at.
+
+        Four outcomes, and the caller is told which:
+
+        ``tagged``
+            the filer reports a single combined debt figure.
+        ``summed``
+            non-current, current and short-term parts added together.  The
+            three buckets are disjoint by construction (see ``TAG_CHAINS``),
+            so nothing is counted twice.
+        ``long_term_only``
+            only a total-including-current tag resolved.
+        ``inferred_zero``
+            no debt tag resolved at this period end, *and* none appears
+            anywhere in the filer's filing history, *and* the balance sheet
+            otherwise reads cleanly.  Texas Pacific Land is the case this
+            exists for: genuinely debt-free, and previously indistinguishable
+            from a company whose debt tags this parser could not read.
+
+        Anything else returns ``(None, None)``.  A zero is only ever inferred,
+        never assumed: a company with no debt and a company whose debt could
+        not be read must not look alike to A2.
         """
         combined = xbrl.latest_instant(
             payload, "total_debt_combined", end, as_of=self.as_of
         )
         if combined is not None:
-            return combined.value
+            return combined.value, "tagged"
 
         parts = [
             xbrl.latest_instant(payload, name, end, as_of=self.as_of)
-            for name in ("long_term_debt_noncurrent", "long_term_debt_current", "short_term_debt")
+            for name in (
+                "long_term_debt_noncurrent",
+                "long_term_debt_current",
+                "short_term_debt",
+            )
         ]
         present = [p.value for p in parts if p is not None]
-        if not present:
-            return None
-        return sum(present)
+        if present:
+            return sum(present), "summed"
+
+        whole = xbrl.latest_instant(
+            payload, "long_term_debt_including_current", end, as_of=self.as_of
+        )
+        if whole is not None:
+            return whole.value, "long_term_only"
+
+        return self._infer_zero_debt(payload, end)
+
+    def _infer_zero_debt(
+        self, payload: dict[str, Any], end: date
+    ) -> tuple[float | None, str | None]:
+        """Zero, but only when the silence is the filer's and not the parser's.
+
+        Requires both that the balance sheet read cleanly at this period end
+        and that no debt tag — nor any evidence of debt activity, such as
+        interest paid or borrowings repaid — appears anywhere in the filing
+        history available at ``as_of``.
+        """
+        for field in self._BALANCE_SHEET_PROOF:
+            if xbrl.latest_instant(payload, field, end, as_of=self.as_of) is None:
+                return None, None
+
+        debt_fields = (
+            "total_debt_combined",
+            "long_term_debt_noncurrent",
+            "long_term_debt_current",
+            "short_term_debt",
+            "long_term_debt_including_current",
+            "debt_existence_evidence",
+        )
+        for field in debt_fields:
+            if xbrl.has_any_fact(payload, field, as_of=self.as_of):
+                # The filer does carry (or has carried) debt, so reading none
+                # at this period end is a parsing miss, not a debt-free
+                # balance sheet.  Refuse rather than invent a zero.
+                return None, None
+
+        return 0.0, "inferred_zero"
 
     # -- unavailable from EDGAR ------------------------------------------
     def get_prices(self, symbol: str, start: date, end: date) -> Sequence[PricePoint]:

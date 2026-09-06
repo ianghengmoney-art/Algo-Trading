@@ -93,6 +93,13 @@ class PeriodFinancials:
     total_current_assets: float | None = None
     total_current_liabilities: float | None = None
     total_debt: float | None = None
+    #: How ``total_debt`` was arrived at: ``"tagged"`` (a single combined tag),
+    #: ``"summed"`` (non-current + current + short-term parts),
+    #: ``"long_term_only"`` (a total-including-current tag, no parts), or
+    #: ``"inferred_zero"`` (no debt tag anywhere in the filer's history and a
+    #: readable balance sheet, so the company is treated as debt-free).  A2
+    #: logs this so an inferred zero is never mistaken for a measured one.
+    debt_basis: str | None = None
     cash_and_equivalents: float | None = None
     total_equity: float | None = None
     tangible_book_value: float | None = None
