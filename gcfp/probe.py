@@ -484,15 +484,33 @@ def _probe_target(
         member = peer_universe.by_symbol(target.symbol)
         if member is not None:
             group = member.grouping_at(TaxonomyLevel.INDUSTRY) or member.sector
-            peer_symbols = [
-                m.symbol
+            same_group = [
+                m
                 for m in peer_universe.included
                 if m.symbol != target.symbol
                 and (m.grouping_at(TaxonomyLevel.INDUSTRY) or m.sector) == group
             ]
+            # Closest by size first, exactly as ``universe.find_peers`` does.
+            # Only the first two dozen candidates get fundamentals fetched, and
+            # taking them in universe order spends that budget on whichever
+            # names happen to come first — usually the small ones, since an
+            # industry has far more minor filers than major ones.  C2 then
+            # rejects the lot on the size band and the probe reports
+            # SINGLE-ANCHOR MODE for a company that does have peers.
+            subject_cap = member.market_cap
+            if subject_cap:
+                same_group.sort(
+                    key=lambda m: (
+                        m.market_cap is None,
+                        abs((m.market_cap or 0.0) / subject_cap - 1.0),
+                    )
+                )
+            peer_symbols = [m.symbol for m in same_group]
             peers_detail = (
                 f"{len(peer_symbols)} same-grouping names in a "
                 f"{len(peer_universe.included)}-name universe sample"
+                + ("" if subject_cap else "; subject has no market cap, so "
+                   "candidates could not be ordered by size")
             )
         else:
             peers_detail = "target not in the universe sample"

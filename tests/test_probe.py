@@ -172,3 +172,57 @@ class TestProbeReport:
 
     def test_report_states_targets_reached_out_of_total(self, report):
         assert "targets reached: 9/10" in report.render()
+
+
+class TestPeerCandidateOrdering:
+    """Only two dozen candidates get fundamentals fetched. Which two dozen
+    decides whether C2 finds a peer set or reports SINGLE-ANCHOR MODE.
+
+    An industry has far more minor filers than major ones, so taking
+    candidates in universe order spends the whole fetch budget on companies
+    C2 will reject on the size band — and the probe then reports that a
+    company has no peers when it has several.
+    """
+
+    def universe(self):
+        from gcfp.universe import Universe, UniverseMember
+
+        u = Universe(as_of=date(2026, 1, 1), source="test")
+        def member(symbol, name, cap):
+            return UniverseMember(
+                symbol=symbol, name=name, market_cap=cap, adv_3m_usd=50e6,
+                sector="Industrials", industry="Machinery", sub_industry=None,
+                net_debt_to_ebitda=1.5, gross_margin_stdev=0.02,
+                revenue_growth=0.05, beta=1.0,
+            )
+
+        u.members.append(member("SUBJ", "Subject", 100e9))
+        # Twenty-five minnows, then the one genuine size peer last.
+        for i in range(25):
+            u.members.append(member(f"TINY{i}", f"Tiny {i}", 50e6))
+        u.members.append(member("BIG", "Big Peer", 90e9))
+        return u
+
+    def ordered(self):
+        u = self.universe()
+        subject = u.by_symbol("SUBJ")
+        group = subject.grouping_at(TaxonomyLevel.INDUSTRY)
+        same = [
+            m for m in u.included
+            if m.symbol != "SUBJ"
+            and m.grouping_at(TaxonomyLevel.INDUSTRY) == group
+        ]
+        same.sort(
+            key=lambda m: (
+                m.market_cap is None,
+                abs((m.market_cap or 0.0) / subject.market_cap - 1.0),
+            )
+        )
+        return [m.symbol for m in same]
+
+    def test_the_closest_by_size_comes_first(self):
+        assert self.ordered()[0] == "BIG"
+
+    def test_the_real_peer_survives_the_fetch_budget(self):
+        """In universe order it sits at position 26 and is never fetched."""
+        assert "BIG" in self.ordered()[:24]
