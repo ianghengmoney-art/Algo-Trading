@@ -772,3 +772,59 @@ class TestGatesThatDoNotApply:
             as_of=date(2026, 1, 1),
         )
         assert assessment.screened_fully
+
+
+class TestC1WindowMeasurement:
+    """A filer with complete history must not read as short on history.
+
+    Stop condition 2 tripped on eight of nine targets across every run, and
+    two separate off-by-a-quarter errors were doing it — neither of them in
+    the data.
+    """
+
+    END = date(2026, 9, 1)
+
+    def series(self, years_of_filings, drop=None):
+        from gcfp.data.reconstruct import reconstruct_series
+        from gcfp.types import PeriodFinancials, PricePoint
+
+        quarters = []
+        for i in range(int(years_of_filings * 4)):
+            if i == drop:
+                continue
+            end = self.END - timedelta(days=91 * i)
+            quarters.append(
+                PeriodFinancials(
+                    period_end=end, filing_date=end + timedelta(days=40),
+                    fiscal_year=end.year, net_income=1e9, shares_diluted=1e9,
+                )
+            )
+        prices = [
+            PricePoint(price_date=self.END - timedelta(days=d), close=100.0)
+            for d in range(0, int(365.25 * 11))
+        ]
+        obs = reconstruct_series(
+            quarters, prices, "trailing_pe", end=self.END, years=7
+        )
+        if len(obs) < 2:
+            return 0.0
+        return (obs[0].observation_date - obs[-1].observation_date).days / 365.25
+
+    @property
+    def bar(self):
+        return 7 - c_anchors._WINDOW_TOLERANCE_YEARS
+
+    def test_complete_history_clears_the_bar(self):
+        """A quarter is lost at each end independently — the first filing
+        after the cutoff, and the last before today. A one-quarter tolerance
+        set the bar at the theoretical best case, which nothing reaches."""
+        assert self.series(9) >= self.bar
+
+    def test_a_single_missing_quarter_does_not_truncate_the_series(self):
+        """With only a year of warm-up the oldest observation consumed the
+        last four quarters fetched, so one gap anywhere shortened the span."""
+        assert self.series(9, drop=30) >= self.bar
+
+    def test_a_genuinely_short_listing_is_still_reported(self):
+        """The tolerance must not be so wide that it stops discriminating."""
+        assert self.series(5) < self.bar

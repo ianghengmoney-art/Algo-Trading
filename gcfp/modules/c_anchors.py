@@ -50,7 +50,17 @@ class AnchorMode(str, Enum):
 #: A series fetched for an N-year window can never span quite N years — the
 #: newest and oldest observations sit inside it.  Without this tolerance every
 #: full-history name would carry a spurious "shorter listing history" flag.
-_WINDOW_TOLERANCE_YEARS = 0.25
+#:
+#: The margin is *two* quarters, not one, because a quarter is lost at each
+#: end independently.  At the old end, the oldest usable observation is the
+#: first filing after the cutoff, up to a quarter inside it.  At the new end,
+#: the newest is the last filing before today, up to a quarter before it.  A
+#: one-quarter tolerance therefore set the bar at 6.75 years for a 7-year
+#: window, which is the theoretical *best* case rather than a typical one: a
+#: filer with complete, unbroken history lands near 6.7 and was reported as
+#: short on history.  Stop condition 2 tripped on nearly every name for that
+#: reason alone.
+_WINDOW_TOLERANCE_YEARS = 0.5
 
 def anchor_multiple_for(
     classification: Classification, config: Config | None = None

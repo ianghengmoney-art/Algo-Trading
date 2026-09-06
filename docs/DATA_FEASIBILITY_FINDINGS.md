@@ -733,3 +733,81 @@ sample-limited flag. Then the directive is earned and the premise really does
 not hold for this universe. Until then, four stop conditions have tripped
 across this whole exercise and **not one of them has yet been shown to be
 about the data rather than about the code or the sample.**
+
+---
+
+## Part 10 — the dual-anchor premise holds
+
+At `--peer-sample 1400`:
+
+```
+assessed 116 universe names (not just the roster)
+would fall into SINGLE-ANCHOR MODE: 25%
+median size-band peers available: 7
+no same-industry name at all: 0
+median names sampled per industry: 12
+size dispersion: 33% of an industry's members fall inside one member's size
+  band, so an industry needs about 12 listed names before a 4-name peer set
+  is available
+the sample carries enough names per industry for this rate to describe the
+  market rather than the sample
+```
+
+**Stop condition 4 no longer trips.** 25% is under the 40% threshold, the
+sample is deep enough for the figure to mean something, and the directive to
+abandon the dual-anchor premise is withdrawn. This is the first result in the
+whole exercise that was *earned* rather than produced by a defect.
+
+Watch the progression as depth increased — this is what a sample-limited
+measurement converging looks like:
+
+| Sample | Names/industry | Rate | Industry size needed |
+|---|---|---|---|
+| 210 | 8 | 78–89% | — |
+| 400 | 8 | 51% | 28 |
+| 1400 | 12 | **25%** | **12** |
+
+The rate fell as depth rose, and the sample-independent statistic fell with
+it — from 28 to 12 — because size dispersion is estimated better with more
+names. It is now consistent: an industry needs about 12 listed members, and
+the sample carries 12.
+
+**One honest caveat: 12 against a requirement of 12 is exactly at the line.**
+It clears, but not comfortably. A deeper run would firm it up. The direction
+across three samples is consistent and the conclusion is not close to the 40%
+threshold, so this is reported as a pass rather than as a certainty.
+
+### Stop condition 2 was two off-by-a-quarter errors
+
+Eight of nine targets read as short on C1 history in every run. Neither cause
+was in the data.
+
+**No warm-up margin.** The oldest observation in a 7-year window still needs
+four trailing quarters behind it before a TTM multiple can be computed. The
+adapter fetched `(years + 1) * 4` = 32 quarters — exactly 8 years once Q4 was
+recovered — and the observation at the 7-year mark consumed the last four. A
+single missing quarter anywhere (a restatement, a tag-chain gap, a fiscal-year
+change) then truncated the series. The warm-up is now two years, which costs
+one wider price request and nothing at all on the fundamentals side, where the
+entire filing history arrives in a single response.
+
+**The tolerance was one quarter where two are lost.** A quarter goes at each
+end independently: the oldest usable observation is the first filing *after*
+the cutoff, and the newest is the last filing *before* today. A one-quarter
+tolerance set the bar at 6.75 years for a 7-year window — the theoretical best
+case. A filer with complete, unbroken history lands near 6.73 and was reported
+as short. The tolerance is now 0.5 years, and a genuinely short listing (five
+years of filings → 3.7 years of usable series) is still caught.
+
+### Where this leaves the four stop conditions
+
+| Condition | Verdict |
+|---|---|
+| 1 — cash burn / share count | **Cleared.** Was measuring companies that could never route to SPEC-GROWTH. |
+| 2 — seven years of history | **Cleared.** Two off-by-a-quarter errors in the measurement. |
+| 3 — GICS sub-industry | **Real and permanent.** SIC is the finest official rung; every grouping is logged VENDOR-SUBSTITUTE. |
+| 4 — single-anchor rate | **Cleared at 25%.** Was measuring nine deliberate outliers, then a thin sample. |
+
+Of the four, exactly one turned out to be about the data. The other three were
+about the code or the sample — which is the probe working, not the probe
+failing: its job is to stop you acting on findings that are not findings.

@@ -47,6 +47,17 @@ from .prices import (
 #: How much price history to pull for beta and the C1 reconstruction.
 DEFAULT_HISTORY_DAYS = int(365.25 * 8)
 
+#: Extra history fetched beyond C1's window, because the *oldest* observation
+#: in that window still needs four trailing quarters behind it before a TTM
+#: multiple can be computed.  One year of warm-up leaves exactly none: a
+#: 7-year window fetched 32 quarters, which is 8 years, and the observation at
+#: the 7-year mark consumed the last four of them.  A single quarter missing
+#: anywhere — a restatement, a gap in the tag chain, a fiscal-year change —
+#: then truncated the series and the probe reported the source as short on
+#: history.  Two years costs one wider price request and nothing on the
+#: fundamentals side, where the whole filing history arrives in one response.
+_WARM_UP_YEARS = 2
+
 
 @dataclass
 class CompositeAdapter(DataAdapter):
@@ -226,10 +237,12 @@ class CompositeAdapter(DataAdapter):
         same way — including its lookahead discipline.
         """
         end = self.as_of or date.today()
-        start = end - timedelta(days=int(365.25 * (years + 1)))
+        start = end - timedelta(days=int(365.25 * (years + _WARM_UP_YEARS)))
 
         quarters = list(
-            self.fundamentals.get_quarterly_financials(symbol, (years + 1) * 4)
+            self.fundamentals.get_quarterly_financials(
+                symbol, int((years + _WARM_UP_YEARS) * 4)
+            )
         )
         if not quarters:
             raise DataUnavailable(
