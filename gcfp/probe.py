@@ -820,7 +820,7 @@ def _peer_pool(
     budget: int,
     *,
     progress: bool = False,
-) -> list[str]:
+) -> tuple[list[str], str | None]:
     """The names C2 will be offered as candidates.
 
     Drawn from each target's *own industry* rather than sampled from the
@@ -847,18 +847,28 @@ def _peer_pool(
             seen.add(symbol.upper())
             pool.append(symbol)
 
-    if len(pool) <= len(wanted):
-        # No industry listing available. Fall back to a market slice so the
-        # probe still produces a peer finding, honestly labelled.
-        from .universe import default_symbol_list
+    if len(pool) > len(wanted):
+        return pool[: max(budget, len(wanted))], None
 
-        try:
-            rest = default_symbol_list(adapter)
-        except Exception:
-            rest = []
-        pool.extend(s for s in rest if s.upper() not in seen)
+    # No industry listing came back for any target. Fall back to a market
+    # slice so the probe still runs — but say so loudly. This fallback fired
+    # silently for a whole run, and the peer findings it produced looked like
+    # evidence about the market when they were evidence about an alphabetical
+    # slice of the ticker index.
+    from .universe import default_symbol_list
 
-    return pool[: max(budget, len(wanted))]
+    try:
+        rest = default_symbol_list(adapter)
+    except Exception:
+        rest = []
+    pool.extend(s for s in rest if s.upper() not in seen)
+    warning = (
+        "PEER POOL IS NOT INDUSTRY-MATCHED. No industry listing came back for "
+        "any target, so candidates are an alphabetical slice of the ticker "
+        "index. Peer findings below — and stop condition 4 — describe that "
+        "slice, not the market. Do not read them as a design finding."
+    )
+    return pool[: max(budget, len(wanted))], warning
 
 
 def run_probe(
@@ -882,10 +892,13 @@ def run_probe(
     # C2 needs a universe to screen. Without one the probe cannot distinguish
     # "this universe has no comparables" from "nobody handed me candidates".
     peer_universe = None
+    peer_warning: str | None = None
     if peer_sample:
         from .universe import build_universe
 
-        sampled = _peer_pool(adapter, targets, peer_sample, progress=progress)
+        sampled, peer_warning = _peer_pool(
+            adapter, targets, peer_sample, progress=progress
+        )
         peer_universe = build_universe(adapter, sampled, config, progress=progress)
 
     coverages = [
@@ -899,6 +912,8 @@ def run_probe(
     stops = _evaluate_stop_conditions(coverages, taxonomy, config, point_in_time)
 
     notes: list[str] = []
+    if peer_warning:
+        notes.append(peer_warning)
     unreached = [c.target.symbol for c in coverages if not c.reached]
     if unreached:
         notes.append(

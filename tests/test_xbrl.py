@@ -417,6 +417,17 @@ class TestIndustryPeerDiscovery:
         found = self.adapter(self.ATOM).symbols_by_sic(3531, limit=10)
         assert set(found) == {"DE", "TEX", "CAT"}
 
+    def test_the_multi_company_shape_is_also_read(self):
+        """A single match redirects to a filing list whose links carry
+        ``CIK=...``; a multi-company match returns ``<CIK>...</CIK>`` elements
+        instead. Reading only the first shape found nothing for any industry,
+        and the probe fell back to an alphabetical slice without saying so."""
+        atom = """<feed>
+          <entry><company-info><CIK>0000315189</CIK></company-info></entry>
+          <entry><company-info><CIK>0000097216</CIK></company-info></entry>
+        </feed>"""
+        assert set(self.adapter(atom).symbols_by_sic(3531, limit=10)) == {"DE", "TEX"}
+
     def test_filers_with_no_ticker_are_skipped_not_guessed(self):
         """A private filer has a CIK and no ticker. It cannot be priced, so it
         cannot be a peer, and inventing a symbol for it would be worse."""

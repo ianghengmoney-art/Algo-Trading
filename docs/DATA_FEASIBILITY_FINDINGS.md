@@ -544,3 +544,72 @@ trip it.
 
 PGR reached 6.7 years of C1 history — the closest any target has come to the
 full seven-year window.
+
+---
+
+## Part 7 — JPMorgan, and gates that answer the wrong question
+
+The bank target produced three numbers that were read correctly and mean
+nothing:
+
+```
+A1  ttm_operating_cash_flow = -2.53e+11
+A2  net_debt                = -2.37e+11
+A3  cash_runway_months      = 14.71
+```
+
+None of these is a parsing error. A bank's operating cash flow swings by
+hundreds of billions with loan origination and the trading book; deposits are
+its raw material, not its leverage; and EBITDA is not a measure anyone applies
+to it. The last line is the dangerous one — **the system calculated that
+JPMorgan has 14.7 months before it runs out of money.** That is not a finding,
+it is an artefact of running a pre-profit startup test on the largest bank in
+America, and it looks exactly like a finding.
+
+Module A is built for operating companies. There is now a third answer
+alongside pass and fail:
+
+- **`NOT_COMPUTABLE`** — the input was missing. Go and find better data.
+- **`NOT_APPLICABLE`** — the *question* is wrong for this business. No amount
+  of better data will produce an answer.
+
+Conflating the two sends someone hunting for a tag that will never exist. A1,
+A2 and A3 now return `NOT_APPLICABLE` for banks and insurers, each naming what
+the right test would be (capital adequacy — tier-1, RBC — which EDGAR does not
+tag reliably).
+
+A not-applicable gate does not block: refusing every bank and insurer outright
+is not what the spec asks for. But it is not a clearance either. `run_module_a`
+records which gates did not run, `HealthAssessment.screened_fully` reports
+whether all of them did, and the ledger says so plainly:
+
+> Module A ran 4 of 7 gates — A1, A2, A3 do not apply to this business. A pass
+> here rests on less screening than a pass on an operating company, and is
+> weaker evidence by exactly that much.
+
+**This is a real reduction in safety for financials, not a fix for one.** A
+bank that clears Module A has been screened less thoroughly than an
+industrial that clears it, and the position sizing does not currently know
+that. Whether financials should be in the universe at all on this data source
+is a question for the operator, and it is now an informed one.
+
+### The peer lookup was failing silently
+
+The run showed `universe: 0/210 (CAT)` then `ACGCW`, `AEAQ` — an alphabetical
+slice, which means the SIC-targeted lookup returned nothing for every target
+and the fallback fired without a word.
+
+The cause: EDGAR's company-by-SIC endpoint returns two undocumented shapes. A
+single match redirects to a filing list whose links carry `CIK=0000320193`; a
+multi-company match returns `<CIK>0000320193</CIK>` elements. The parser read
+only the first, so every industry query came back empty.
+
+Both shapes are now read. More importantly, **the fallback announces itself**:
+
+> PEER POOL IS NOT INDUSTRY-MATCHED. No industry listing came back for any
+> target, so candidates are an alphabetical slice of the ticker index. Peer
+> findings below — and stop condition 4 — describe that slice, not the market.
+
+A silent fallback produced a whole run of peer findings that looked like
+evidence about the market. That is the failure mode worth engineering against,
+more than the regex itself.

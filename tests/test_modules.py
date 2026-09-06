@@ -696,3 +696,79 @@ class TestUnderstatedDebt:
         )
         assert result.outcome is not Outcome.NOT_COMPUTABLE
         assert any("UNDERSTATED" in n for n in ledger.notes)
+
+
+class TestGatesThatDoNotApply:
+    """Module A is built for operating companies. Banks are not one.
+
+    JPMorgan's probe run returned a 14.7-month cash runway, net debt of
+    -$237bn, and TTM operating cash flow of -$253bn. Every one of those is a
+    correctly-read number that means nothing, and two of them look like
+    findings. A gate that cannot ask the right question must say so rather
+    than answer the wrong one.
+    """
+
+    @staticmethod
+    def bank():
+        return build_company(profile=stable_profile(is_bank=True))
+
+    def test_a1_does_not_test_a_bank_for_solvency_by_current_ratio(self):
+        result = a_health.gate_a1_solvency(self.bank(), Config())
+        assert result.outcome is Outcome.NOT_APPLICABLE
+        assert "capital adequacy" in result.reason
+
+    def test_a2_does_not_call_deposits_leverage(self):
+        result, _ = a_health.gate_a2_leverage(
+            self.bank(), MarketData(), Config(), None
+        )
+        assert result.outcome is Outcome.NOT_APPLICABLE
+
+    def test_a3_does_not_compute_a_cash_runway_for_a_bank(self):
+        result = a_health.gate_a3_earnings_quality(self.bank(), Config())
+        assert result.outcome is Outcome.NOT_APPLICABLE
+
+    def test_not_applicable_is_not_a_data_gap(self):
+        """NOT_COMPUTABLE says 'find better data'. NOT_APPLICABLE says 'the
+        question is wrong'. Conflating them sends someone hunting for a tag
+        that will never exist."""
+        result = a_health.gate_a1_solvency(self.bank(), Config())
+        assert result.computable
+        assert not result.applicable
+
+    def test_a_bank_is_not_blocked_merely_for_being_a_bank(self):
+        ledger = AuditLedger("JPM", date(2026, 1, 1))
+        assessment = a_health.run_module_a(
+            self.bank(),
+            MarketData(
+                group_net_debt_ebitda_median={"Machinery": 2.0},
+                group_member_counts={"Machinery": 22},
+            ),
+            Config(),
+            ledger,
+            as_of=date(2026, 1, 1),
+        )
+        assert "A1" in assessment.inapplicable_gates
+        assert not assessment.screened_fully
+
+    def test_the_thinner_screening_is_stated_on_the_record(self):
+        """A pass on four gates is weaker than a pass on six, and nothing
+        downstream can tell unless it is said."""
+        ledger = AuditLedger("JPM", date(2026, 1, 1))
+        a_health.run_module_a(
+            self.bank(), MarketData(), Config(), ledger, as_of=date(2026, 1, 1)
+        )
+        assert any("do not apply" in n for n in ledger.notes)
+
+    def test_an_operating_company_still_runs_every_gate(self):
+        ledger = AuditLedger("CAT", date(2026, 1, 1))
+        assessment = a_health.run_module_a(
+            build_company(),
+            MarketData(
+                group_net_debt_ebitda_median={"Machinery": 2.0},
+                group_member_counts={"Machinery": 22},
+            ),
+            Config(),
+            ledger,
+            as_of=date(2026, 1, 1),
+        )
+        assert assessment.screened_fully

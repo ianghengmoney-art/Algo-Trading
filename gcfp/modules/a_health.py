@@ -24,6 +24,7 @@ from ..ledger import (
     Outcome,
     gate_fail,
     gate_pass,
+    gate_not_applicable,
     gate_uncomputable,
 )
 from ..types import CompanyData, MarketData, PeriodFinancials, TaxonomyLevel
@@ -40,10 +41,19 @@ class HealthAssessment:
     considered_tags: list[Classification] = field(default_factory=list)
     grouping: Grouping | None = None
     data_gaps: list[str] = field(default_factory=list)
+    #: Gates that did not apply to this kind of business.  A name that clears
+    #: Module A on four gates instead of six has been screened less, and the
+    #: difference must be visible wherever the pass is used.
+    inapplicable_gates: list[str] = field(default_factory=list)
 
     @property
     def failures(self) -> list[GateResult]:
         return [g for g in self.gates if g.failed]
+
+    @property
+    def screened_fully(self) -> bool:
+        """Whether every gate in Module A actually ran."""
+        return not self.inapplicable_gates
 
     @property
     def uncomputable(self) -> list[GateResult]:
@@ -96,6 +106,19 @@ def _months_between(earlier: date, later: date) -> float:
     return (later - earlier).days / 30.44
 
 
+#: Businesses whose balance sheets and cash flows are not shaped like an
+#: operating company's.  Their financial statements are not incomplete — they
+#: are organised around different questions entirely.
+def _is_financial(data: CompanyData) -> bool:
+    p = data.profile
+    return bool(p.is_bank or p.is_insurer)
+
+
+def _financial_kind(data: CompanyData) -> str:
+    p = data.profile
+    return "bank" if p.is_bank else "insurer" if p.is_insurer else "financial"
+
+
 # -- A1 ------------------------------------------------------------------
 
 
@@ -105,6 +128,22 @@ def gate_a1_solvency(data: CompanyData, config: Config) -> GateResult:
     Structurally negative working capital is a feature in some businesses
     (subscription prepayments, float), never an automatic fail — hence the OR.
     """
+    if _is_financial(data):
+        # Neither leg of this test means anything here.  Banks and insurers
+        # present unclassified balance sheets, so there is no current ratio to
+        # compute; and their operating cash flow swings by hundreds of
+        # billions with loan origination and the trading book, so its sign
+        # says nothing about solvency.  JPMorgan's TTM operating cash flow
+        # came back at -$253bn — a real figure, and not a distress signal.
+        # Solvency for these businesses is a capital-adequacy question
+        # (tier-1, RBC), which EDGAR does not tag reliably.
+        return gate_not_applicable(
+            "A1",
+            f"solvency by current ratio or operating cash flow does not apply "
+            f"to a {_financial_kind(data)}; capital adequacy is the right test "
+            f"and this source cannot supply it",
+        )
+
     quarters = data.trailing_quarters(4)
     latest = data.latest_quarter
 
@@ -260,6 +299,21 @@ def gate_a2_leverage(
                 "the median is wider than the spec assumes"
             )
 
+    if _is_financial(data):
+        # Deposits are a bank's raw material, not its leverage, and EBITDA is
+        # not a measure anyone applies to an underwriter.  JPMorgan came back
+        # at net debt -$237bn, which reads as a fortress and means nothing.
+        return (
+            gate_not_applicable(
+                "A2",
+                f"net debt / EBITDA does not apply to a {_financial_kind(data)}: "
+                f"deposits and reserves are not debt, and EBITDA is not a "
+                f"measure of this business",
+                detail={"grouping": grouping.key},
+            ),
+            grouping,
+        )
+
     ratio = net_debt_to_ebitda(data)
     median = market.group_net_debt_ebitda_median.get(grouping.key)
 
@@ -377,6 +431,19 @@ def gate_a3_earnings_quality(data: CompanyData, config: Config) -> GateResult:
     """Profitable: OCF >= 80% of net income over TTM.
     Pre-profit: cash / TTM burn >= 24 months, OR positive OCF.
     """
+    if _is_financial(data):
+        # Both branches are wrong here.  The profitable branch asks whether
+        # operating cash flow backs reported earnings, which for a bank
+        # compares a lending-flow figure with an accrual one.  The pre-profit
+        # branch is worse: it computed a 14.7-month cash runway for JPMorgan,
+        # a number that looks like a finding and is pure artefact.
+        return gate_not_applicable(
+            "A3",
+            f"earnings quality by cash-flow backing does not apply to a "
+            f"{_financial_kind(data)}: operating cash flow tracks lending and "
+            f"trading flows, not the quality of reported earnings",
+        )
+
     quarters = data.trailing_quarters(4)
     if len(quarters) < 4:
         return gate_uncomputable(
@@ -979,8 +1046,21 @@ def run_module_a(
     # gate: a NOT_COMPUTABLE verdict blocks the name just as a FAIL does, and
     # is reported distinctly so the operator can tell a sick company from an
     # unreadable one.
+    # A NOT_APPLICABLE gate does not block: the question was wrong for this
+    # business, and refusing every bank and insurer outright is not what the
+    # spec asks for.  But it does not count as a clearance either, so it is
+    # named on the record and carried in the assessment.
     blocking = [g for g in gates if g.failed or not g.computable]
     passed = not blocking
+    inapplicable = [g.gate for g in gates if not g.applicable]
+
+    if inapplicable:
+        ledger.note(
+            f"Module A ran {len(gates) - len(inapplicable)} of {len(gates)} "
+            f"gates — {', '.join(inapplicable)} do not apply to this business. "
+            "A pass here rests on less screening than a pass on an operating "
+            "company, and is weaker evidence by exactly that much."
+        )
 
     return HealthAssessment(
         symbol=data.profile.symbol,
@@ -990,6 +1070,7 @@ def run_module_a(
         considered_tags=considered,
         grouping=grouping,
         data_gaps=[g.gate for g in gates if not g.computable],
+        inapplicable_gates=inapplicable,
     )
 
 

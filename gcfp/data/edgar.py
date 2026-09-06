@@ -320,7 +320,18 @@ class EdgarAdapter(DataAdapter):
                 )
             except Exception:
                 break
-            ciks = [int(m) for m in re.findall(r"CIK=(\d{1,10})", body)]
+            # Two shapes come back from this endpoint and the difference is
+            # not documented: a single match redirects to a filing list whose
+            # links carry ``CIK=0000320193``, while a multi-company match
+            # returns ``<CIK>0000320193</CIK>`` elements.  Matching only the
+            # first found nothing for every industry, and the probe then fell
+            # back to an alphabetical market slice without saying so.
+            ciks = [
+                int(m)
+                for m in re.findall(
+                    r"(?:CIK=|<CIK>)\s*(\d{1,10})", body, flags=re.IGNORECASE
+                )
+            ]
             if not ciks:
                 break
             for cik in ciks:

@@ -25,6 +25,11 @@ class Outcome(str, Enum):
     FLAG = "FLAG"
     #: The input needed to decide was absent.  Never imputed (A5).
     NOT_COMPUTABLE = "NOT_COMPUTABLE"
+    #: The test does not apply to this kind of business, so it was not run.
+    #: Distinct from NOT_COMPUTABLE: nothing is missing, and no amount of
+    #: better data would produce an answer, because the question is wrong.
+    #: A bank has no current ratio to compute and no cash runway to run out.
+    NOT_APPLICABLE = "NOT_APPLICABLE"
 
     def __str__(self) -> str:  # pragma: no cover - display only
         return self.value
@@ -57,6 +62,10 @@ class GateResult:
     @property
     def computable(self) -> bool:
         return self.outcome is not Outcome.NOT_COMPUTABLE
+
+    @property
+    def applicable(self) -> bool:
+        return self.outcome is not Outcome.NOT_APPLICABLE
 
     def describe(self) -> str:
         """One audit line: the value, the threshold, and how it was reached."""
@@ -156,6 +165,19 @@ def gate_uncomputable(gate: str, reason: str, **kw: Any) -> GateResult:
     )
 
 
+def gate_not_applicable(gate: str, reason: str, **kw: Any) -> GateResult:
+    """The test does not apply to this business, so it was not run.
+
+    Use this only where the *question* is wrong for the classification, never
+    where an input happens to be missing — that is ``gate_uncomputable``.
+    A bank has no current ratio and no cash runway; computing one anyway
+    produces a number that looks fine and means nothing.
+    """
+    return GateResult(
+        gate=gate, outcome=Outcome.NOT_APPLICABLE, reason=reason, **kw
+    )
+
+
 __all__ = [
     "Outcome",
     "GateResult",
@@ -164,4 +186,5 @@ __all__ = [
     "gate_fail",
     "gate_flag",
     "gate_uncomputable",
+    "gate_not_applicable",
 ]
