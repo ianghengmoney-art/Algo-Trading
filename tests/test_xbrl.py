@@ -457,3 +457,83 @@ class TestIndustryPeerDiscovery:
     def test_a_missing_sic_code_is_not_an_error(self):
         assert self.adapter(self.ATOM).symbols_by_sic(None) == []
         assert self.adapter(self.ATOM).symbols_by_sic("") == []
+
+
+class TestRealFilingPatternEndToEnd:
+    """A calendar-year filer's whole year, through the adapter.
+
+    The unit tests above check ``select_facts``. This checks what the gates
+    actually receive, because that is where the missing quarter did its damage:
+    CAT's probe run showed TTM net income, TTM cash flow and TTM EBITDA all
+    missing at once, and every one of them was the same absent Q4.
+    """
+
+    @staticmethod
+    def payload():
+        def dur(val, end, start, filed, form):
+            return {"val": val, "end": end, "start": start, "filed": filed, "form": form}
+
+        rev, ni, ocf = [], [], []
+        fy_r, fy_n, fy_o = 64e9, 10e9, 12e9
+        # Three 10-Qs: each carries a three-month leg and a cumulative one.
+        for end, start, filed, frac in [
+            ("2025-03-31", "2025-01-01", "2025-04-30", 0.24),
+            ("2025-06-30", "2025-04-01", "2025-07-30", 0.48),
+            ("2025-09-30", "2025-07-01", "2025-10-29", 0.72),
+        ]:
+            rev.append(dur(fy_r * 0.24, end, start, filed, "10-Q"))
+            ni.append(dur(fy_n * 0.24, end, start, filed, "10-Q"))
+        for end, filed, frac in [
+            ("2025-03-31", "2025-04-30", 0.24),
+            ("2025-06-30", "2025-07-30", 0.48),
+            ("2025-09-30", "2025-10-29", 0.72),
+        ]:
+            rev.append(dur(fy_r * frac, end, "2025-01-01", filed, "10-Q"))
+            ni.append(dur(fy_n * frac, end, "2025-01-01", filed, "10-Q"))
+            ocf.append(dur(fy_o * frac, end, "2025-01-01", filed, "10-Q"))
+        # The 10-K states the year and no fourth quarter, which is the point.
+        for series, v in ((rev, fy_r), (ni, fy_n), (ocf, fy_o)):
+            series.append(dur(v, "2025-12-31", "2025-01-01", "2026-02-11", "10-K"))
+        # Two quarters into the next year.
+        for end, start, filed in [
+            ("2026-03-31", "2026-01-01", "2026-04-29"),
+            ("2026-06-30", "2026-04-01", "2026-08-05"),
+        ]:
+            rev.append(dur(16e9, end, start, filed, "10-Q"))
+            ni.append(dur(2.6e9, end, start, filed, "10-Q"))
+        for end, filed, frac in [("2026-03-31", "2026-04-29", 0.25),
+                                 ("2026-06-30", "2026-08-05", 0.5)]:
+            ocf.append(dur(fy_o * frac, end, "2026-01-01", filed, "10-Q"))
+
+        return {"cik": 18230, "entityName": "TESTCO", "facts": {"us-gaap": {
+            "Revenues": {"units": {"USD": rev}},
+            "NetIncomeLoss": {"units": {"USD": ni}},
+            "NetCashProvidedByUsedInOperatingActivities": {"units": {"USD": ocf}},
+        }}}
+
+    def quarters(self):
+        from unittest.mock import Mock
+
+        from gcfp.data.edgar import EdgarAdapter
+
+        a = EdgarAdapter(user_agent="t t@example.com", session=Mock())
+        a._facts = lambda symbol: self.payload()
+        return a._periods("TESTCO", annual=False, limit=8)
+
+    def test_the_trailing_year_has_four_quarters_with_no_hole(self):
+        ttm = self.quarters()[:4]
+        assert len(ttm) == 4
+        assert all(q.net_income is not None for q in ttm), "a quarter is missing"
+        assert all(q.operating_cash_flow is not None for q in ttm)
+
+    def test_the_fourth_quarter_carries_the_10k_filing_date(self):
+        """Dating it 31 December would give a backtest six weeks of
+        information it could not have had."""
+        q4 = next(q for q in self.quarters() if q.period_end == date(2025, 12, 31))
+        assert q4.filing_date == date(2026, 2, 11)
+
+    def test_the_calendar_year_reconciles_to_what_the_10k_reported(self):
+        year = [q for q in self.quarters() if q.period_end.year == 2025]
+        assert len(year) == 4
+        assert sum(q.net_income for q in year) == pytest.approx(10e9)
+        assert sum(q.operating_cash_flow for q in year) == pytest.approx(12e9)
