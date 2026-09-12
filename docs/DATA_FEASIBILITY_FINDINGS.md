@@ -811,3 +811,63 @@ years of filings → 3.7 years of usable series) is still caught.
 Of the four, exactly one turned out to be about the data. The other three were
 about the code or the sample — which is the probe working, not the probe
 failing: its job is to stop you acting on findings that are not findings.
+
+---
+
+## Part 11 — A4's dilution flag on REITs
+
+The last open item from Part 6. Realty Income's share count grew **14.8% a
+year**, a hair under A4's 15% threshold. Many REITs are above it.
+
+That is not dilution — issuing equity is how a REIT funds acquisitions. It is
+the business model. A flag that fires on nearly every member of a
+classification is noise on that path, not a signal, and it would have rejected
+most of the REIT universe for operating normally.
+
+The raw threshold is replaced, for REITs only, by the question that actually
+matters: **was the issuance accretive?** Shares up 25% a year against revenue
+up 35% means every holder owns a smaller slice of a business that grew more
+than their stake shrank. Shares up 25% against revenue up 5% is real dilution
+and still fails.
+
+Two honest limits, both stated in the gate rather than hidden:
+
+- **Revenue stands in for FFO.** The right per-share measure for a REIT is
+  AFFO, which is a custom XBRL extension this source does not expose. Revenue
+  per share is weaker. The substitution is named in the gate's reason.
+- **When revenue per share cannot be computed, A4 refuses rather than
+  guessing.** Passing would exempt REITs from dilution checks entirely;
+  failing would reinstate the false positive. `NOT_COMPUTABLE` is the honest
+  answer and blocks the name, consistent with A5's rule everywhere else.
+
+Operating companies are unaffected — an industrial issuing 25% more shares a
+year is diluting, and is still judged on the raw threshold.
+
+---
+
+## Where the build stands
+
+**§18 is satisfied.** Three of four stop conditions were defects in this code
+or in the sample; the fourth (GICS) is real, permanent, and every affected
+result is logged `VENDOR-SUBSTITUTE`.
+
+**The backtest runs end to end on synthetic data** — six benchmarks, the
+walk-forward split, the parameter sweep, classification accuracy, and Module
+I's break criteria. On the synthetic fixture it trips the C4 divergence
+criterion at 58.2%, which is a property of that fixture's randomly-generated
+multiples rather than a finding about the strategy. **It has not been run on
+real data.**
+
+Still open, and honestly so:
+
+- **Survivorship.** `cik_overrides` exists so delisted companies stay
+  reachable, but populating it for a historical universe is manual work. Until
+  it is done, any backtest over an EDGAR-built universe is survivor-biased.
+- **§13.11 paper trading.** Two to three months of calendar time that no
+  amount of code shortens. Backtests catch strategy flaws; paper trading
+  catches pipeline flaws.
+- **NVDA's interest expense** across eight tags. `field_coverage("NVDA")` will
+  name the tag it actually uses.
+- **A1 and A2 for insurers.** Both return `NOT_APPLICABLE`, which is correct
+  but means an insurer clears Module A on fewer gates. The ledger says so;
+  position sizing does not yet account for it.

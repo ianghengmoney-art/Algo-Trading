@@ -828,3 +828,57 @@ class TestC1WindowMeasurement:
     def test_a_genuinely_short_listing_is_still_reported(self):
         """The tolerance must not be so wide that it stops discriminating."""
         assert self.series(5) < self.bar
+
+
+class TestReitIssuanceIsNotDilution:
+    """Issuing equity is how a REIT funds acquisitions.
+
+    Realty Income grew its share count 14.8% a year and is not diluting
+    anyone. A4's raw 15%/yr threshold fires on nearly every REIT, which makes
+    it noise on that path rather than a signal. The question that matters is
+    whether the issuance was accretive.
+    """
+
+    @staticmethod
+    def company(share_growth, revenue_growth, *, is_reit):
+        """Shares and revenue each compounding at their own annual rate."""
+        profile = stable_profile(is_reit=is_reit)
+        shares = [500e6 * (1 + share_growth) ** -i for i in range(3)]
+        revenue = [10e9 * (1 + revenue_growth) ** -i for i in range(3)]
+        return build_company(
+            profile=profile,
+            annual_kw={"count": 3},
+            quarterly_kw={"count": 12, "shares": 500e6, "share_growth": share_growth},
+            annual_overrides=[
+                {"shares_diluted": s, "shares_outstanding": s, "revenue": r}
+                for s, r in zip(shares, revenue)
+            ],
+        )
+
+    def reit(self, share_growth, revenue_growth):
+        return self.company(share_growth, revenue_growth, is_reit=True)
+
+    def test_accretive_issuance_passes(self):
+        """Shares up 25%/yr, revenue up 35%/yr — every holder owns less of a
+        business that grew more than their stake shrank."""
+        result = a_health.gate_a4_red_flags(
+            self.reit(0.25, 0.35), Config(), date(2026, 1, 1)
+        )
+        assert result.outcome is not Outcome.FAIL, result.reason
+
+    def test_dilutive_issuance_still_fails(self):
+        """Shares up 25%/yr, revenue up 5% — the tolerance must not be a
+        blanket exemption for REITs."""
+        result = a_health.gate_a4_red_flags(
+            self.reit(0.25, 0.05), Config(), date(2026, 1, 1)
+        )
+        assert result.outcome is Outcome.FAIL
+        assert "not accretive" in result.reason
+
+    def test_an_operating_company_is_judged_on_the_raw_threshold(self):
+        """The accretion test is for businesses funded by issuance. An
+        industrial issuing 25% more shares a year is diluting."""
+        data = self.company(0.25, 0.35, is_reit=False)
+        result = a_health.gate_a4_red_flags(data, Config(), date(2026, 1, 1))
+        assert result.outcome is Outcome.FAIL
+        assert "share count +" in result.reason

@@ -7,6 +7,7 @@ happened to be large enough.
 
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import date, timedelta
 
 import pytest
@@ -81,6 +82,8 @@ def build_company(
     multiple: str = "trailing_pe",
     multiple_values: list[float] | None = None,
     corporate_actions: list | None = None,
+    annual_overrides: list[dict] | None = None,
+    quarterly_overrides: list[dict] | None = None,
     **company_kw,
 ):
     """A company that clears Module A comfortably, with knobs for each gate."""
@@ -122,10 +125,22 @@ def build_company(
     # (a 20-F foreign private issuer, say) is a case the gates must survive.
     n_annual = annual_defaults.pop("count", 8)
     n_quarters = quarterly_defaults.pop("count", 12)
+
+    def override(rows, edits):
+        """Per-period edits, newest first, for series the knobs cannot shape."""
+        if not edits:
+            return rows
+        return [
+            replace(row, **edit) if edit else row
+            for row, edit in zip(rows, list(edits) + [None] * len(rows))
+        ]
+
     fixture = FixtureCompany(
         profile=profile,
-        annual=make_annuals(n_annual, **annual_defaults),
-        quarterly=make_quarters(n_quarters, **quarterly_defaults),
+        annual=override(make_annuals(n_annual, **annual_defaults), annual_overrides),
+        quarterly=override(
+            make_quarters(n_quarters, **quarterly_defaults), quarterly_overrides
+        ),
         prices=make_prices(500, start_price=price, daily_drift=0.0004),
         multiples={multiple: make_multiple_series(multiple, values)},
         corporate_actions=corporate_actions or [],

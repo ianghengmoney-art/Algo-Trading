@@ -506,6 +506,33 @@ def gate_a3_earnings_quality(data: CompanyData, config: Config) -> GateResult:
 # -- A4 ------------------------------------------------------------------
 
 
+def _revenue_per_share_cagr(data: CompanyData, years: int = 2) -> float | None:
+    """Revenue per share, compounded, on a split-adjusted share base.
+
+    The accretion test for a business that funds itself by issuing equity.
+    Revenue stands in for FFO here because FFO and AFFO are custom XBRL
+    extensions this source does not expose — it is a weaker measure, and the
+    substitution is named in the gate's reason rather than hidden.
+    """
+    annual = data.trailing_years(years + 1)
+    if len(annual) < years + 1:
+        return None
+    newest, oldest = annual[0], annual[years]
+    counts, _ = normalise_share_counts(list(reversed(annual)))
+    if len(counts) < years + 1:
+        return None
+    old_shares, new_shares = counts[0], counts[-1]
+    if not old_shares or not new_shares:
+        return None
+    if newest.revenue is None or oldest.revenue is None or oldest.revenue <= 0:
+        return None
+    start = oldest.revenue / old_shares
+    finish = newest.revenue / new_shares
+    if start <= 0 or finish <= 0:
+        return None
+    return (finish / start) ** (1.0 / years) - 1.0
+
+
 def gate_a4_red_flags(
     data: CompanyData, config: Config, as_of: date | None = None
 ) -> GateResult:
@@ -567,7 +594,30 @@ def gate_a4_red_flags(
             detail={"other_flags_hit": hits, "checked": checked},
         )
     if growth > config.health.max_share_count_growth:
-        hits.append(f"share count +{growth:.1%}/yr")
+        if data.profile.is_reit:
+            # Issuing equity is how a REIT funds acquisitions — it is the
+            # business model, not a warning sign, and the raw test fires on
+            # nearly every REIT.  Realty Income grew its share count 14.8% a
+            # year and is not diluting anyone.  What matters is whether the
+            # issuance was *accretive*: did the business per share grow with
+            # it, or did existing holders end up owning less of the same?
+            per_share = _revenue_per_share_cagr(data, years=2)
+            if per_share is None:
+                return gate_uncomputable(
+                    "A4",
+                    "a REIT's share growth can only be judged per share, and "
+                    "revenue per share was not computable; the raw dilution "
+                    "threshold does not apply to a business funded by issuance",
+                    branch="share_count_growth_reit",
+                    detail={"share_count_cagr": growth, "checked": checked},
+                )
+            if per_share < 0:
+                hits.append(
+                    f"share count +{growth:.1%}/yr while revenue per share fell "
+                    f"{per_share:.1%}/yr — issuance was not accretive"
+                )
+        else:
+            hits.append(f"share count +{growth:.1%}/yr")
 
     if hits:
         return gate_fail(
