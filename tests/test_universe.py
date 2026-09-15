@@ -160,3 +160,56 @@ class TestPersistence:
         old = Universe(as_of=date.today() - timedelta(days=30), members=[])
         assert old.is_stale(max_age_days=7)
         assert not universe.is_stale(max_age_days=7)
+
+
+class TestUniverseSampling:
+    """--limit 500 screened A through ABX and reported its rejection rates as
+    though they described the market. Nothing about a ticker's spelling
+    predicts its fundamentals.
+    """
+
+    class FakeAdapter:
+        name = "fake"
+
+        def __init__(self, n=2000):
+            self._tickers = {f"{chr(65 + i // 100)}{i:04d}": i for i in range(n)}
+
+        def all_tickers(self):
+            return dict(self._tickers)
+
+    def test_a_limit_takes_a_sample_not_the_front_of_the_alphabet(self):
+        from gcfp.universe import default_symbol_list
+
+        picked = default_symbol_list(self.FakeAdapter(), limit=100)
+        assert len(picked) == 100
+        first_letters = {s[0] for s in picked}
+        assert len(first_letters) > 5, (
+            f"sample spans only {first_letters} — still an alphabetical slice"
+        )
+
+    def test_the_sample_is_stable_across_runs(self):
+        """Two runs of the same size must cover the same names, or no two
+        screens can be compared."""
+        from gcfp.universe import default_symbol_list
+
+        a = self.FakeAdapter()
+        assert default_symbol_list(a, limit=50) == default_symbol_list(a, limit=50)
+
+    def test_no_limit_returns_everything(self):
+        from gcfp.universe import default_symbol_list
+
+        assert len(default_symbol_list(self.FakeAdapter(n=300))) == 300
+
+    def test_a_limit_beyond_the_index_returns_everything(self):
+        from gcfp.universe import default_symbol_list
+
+        assert len(default_symbol_list(self.FakeAdapter(n=300), limit=9999)) == 300
+
+    def test_the_taxonomy_says_a_sample_is_a_sample(self):
+        from gcfp.diagnostics import RejectionLedger
+
+        ledger = RejectionLedger()
+        ledger.record_unreachable("X", "no data")
+        ledger.universe_total = 10_000
+        text = " ".join(ledger.as_report_lines())
+        assert "SAMPLE" in text and "10000" in text.replace(",", "")

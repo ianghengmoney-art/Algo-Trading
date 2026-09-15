@@ -46,7 +46,15 @@ def parse_args() -> argparse.Namespace:
         "--user-agent",
         help='Required for EDGAR. SEC policy: identify yourself, e.g. "jane jane@example.com"',
     )
-    parser.add_argument("--limit", type=int, help="cap the universe size while testing")
+    parser.add_argument(
+        "--limit", type=int,
+        help=(
+            "screen a random sample of N filers instead of all of them. The "
+            "sample is seeded, so two runs of the same size cover the same "
+            "names. Omit it for the whole market — slower, and the only way "
+            "to read the rejection rates as describing the market."
+        ),
+    )
     parser.add_argument("--symbols", nargs="*", help="screen only these tickers")
     parser.add_argument("--cache-dir", type=Path, default=Path(".cache"))
     parser.add_argument("--universe-cache", type=Path, default=Path(".cache/universe.json"))
@@ -122,6 +130,17 @@ def main() -> int:
     from gcfp.sensitivity import SensitivitySummary, analyse
 
     diagnostics = ScreenDiagnostics()
+    if args.limit:
+        # Say what fraction of the market this run actually looked at, so a
+        # sample's rejection rates are never read as the market's.
+        try:
+            from gcfp.universe import default_symbol_list
+
+            diagnostics.rejections.universe_total = len(
+                default_symbol_list(adapter)
+            )
+        except Exception:
+            pass
     for evaluation in evaluations:
         diagnostics.record(evaluation, evaluation.peer_decisions, config)
     for symbol in universe.unreachable:

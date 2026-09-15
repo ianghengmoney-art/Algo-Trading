@@ -21,6 +21,7 @@ once per name.
 from __future__ import annotations
 
 import json
+import random
 import statistics
 from dataclasses import asdict, dataclass, field
 from datetime import date, datetime, timedelta
@@ -338,12 +339,25 @@ def find_peers(
     return candidates
 
 
+#: Seed for the sampling below.  Fixed so two runs of the same size screen
+#: the same names and their results can be compared; changing it is how you
+#: deliberately look at a different slice.
+SAMPLE_SEED = 20240101
+
+
 def default_symbol_list(adapter: DataAdapter, limit: int | None = None) -> list[str]:
     """Every ticker the source indexes, as the raw input to the screen.
 
     EDGAR indexes every filer, which is the whole point — including the ones
     that later delisted, which is what makes a point-in-time backtest possible
     at all.
+
+    ``limit`` takes a **random sample**, not the first N alphabetically.  The
+    alphabetical slice is a trap: ``--limit 500`` screened A through ABX and
+    reported its rejection rates as though they described the market.  Nothing
+    about a company's ticker predicts its fundamentals, so a seeded sample is
+    a genuine cross-section, and the seed keeps two runs of the same size
+    comparable.  The sample is returned sorted so the run order is stable.
     """
     getter = getattr(adapter, "all_tickers", None)
     if getter is None:
@@ -354,7 +368,9 @@ def default_symbol_list(adapter: DataAdapter, limit: int | None = None) -> list[
             "symbol_list", f"{adapter.name} cannot enumerate tickers"
         )
     symbols = sorted(getter().keys())
-    return symbols[:limit] if limit else symbols
+    if limit is None or limit >= len(symbols):
+        return symbols
+    return sorted(random.Random(SAMPLE_SEED).sample(symbols, limit))
 
 
 __all__ = [
@@ -363,4 +379,5 @@ __all__ = [
     "build_universe",
     "find_peers",
     "default_symbol_list",
+    "SAMPLE_SEED",
 ]

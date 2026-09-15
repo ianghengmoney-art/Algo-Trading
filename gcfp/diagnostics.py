@@ -124,12 +124,24 @@ class RejectionLedger:
         (stage, cause), n = counts.most_common(1)[0]
         return stage, cause, n
 
+    #: How many filers the source indexes, when the screen ran on a sample of
+    #: them.  Rejection rates off a sample describe the sample; saying so is
+    #: the difference between a diagnostic and a claim about the market.
+    universe_total: int | None = None
+
     def as_report_lines(self) -> list[str]:
         lines = [
             "REJECTION TAXONOMY",
             f"  screened {self.total} · passed {len(self.passed)} · "
             f"rejected {len(self.rejections)}",
         ]
+        if self.universe_total and self.universe_total > self.total:
+            lines.append(
+                f"  SAMPLE — {self.total} of {self.universe_total} filers the "
+                f"source indexes ({self.total / self.universe_total:.1%}). "
+                "Every percentage below describes this sample. Run without "
+                "--limit to describe the market."
+            )
         if not self.rejections:
             lines.append("  nothing was rejected")
             return lines
