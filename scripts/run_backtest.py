@@ -45,6 +45,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--source", default="synthetic", choices=("synthetic", "edgar"))
     parser.add_argument("--user-agent", help="required for EDGAR; SEC policy")
     parser.add_argument("--symbols", nargs="*", help="tickers to include")
+    parser.add_argument(
+        "--symbols-from", type=Path, metavar="FILE",
+        help=(
+            "read tickers from a file, one per line; '#' comments and blank "
+            "lines ignored. run_screen.py --symbols-out writes one."
+        ),
+    )
     parser.add_argument("--start", type=_date, default=date(2012, 1, 1))
     parser.add_argument("--end", type=_date, default=date(2020, 12, 31))
     parser.add_argument("--capital", type=float, default=100_000.0)
@@ -55,6 +62,20 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--no-benchmarks", action="store_true")
     parser.add_argument("--progress", action="store_true")
     return parser.parse_args()
+
+
+def read_symbol_file(path: Path) -> list[str]:
+    """Tickers from a file, one per line, ignoring comments and blanks."""
+    if not path.exists():
+        raise SystemExit(f"no such symbol file: {path}")
+    out: list[str] = []
+    for line in path.read_text().splitlines():
+        line = line.split("#", 1)[0].strip()
+        if line:
+            out.append(line.upper())
+    if not out:
+        raise SystemExit(f"{path} contained no tickers")
+    return out
 
 
 def main() -> int:
@@ -75,14 +96,25 @@ def main() -> int:
     else:
         if not args.user_agent:
             raise SystemExit('EDGAR requires --user-agent "you you@example.com"')
-        if not args.symbols:
+        symbols = list(args.symbols or ())
+        if args.symbols_from:
+            symbols.extend(read_symbol_file(args.symbols_from))
+        symbols = list(dict.fromkeys(s.upper() for s in symbols))
+        if not symbols:
             raise SystemExit(
-                "--symbols is required for an EDGAR backtest: screening every "
-                "filer at every rebalance over 15 years is not tractable. Give "
-                "the candidate list you want tested."
+                "--symbols or --symbols-from is required for an EDGAR "
+                "backtest: screening every filer at every rebalance over 15 "
+                "years is not tractable.\n\n"
+                "  --symbols-from FILE   one ticker per line; '#' comments and "
+                "blank lines ignored.\n"
+                "                        run_screen.py --symbols-out FILE "
+                "writes one.\n\n"
+                "Whichever you use, read the survivorship warning the report "
+                "prints: a list chosen today contains only companies that\n"
+                "still exist, and backtesting it measures survival rather "
+                "than the strategy."
             )
         adapter = build_free_adapter(args.user_agent, cache_dir=args.cache_dir)
-        symbols = args.symbols
         config = free_stack_config(DEFAULT_CONFIG)
 
     settings = BacktestSettings(

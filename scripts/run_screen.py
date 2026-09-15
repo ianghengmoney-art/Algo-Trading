@@ -56,6 +56,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--portfolio-value", type=float, default=100_000.0)
     parser.add_argument("--usdsgd", type=float, default=None,
                         help="USD/SGD spot; omit to report in listing currency only")
+    parser.add_argument(
+        "--symbols-out", type=Path, metavar="FILE",
+        help=(
+            "write every screened ticker here, one per line, for "
+            "run_backtest.py --symbols-from. The file carries a survivorship "
+            "warning as a comment, because a list drawn today holds only "
+            "companies that still exist."
+        ),
+    )
     parser.add_argument("--progress", action="store_true")
     return parser.parse_args()
 
@@ -166,6 +175,24 @@ def main() -> int:
 
     path = write_report(text, args.reports, "new-passers")
     print(f"\nwritten to {path}", file=sys.stderr)
+
+    if args.symbols_out:
+        args.symbols_out.parent.mkdir(parents=True, exist_ok=True)
+        args.symbols_out.write_text(
+            "# Screened by GCFP v4 on "
+            f"{date.today().isoformat()} — {len(symbols)} names.\n"
+            "#\n"
+            "# SURVIVORSHIP WARNING. Every ticker here exists today. A\n"
+            "# backtest over this list cannot lose money in a company that\n"
+            "# went to zero, because no such company is in it, and it will\n"
+            "# therefore report the returns of survival rather than of the\n"
+            "# strategy. Add delisted names by CIK (EdgarAdapter accepts\n"
+            "# 'CIK0000719739' and a cik_overrides map) before believing any\n"
+            "# number a backtest over this file produces.\n"
+            + "\n".join(sorted(symbols))
+            + "\n"
+        )
+        print(f"symbol list written to {args.symbols_out}", file=sys.stderr)
 
     # F3: a thin sleeve holds the gap in ballast rather than concentrating.
     from gcfp.modules.f_sizing import below_minimum_handling

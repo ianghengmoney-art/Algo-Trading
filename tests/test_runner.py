@@ -201,3 +201,61 @@ class TestCommandLine:
         combined = (result.stdout + result.stderr).lower()
         assert "invalid choice" not in combined
         assert "traceback" not in combined
+
+
+class TestSymbolListHandoff:
+    """The screen produces the list the backtest consumes.
+
+    The old error said "--symbols is required" and stopped there, which left
+    the operator to invent a candidate list by hand — and a list invented
+    today is survivorship bias in its purest form.
+    """
+
+    @staticmethod
+    def backtest_module():
+        import importlib.util
+        from pathlib import Path
+
+        spec = importlib.util.spec_from_file_location(
+            "rb", Path(__file__).resolve().parent.parent / "scripts/run_backtest.py"
+        )
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_comments_and_blank_lines_are_ignored(self, tmp_path):
+        f = tmp_path / "syms.txt"
+        f.write_text("# a comment\n\nCAT\n  DE  # trailing\n\nnvda\n")
+        assert self.backtest_module().read_symbol_file(f) == ["CAT", "DE", "NVDA"]
+
+    def test_a_missing_file_fails_loudly(self, tmp_path):
+        with pytest.raises(SystemExit):
+            self.backtest_module().read_symbol_file(tmp_path / "nope.txt")
+
+    def test_a_file_of_only_comments_is_not_an_empty_backtest(self, tmp_path):
+        """Silently running zero symbols would produce an empty report that
+        looks like a result."""
+        f = tmp_path / "syms.txt"
+        f.write_text("# nothing but warnings\n#\n")
+        with pytest.raises(SystemExit):
+            self.backtest_module().read_symbol_file(f)
+
+    def test_the_written_list_carries_the_survivorship_warning(self, tmp_path):
+        """The warning has to travel with the file — whoever runs the backtest
+        may not be whoever ran the screen."""
+        import subprocess
+        import sys
+        from pathlib import Path
+
+        out = tmp_path / "syms.txt"
+        root = Path(__file__).resolve().parent.parent
+        subprocess.run(
+            [sys.executable, str(root / "scripts/run_screen.py"),
+             "--source", "fixture", "--symbols-out", str(out),
+             "--db", str(tmp_path / "t.sqlite"),
+             "--reports", str(tmp_path / "reports")],
+            cwd=root, capture_output=True, check=True,
+        )
+        body = out.read_text()
+        assert "SURVIVORSHIP WARNING" in body
+        assert "CAT" in body
