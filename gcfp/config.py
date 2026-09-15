@@ -72,6 +72,15 @@ class ValuationConfig:
     # B1
     b1_projection_years: int = 10
     b1_stage_one_years: int = 5
+    #: Absolute ceiling on B1's stage-one growth, whatever the trailing
+    #: average says.  A6 routes a company to CORE-STABLE only when its revenue
+    #: is growing under 20%, so projecting more than that contradicts the very
+    #: classification that chose this method.  Without the ceiling a company
+    #: whose revenue tripled over five years has the tripling projected
+    #: forward: Consolidated Water came out at a $422 fair value against a $27
+    #: share price, and conviction scored the resulting 93% "discount" a
+    #: perfect 30/30 — the model's error feeding straight into the buy signal.
+    b1_stage_one_growth_cap: float = 0.20
     terminal_value_share_flag: float = 0.75
     # B2
     b2_phase1_years: int = 3
@@ -138,6 +147,14 @@ class ConvictionConfig:
 
     # D2: full marks at gate + this many percentage points of extra discount.
     valuation_excess_denominator: float = 0.25
+    #: A discount this large on a company that cleared every health gate is
+    #: far more often a broken model than a mispriced market.  D2's score is
+    #: the spec's own table and is left alone; this only raises a flag, because
+    #: the scoring has a property worth seeing: excess is capped at gate + 25pp,
+    #: so a 90% discount and a 60% discount both score a perfect 30/30.  The
+    #: larger the valuation error, the more confident the system becomes, and
+    #: nothing else in the pipeline notices.
+    implausible_discount: float = 0.70
     # D3: full marks when the conservative anchor implies this discount.
     anchor_conservatism_denominator: float = 0.40
     # D4

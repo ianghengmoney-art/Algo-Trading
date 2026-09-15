@@ -173,16 +173,34 @@ def score_valuation_excess(
     excess = actual_discount - gate_threshold
     fraction = min(max(excess / cfg.valuation_excess_denominator, 0.0), 1.0)
     points = fraction * cfg.valuation_excess_max
+    reason = (
+        f"discount {actual_discount:.1%} vs gate {gate_threshold:.0%} "
+        f"= {excess*100:+.1f}pp excess"
+    )
+    # The score above is the spec's table and is left exactly as written.  But
+    # it saturates: excess is capped at gate + 25pp, so a 90% discount and a
+    # 60% discount both score a perfect 30.  That means a valuation error
+    # large enough to be obviously wrong produces maximum confidence, and
+    # nothing downstream notices.  Consolidated Water came through at a 93.4%
+    # discount — a $422 fair value against a $27 share price — and scored
+    # 30/30.  Say so on the name.
+    implausible = actual_discount >= cfg.implausible_discount
+    if implausible:
+        reason += (
+            f" · IMPLAUSIBLE — a {actual_discount:.0%} discount on a company "
+            "that cleared every health gate is more often a broken model than "
+            "a mispriced market. Check the valuation before the thesis"
+        )
     return ComponentScore(
         "valuation excess",
         points,
         cfg.valuation_excess_max,
-        f"discount {actual_discount:.1%} vs gate {gate_threshold:.0%} "
-        f"= {excess*100:+.1f}pp excess",
+        reason,
         detail={
             "actual_discount": actual_discount,
             "gate_threshold": gate_threshold,
             "excess_pp": excess * 100.0,
+            "implausible": implausible,
         },
     )
 

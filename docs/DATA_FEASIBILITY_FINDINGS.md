@@ -871,3 +871,102 @@ Still open, and honestly so:
 - **A1 and A2 for insurers.** Both return `NOT_APPLICABLE`, which is correct
   but means an insurer clears Module A on fewer gates. The ledger says so;
   position sizing does not yet account for it.
+
+---
+
+## Part 12 — the first real screens, and the valuation engine's first contact
+
+Three screens of 134 names each. The funnel, run by run:
+
+| | Screen 1 | Screen 2 | Screen 3 |
+|---|---|---|---|
+| A2 rejections | 81 (60%) | 47 (35%) | 50 (37%) |
+| — missing EBITDA | 34 | 9 | 10 |
+| — genuine leverage fail | 16 | 22 | **27** |
+| Reached triggers (E) | 8 | 16 | **24** |
+| Passed | 2 | 2 | 1 |
+
+### A2 was rejecting three names in five, and two causes were defects
+
+**EBITDA needs depreciation and amortisation, and many filers never tag a
+combined figure** — they report the two as separate lines. The tag chain is
+first-match-wins, so it found neither, and 34 names had "fewer than 4 quarters
+carry EBITDA". They are now separate fields, summed when the combined tag
+misses. That is not a substitution; it is the same quantity written down in
+two places.
+
+**Seventeen more were blocked for negative EBITDA, several sitting on net
+cash.** A company holding more cash than debt cannot be over-levered, and the
+ratio it would be judged on does not exist. Net cash now clears A2 on its own
+branch, checked before the ratio.
+
+Afterwards the dominant A2 cause is *genuine sector-relative leverage
+failure* — the gate doing its job rather than failing to run.
+
+### Every screen had only looked at the letter A
+
+The rejected names read `A AA AAAU AADX AAL AAMI AAOI AAON AAP AAPL AAT AB
+ABAT ABCB…`. `default_symbol_list` sorted the ticker index and took the first
+N, so `--limit 500` screened **A through ABX** and the report presented its
+rejection rates as though they described the market. The same bug class as the
+peer sampler: a slice that looks like a universe.
+
+`--limit` now takes a seeded random sample, and the taxonomy states what
+fraction of the market it covers:
+
+> SAMPLE — 134 of 10,412 filers the source indexes (1.3%). Every percentage
+> below describes this sample. Run without --limit to describe the market.
+
+### The DCF valued a $27 stock at $422
+
+Consolidated Water passed screen 3 with a B1 fair value of **$422.74** against
+a share price near $27 — a 93.4% "discount". Its own C1 anchor put the stock
+**8.8%** below its historical multiple. The two disagreed by a factor of
+fifteen, and the DCF was the one that was wrong.
+
+The cause: `start_growth = max(trailing, terminal)`. The docstring said
+"growth capped at the trailing 5-year average" and that is precisely what it
+did — it *used* the trailing average, with no upper bound. A company whose
+revenue tripled over five years had the tripling projected forward five more
+years, faded over five more, and capitalised into a perpetuity.
+
+| Trailing CAGR | Fair value, uncapped | Capped at 20% |
+|---|---|---|
+| 10% | $48 | $48 |
+| 20% | $82 | $82 |
+| 30% | $138 | $82 |
+| 45% | $296 | $82 |
+| 60% | $607 | $82 |
+
+The cap is the classification's own ceiling: **A6 routes a company to
+CORE-STABLE only when revenue is growing under 20%**, so projecting more than
+that contradicts the classification that selected the method. When the cap
+binds, the valuation says so — a past that fast is not a forecast.
+
+### The error fed straight into the buy signal
+
+D2 scores valuation excess as `min(excess / 25pp, 1.0) × 30`. It **saturates**:
+a 90% discount and a 60% discount both score a perfect 30/30. So a valuation
+error large enough to be obviously wrong produced *maximum confidence*, and
+nothing downstream noticed. Consolidated Water scored 30/30 on a number that
+was wrong by 15×.
+
+The score is the spec's own page-11 table and is left exactly as written. What
+is added is a flag: a discount above 70% on a company that cleared every
+health gate is named as implausible on the score line, because in practice it
+is far more often a broken model than a mispriced market.
+
+**This remains the most dangerous property in the system** and the flag only
+makes it visible. A conviction score that rises monotonically with model error
+is worth an operator's attention at the next annual review.
+
+### Still open
+
+- **`verdict does not survive perturbation: 15 of 27`** in screen 3. Over half
+  the valuations change their answer on a 1pp move in the discount rate. The
+  sensitivity module reports it; nothing gates on it.
+- **ADBE's C1 window came back at 4.2 years.** Adobe has been listed since
+  1986. Something truncates the series that is not the fundamentals.
+- **C2 formed a peer set 0 times out of 10** in screen 3, binding constraint
+  the growth band. At a 1.3% sample this is expected; it needs the deep-sample
+  treatment from Part 9 before it means anything.

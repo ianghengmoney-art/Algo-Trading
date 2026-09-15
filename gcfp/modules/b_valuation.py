@@ -213,11 +213,20 @@ def value_b1_core_stable(
         )
 
     terminal = cfg.terminal_growth_cap
-    # Growth is capped at the trailing 5-year average and never allowed below
-    # terminal in stage one — a company shrinking toward perpetuity is not a
-    # CORE-STABLE name and A6 should not have routed it here, but the floor
-    # keeps the path arithmetically sound either way.
-    start_growth = max(trailing, terminal)
+    # Growth is capped at the trailing 5-year average *and* at an absolute
+    # ceiling, and never allowed below terminal in stage one — a company
+    # shrinking toward perpetuity is not a CORE-STABLE name and A6 should not
+    # have routed it here, but the floor keeps the path arithmetically sound
+    # either way.
+    #
+    # The absolute ceiling is the point.  A6 routes to CORE-STABLE only when
+    # revenue is growing under 20%, so projecting more than that contradicts
+    # the classification that selected this method.  Capping at the trailing
+    # average alone is no cap at all for a company whose revenue tripled: five
+    # years of tripling get projected forward, compounded again through the
+    # fade, and capitalised into a perpetuity.
+    ceiling = cfg.b1_stage_one_growth_cap
+    start_growth = max(min(trailing, ceiling), terminal)
 
     discount = build_discount_rate(
         data, market, config, Classification.CORE_STABLE
@@ -232,6 +241,12 @@ def value_b1_core_stable(
     _, per_share = _equity_per_share(enterprise, data)
 
     flags: list[str] = list(discount.flags)
+    if trailing > ceiling:
+        flags.append(
+            f"GROWTH CAPPED — trailing {cfg.b1_stage_one_years}-year revenue "
+            f"CAGR is {trailing:.1%}, projected at the {ceiling:.0%} ceiling "
+            "this classification permits. A past that fast is not a forecast"
+        )
     if tv_share > cfg.terminal_value_share_flag:
         flags.append(
             f"TERMINAL VALUE {tv_share:.0%} OF EV — the model is valuing a "

@@ -944,3 +944,52 @@ class TestA2NetCashAndSplitDepreciation:
         }
         period = adapter._periods("X", annual=False, limit=4)[0]
         assert period.ebitda == 142, "100 operating income + 30 depreciation + 12 amortisation"
+
+
+class TestRunawayGrowthAndImplausibleDiscount:
+    """Consolidated Water passed the screen at a $422.74 fair value against a
+    $27 share price, and conviction scored the resulting 93.4% discount a
+    perfect 30/30. Two separate defects, and the second amplified the first.
+    """
+
+    def test_stage_one_growth_is_capped_at_the_classification_ceiling(self):
+        """A6 routes to CORE-STABLE only below 20% growth. Projecting more
+        than that contradicts the classification that chose the method."""
+        from gcfp.modules.b_valuation import _discounted_dcf, _linear_fade
+
+        cap = Config().valuation.b1_stage_one_growth_cap
+
+        def value(growth):
+            path = [growth] * 5 + _linear_fade(growth, 0.025, 5)
+            return _discounted_dcf(25e6, path, 0.025, 0.085)[0]
+
+        runaway = value(0.45)
+        capped = value(min(0.45, cap))
+        assert capped < runaway / 3, (
+            "a 45% trailing CAGR projected forward still dominates the value"
+        )
+
+    def test_a_fast_past_is_flagged_rather_than_silently_trimmed(self):
+        """The operator needs to know the cap bound — otherwise the fair value
+        looks like a measurement rather than a ceiling."""
+        data = build_company(
+            annual_kw={"revenue_growth": 0.45},
+            quarterly_kw={"revenue_growth": 0.45},
+        )
+        result = b_valuation.value_b1_core_stable(
+            data, MarketData(risk_free_rate=0.04), Config()
+        )
+        assert any("GROWTH CAPPED" in f for f in result.flags), result.flags
+
+    def test_an_implausible_discount_is_named_on_the_score(self):
+        """D2 saturates: 90% and 60% discounts both score 30/30, so the
+        larger the valuation error the more confident the system becomes."""
+        score = d_conviction.score_valuation_excess(0.934, 0.35, Config())
+        assert score.points == 30.0
+        assert "IMPLAUSIBLE" in score.basis
+        assert score.detail["implausible"] is True
+
+    def test_an_ordinary_discount_is_not_flagged(self):
+        score = d_conviction.score_valuation_excess(0.45, 0.35, Config())
+        assert "IMPLAUSIBLE" not in score.basis
+        assert score.detail["implausible"] is False
