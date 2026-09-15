@@ -28,12 +28,12 @@ NEW PASSERS: 2
 ------------------------------------------------------------------------------
 ACEL · CORE-STABLE
   tags considered: CORE-STABLE
-  conviction: 63.8 (standard)
+  conviction: 64.1 (standard)
     health margin: 19.8/25 — margin above each A-gate threshold, not the pass itself
     valuation excess: 30.0/30 — discount 74.8% vs gate 35% = +39.8pp excess
     anchor conservatism: 3.2/15 — conservative anchor implies 17.2% discount · halved for SINGLE-ANCHOR MODE (one anchor cannot corroborate itself)
     business quality: 5.4/20 — return spread + margin stability + share count trend
-    momentum tiebreaker: 5.5/10 — 12-1 return +11.6%, rank 18 of 32 passers
+    momentum tiebreaker: 5.8/10 — 12-1 return +11.6%, rank 24 of 41 passers
   fair value: 45.76 USD via B1 two-stage DCF
     terminal value 61% of EV
     at half year-1 growth: 16.39 USD
@@ -49,12 +49,12 @@ ACEL · CORE-STABLE
 ------------------------------------------------------------------------------
 ADBE · CORE-STABLE
   tags considered: CORE-STABLE
-  conviction: 70.0 (standard)
-    health margin: 25.0/25 — margin above each A-gate threshold, not the pass itself
+  conviction: 65.1 (standard)
+    health margin: 18.7/25 — margin above each A-gate threshold, not the pass itself
     valuation excess: 18.6/30 — discount 50.5% vs gate 35% = +15.5pp excess
     anchor conservatism: 7.5/15 — conservative anchor implies 59.7% discount · halved for SINGLE-ANCHOR MODE (one anchor cannot corroborate itself)
     business quality: 20.0/20 — return spread + margin stability + share count trend
-    momentum tiebreaker: 0.0/10 — 12-1 return -24.4%, rank 1 of 32 passers
+    momentum tiebreaker: 0.2/10 — 12-1 return -24.4%, rank 2 of 41 passers
   fair value: 537.01 USD via B1 two-stage DCF
     terminal value 52% of EV
     at half year-1 growth: 372.09 USD
@@ -66,9 +66,8 @@ ADBE · CORE-STABLE
   ADBE: 4.0% of CORE sleeve = 1.40% of portfolio = 1,400 base currency
   yield: n/a (not a dividend payer)
   FLAG: ANCHOR MODE: SINGLE (C1 only) — reason: only 1 genuine peers after exclusions (minimum 4) — routed to C5. Buy threshold +10%, conviction capped at 70, counts against the 20% portfolio cap.
-  FLAG: conviction 71.1 capped to 70 — a SINGLE-ANCHOR name can never be sized as high-conviction
 ------------------------------------------------------------------------------
-DID NOT REACH A VERDICT: 124
+DID NOT REACH A VERDICT: 116
   A: stopped at Module A
     A2: FAIL · value=0.6681 · threshold=0.6347 · branch=sector · group=Manufacturing · group_median=0.42314064862842093 · debt_basis=summed · debt_plausibility=not questioned · taxonomy=VENDOR-SUBSTITUTE; A4: NOT_COMPUTABLE · branch=share_count_growth · reason=share count history unavailable; dilution flag cannot be enforced · other_flags_hit=[] · checked=['restatement', 'auditor_change', 'going_concern', 'negative_equity_with_negative_ocf', 'delayed_filing', 'share_count_growth']
   AA: stopped at Module A
@@ -82,51 +81,49 @@ DID NOT REACH A VERDICT: 124
   AAMI: stopped at Module A
     A1: FAIL · value=-34,100,000 · threshold=1 · branch=operating_cash_flow · reason=neither branch satisfied · current_ratio=None · ttm_ocf=-34100000.0; A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA (fewer than 4 quarters carry it) · grouping=Finance, Insurance & Real Estate · level=sector · debt_basis=long_term_only; A3: FAIL · value=-0.3363 · threshold=0.8 · branch=profitable · reason=GAAP profit not backed by operating cash — the unrealised-gains pattern · ttm_ocf=-34100000.0 · ttm_net_income=101400000.0; A6: FAIL · value=0 · reason=could not be classified — these inputs were unavailable: 5yr positive-FCF count, Rule of 40. This is a data gap, not a judgement about the company · considered=[]
   AAOI: stopped at Module A
-    A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA is not positive (-32,106,000); the ratio has no meaning against a negative denominator · grouping=Manufacturing · level=sector · debt_basis=summed; A4: FAIL · value=1 · threshold=0 · reason=share count +20.8%/yr · share_count_cagr=0.2084404018302597 · checked=['restatement', 'auditor_change', 'going_concern', 'negative_equity_with_negative_ocf', 'delayed_filing', 'share_count_growth']
+    A4: FAIL · value=1 · threshold=0 · reason=share count +20.8%/yr · share_count_cagr=0.2084404018302597 · checked=['restatement', 'auditor_change', 'going_concern', 'negative_equity_with_negative_ocf', 'delayed_filing', 'share_count_growth']
   AAON: stopped at Module A
     A3: FAIL · value=0.5433 · threshold=0.8 · branch=profitable · reason=GAAP profit not backed by operating cash — the unrealised-gains pattern · ttm_ocf=86542000.0 · ttm_net_income=159288000.0; A6: FAIL · value=0 · reason=could not be classified — these inputs were unavailable: 5yr positive-FCF count, Rule of 40. This is a data gap, not a judgement about the company · considered=[]
   AAP: stopped at Module A
-    A2: NOT_COMPUTABLE · value=-2.705 · reason=no grouping reached 8 computable members; finest available was 'Retail-Auto & Home Supply Stores' at industry with 1 · group=Retail-Auto & Home Supply Stores · group_median=-2.7049573170731707; A6: FAIL · value=0 · reason=satisfied no classification's criteria · considered=[]
+    A6: FAIL · value=0 · reason=satisfied no classification's criteria · considered=[]
   AAPL: stopped at Module A
     A4: NOT_COMPUTABLE · branch=share_count_growth · reason=share count history unavailable; dilution flag cannot be enforced · other_flags_hit=[] · checked=['restatement', 'auditor_change', 'going_concern', 'negative_equity_with_negative_ocf', 'delayed_filing', 'share_count_growth']
   AAT: stopped at Module A
     A2: FAIL · value=6.858 · threshold=0.0787 · branch=sector · group=Finance, Insurance & Real Estate · group_median=0.05246993966228242 · debt_basis=by_security · debt_plausibility=not questioned · taxonomy=VENDOR-SUBSTITUTE
   AB: stopped at Module A
-    A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA (fewer than 4 quarters carry it) · grouping=Finance, Insurance & Real Estate · level=sector · debt_basis=inferred_zero; A4: NOT_COMPUTABLE · branch=share_count_growth · reason=share count history unavailable; dilution flag cannot be enforced · other_flags_hit=[] · checked=['restatement', 'auditor_change', 'going_concern', 'negative_equity_with_negative_ocf', 'delayed_filing', 'share_count_growth']; A6: FAIL · value=0 · reason=could not be classified — these inputs were unavailable: annual revenue, revenue growth, 2yr revenue CAGR, 5yr positive-FCF count, Rule of 40. This is a data gap, not a judgement about the company · considered=[]
+    A4: NOT_COMPUTABLE · branch=share_count_growth · reason=share count history unavailable; dilution flag cannot be enforced · other_flags_hit=[] · checked=['restatement', 'auditor_change', 'going_concern', 'negative_equity_with_negative_ocf', 'delayed_filing', 'share_count_growth']; A6: FAIL · value=0 · reason=could not be classified — these inputs were unavailable: annual revenue, revenue growth, 2yr revenue CAGR, 5yr positive-FCF count, Rule of 40. This is a data gap, not a judgement about the company · considered=[]
   ABAT: stopped at Module A
-    A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA is not positive (-56,687,846); the ratio has no meaning against a negative denominator · grouping=Mining & Quarrying of  Nonmetallic Minerals (No Fuels) · level=industry · debt_basis=summed; A3: FAIL · value=17.8 · threshold=24 · branch=pre_profit_runway · ttm_ocf=-25417553.0; A4: FAIL · value=1 · threshold=0 · reason=share count +19.9%/yr · share_count_cagr=0.19912409303657164 · checked=['restatement', 'auditor_change', 'going_concern', 'negative_equity_with_negative_ocf', 'delayed_filing', 'share_count_growth']; A6: FAIL · value=0 · reason=could not be classified — these inputs were unavailable: 2yr revenue CAGR, 5yr positive-FCF count, Rule of 40. This is a data gap, not a judgement about the company · considered=[]
-  ABBV: stopped at Module A
-    A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA (fewer than 4 quarters carry it) · grouping=Manufacturing · level=sector · debt_basis=summed
+    A3: FAIL · value=17.8 · threshold=24 · branch=pre_profit_runway · ttm_ocf=-25417553.0; A4: FAIL · value=1 · threshold=0 · reason=share count +19.9%/yr · share_count_cagr=0.19912409303657164 · checked=['restatement', 'auditor_change', 'going_concern', 'negative_equity_with_negative_ocf', 'delayed_filing', 'share_count_growth']; A6: FAIL · value=0 · reason=could not be classified — these inputs were unavailable: 2yr revenue CAGR, 5yr positive-FCF count, Rule of 40. This is a data gap, not a judgement about the company · considered=[]
   ABCB: stopped at Module B
     DataUnavailable: sector_price_to_book: B3 values against the sector multiple
   ABCL: stopped at Module A
-    A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA (fewer than 4 quarters carry it) · grouping=Manufacturing · level=sector · debt_basis=summed; A3: FAIL · value=15.18 · threshold=24 · branch=pre_profit_runway · ttm_ocf=-94937000.0
+    A3: FAIL · value=15.18 · threshold=24 · branch=pre_profit_runway · ttm_ocf=-94937000.0
   ABEO: stopped at Module A
-    A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA is not positive (-80,789,000); the ratio has no meaning against a negative denominator · grouping=Manufacturing · level=sector · debt_basis=summed; A3: FAIL · value=8.827 · threshold=24 · branch=pre_profit_runway · ttm_ocf=-76440000.0; A6: FAIL · value=0 · reason=could not be classified — these inputs were unavailable: revenue growth, Rule of 40. This is a data gap, not a judgement about the company · considered=[]
+    A3: FAIL · value=8.827 · threshold=24 · branch=pre_profit_runway · ttm_ocf=-76440000.0; A6: FAIL · value=0 · reason=could not be classified — these inputs were unavailable: revenue growth, Rule of 40. This is a data gap, not a judgement about the company · considered=[]
   ABG: stopped at Module A
     A2: NOT_COMPUTABLE · value=0.9737 · reason=no grouping reached 8 computable members; finest available was 'Retail-Auto Dealers & Gasoline Stations' at industry with 1 · group=Retail-Auto Dealers & Gasoline Stations · group_median=0.9737415434009862; A6: FAIL · value=0 · reason=could not be classified — these inputs were unavailable: 5yr positive-FCF count, Rule of 40. This is a data gap, not a judgement about the company · considered=[]
   ABM: stopped at Module A
     A2: FAIL · value=4.508 · threshold=2.506 · branch=sector · group=Services · group_median=1.67099195391245 · debt_basis=summed · debt_plausibility=not questioned · taxonomy=VENDOR-SUBSTITUTE
   ABNB: stopped at Module A
-    A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA (fewer than 4 quarters carry it) · grouping=Services · level=sector · debt_basis=summed; A6: FAIL · value=0 · reason=could not be classified — these inputs were unavailable: 5yr positive-FCF count, Rule of 40. This is a data gap, not a judgement about the company · considered=[]
+    A6: FAIL · value=0 · reason=could not be classified — these inputs were unavailable: 5yr positive-FCF count, Rule of 40. This is a data gap, not a judgement about the company · considered=[]
   ABR: stopped at Module A
     A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA (fewer than 4 quarters carry it) · grouping=Finance, Insurance & Real Estate · level=sector · debt_basis=by_security
   ABSI: stopped at Module A
-    A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA is not positive (-115,105,000); the ratio has no meaning against a negative denominator · grouping=Services · level=sector · debt_basis=summed; A3: FAIL · value=11.98 · threshold=24 · branch=pre_profit_runway · ttm_ocf=-108084000.0; A6: FAIL · value=0 · reason=satisfied no classification's criteria · considered=[]
+    A3: FAIL · value=11.98 · threshold=24 · branch=pre_profit_runway · ttm_ocf=-108084000.0; A6: FAIL · value=0 · reason=satisfied no classification's criteria · considered=[]
   ABT: stopped at Module A
-    A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA (fewer than 4 quarters carry it) · grouping=Manufacturing · level=sector · debt_basis=summed
+    A2: FAIL · value=1.76 · threshold=0.6347 · branch=sector · group=Manufacturing · group_median=0.42314064862842093 · debt_basis=summed · debt_plausibility=not questioned · taxonomy=VENDOR-SUBSTITUTE
   ABTC: stopped at Module A
     A1: FAIL · value=0.1883 · threshold=1 · branch=current_ratio · reason=neither branch satisfied · current_ratio=0.18833135782957988 · ttm_ocf=-99400000.0; A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA is not positive (-192,983,000); the ratio has no meaning against a negative denominator · grouping=Finance, Insurance & Real Estate · level=sector · debt_basis=summed; A3: FAIL · value=2.216 · threshold=24 · branch=pre_profit_runway · ttm_ocf=-99400000.0
   ABUS: stopped at Module A
-    A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA (fewer than 4 quarters carry it) · grouping=Manufacturing · level=sector · debt_basis=long_term_only; A3: FAIL · value=-0.1609 · threshold=0.8 · branch=profitable · reason=GAAP profit not backed by operating cash — the unrealised-gains pattern · ttm_ocf=-24625000.0 · ttm_net_income=153054000.0; A6: FAIL · value=0 · reason=satisfied no classification's criteria · considered=[]
+    A3: FAIL · value=-0.1609 · threshold=0.8 · branch=profitable · reason=GAAP profit not backed by operating cash — the unrealised-gains pattern · ttm_ocf=-24625000.0 · ttm_net_income=153054000.0; A6: FAIL · value=0 · reason=satisfied no classification's criteria · considered=[]
   ABX: stopped at Module A
     A2: FAIL · value=3.025 · threshold=0.0787 · branch=sector · group=Finance, Insurance & Real Estate · group_median=0.05246993966228242 · debt_basis=summed · debt_plausibility=not questioned · taxonomy=VENDOR-SUBSTITUTE
   ACA: stopped at Module A
     A3: FAIL · value=0.6945 · threshold=0.8 · branch=profitable · reason=GAAP profit not backed by operating cash — the unrealised-gains pattern · ttm_ocf=341300000.0 · ttm_net_income=491400000.0
   ACAD: stopped at Module A
-    A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA (fewer than 4 quarters carry it) · grouping=Manufacturing · level=sector · debt_basis=summed; A3: FAIL · value=0.4214 · threshold=0.8 · branch=profitable · reason=GAAP profit not backed by operating cash — the unrealised-gains pattern · ttm_ocf=160319000.0 · ttm_net_income=380484000.0; A6: FAIL · value=0 · reason=satisfied no classification's criteria · considered=[]
+    A3: FAIL · value=0.4214 · threshold=0.8 · branch=profitable · reason=GAAP profit not backed by operating cash — the unrealised-gains pattern · ttm_ocf=160319000.0 · ttm_net_income=380484000.0; A6: FAIL · value=0 · reason=satisfied no classification's criteria · considered=[]
   ACCO: stopped at Module A
-    A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA (fewer than 4 quarters carry it) · grouping=Manufacturing · level=sector · debt_basis=tagged; A6: FAIL · value=0 · reason=could not be classified — these inputs were unavailable: 5yr positive-FCF count, Rule of 40. This is a data gap, not a judgement about the company · considered=[]
+    A2: FAIL · value=3.154 · threshold=0.6347 · branch=sector · group=Manufacturing · group_median=0.42314064862842093 · debt_basis=tagged · debt_plausibility=not questioned · taxonomy=VENDOR-SUBSTITUTE; A6: FAIL · value=0 · reason=could not be classified — these inputs were unavailable: 5yr positive-FCF count, Rule of 40. This is a data gap, not a judgement about the company · considered=[]
   ACDC: stopped at Module A
     A2: NOT_COMPUTABLE · value=8.049 · reason=no grouping reached 8 computable members; finest available was 'Oil & Gas Field Services, NEC' at industry with 1 · group=Oil & Gas Field Services, NEC · group_median=8.049392097264437; A6: FAIL · value=0 · reason=satisfied no classification's criteria · considered=[]
   ACGL: stopped at Module B
@@ -134,9 +131,9 @@ DID NOT REACH A VERDICT: 124
   ACHC: stopped at Module A
     A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA (fewer than 4 quarters carry it) · grouping=Services · level=sector · debt_basis=summed
   ACHR: stopped at Module A
-    A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA is not positive (-914,000,000); the ratio has no meaning against a negative denominator · grouping=Manufacturing · level=sector · debt_basis=summed; A3: FAIL · value=18.93 · threshold=24 · branch=pre_profit_runway · ttm_ocf=-540400000.0; A4: FAIL · value=1 · threshold=0 · reason=share count +21.8%/yr · share_count_cagr=0.21792301381121026 · checked=['restatement', 'auditor_change', 'going_concern', 'negative_equity_with_negative_ocf', 'delayed_filing', 'share_count_growth']; A6: FAIL · value=0 · reason=could not be classified — these inputs were unavailable: revenue growth, 2yr revenue CAGR, Rule of 40. This is a data gap, not a judgement about the company · considered=[]
+    A3: FAIL · value=18.93 · threshold=24 · branch=pre_profit_runway · ttm_ocf=-540400000.0; A4: FAIL · value=1 · threshold=0 · reason=share count +21.8%/yr · share_count_cagr=0.21792301381121026 · checked=['restatement', 'auditor_change', 'going_concern', 'negative_equity_with_negative_ocf', 'delayed_filing', 'share_count_growth']; A6: FAIL · value=0 · reason=could not be classified — these inputs were unavailable: revenue growth, 2yr revenue CAGR, Rule of 40. This is a data gap, not a judgement about the company · considered=[]
   ACHV: stopped at Module A
-    A1: FAIL · value=0.9526 · threshold=1 · branch=current_ratio · reason=neither branch satisfied · current_ratio=0.9526300611665663 · ttm_ocf=-47017000.0; A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA (fewer than 4 quarters carry it) · grouping=Manufacturing · level=sector · debt_basis=summed; A3: FAIL · value=12.24 · threshold=24 · branch=pre_profit_runway · ttm_ocf=-47017000.0; A4: FAIL · value=1 · threshold=0 · reason=negative shareholder equity with negative operating cash flow · share_count_cagr=0.0005293232982024332 · checked=['restatement', 'auditor_change', 'going_concern', 'negative_equity_with_negative_ocf', 'delayed_filing', 'share_count_growth']; A6: FAIL · value=0 · reason=could not be classified — these inputs were unavailable: annual revenue, revenue growth, 2yr revenue CAGR, 5yr positive-FCF count, Rule of 40. This is a data gap, not a judgement about the company · considered=[]
+    A1: FAIL · value=0.9526 · threshold=1 · branch=current_ratio · reason=neither branch satisfied · current_ratio=0.9526300611665663 · ttm_ocf=-47017000.0; A3: FAIL · value=12.24 · threshold=24 · branch=pre_profit_runway · ttm_ocf=-47017000.0; A4: FAIL · value=1 · threshold=0 · reason=negative shareholder equity with negative operating cash flow · share_count_cagr=0.0005293232982024332 · checked=['restatement', 'auditor_change', 'going_concern', 'negative_equity_with_negative_ocf', 'delayed_filing', 'share_count_growth']; A6: FAIL · value=0 · reason=could not be classified — these inputs were unavailable: annual revenue, revenue growth, 2yr revenue CAGR, 5yr positive-FCF count, Rule of 40. This is a data gap, not a judgement about the company · considered=[]
   ACI: stopped at Module A
     A2: NOT_COMPUTABLE · value=4.133 · reason=no grouping reached 8 computable members; finest available was 'Retail-Grocery Stores' at industry with 1 · group=Retail-Grocery Stores · group_median=4.133271352924532
   ACIC: stopped at Module B
@@ -145,34 +142,30 @@ DID NOT REACH A VERDICT: 124
     A4: NOT_COMPUTABLE · branch=share_count_growth · reason=share count history unavailable; dilution flag cannot be enforced · other_flags_hit=[] · checked=['restatement', 'auditor_change', 'going_concern', 'negative_equity_with_negative_ocf', 'delayed_filing', 'share_count_growth']
   ACMR: stopped at Module A
     A3: FAIL · value=-0.04395 · threshold=0.8 · branch=profitable · reason=GAAP profit not backed by operating cash — the unrealised-gains pattern · ttm_ocf=-6602000.0 · ttm_net_income=150229000.0
-  ACN: stopped at Module A
-    A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA (fewer than 4 quarters carry it) · grouping=Services · level=sector · debt_basis=tagged
   ACNB: stopped at Module B
     DataUnavailable: sector_price_to_book: B3 values against the sector multiple
   ACRS: stopped at Module A
-    A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA is not positive (-85,892,000); the ratio has no meaning against a negative denominator · grouping=Manufacturing · level=sector · debt_basis=long_term_only; A3: FAIL · value=3.706 · threshold=24 · branch=pre_profit_runway · ttm_ocf=-62059000.0; A6: FAIL · value=0 · reason=satisfied no classification's criteria · considered=[]
+    A3: FAIL · value=3.706 · threshold=24 · branch=pre_profit_runway · ttm_ocf=-62059000.0; A6: FAIL · value=0 · reason=satisfied no classification's criteria · considered=[]
   ACT: stopped at Module B
     DataUnavailable: sector_price_to_book: B5 values against the sector multiple
-  ACVA: stopped at Module A
-    A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA is not positive (-10,597,000); the ratio has no meaning against a negative denominator · grouping=Services · level=sector · debt_basis=long_term_only
   AD: stopped at Module A
-    A1: FAIL · value=0.9504 · threshold=1 · branch=current_ratio · reason=neither branch satisfied · current_ratio=0.9503743046770756 · ttm_ocf=-302741000.0; A2: NOT_COMPUTABLE · value=-0.7324 · reason=no grouping reached 8 computable members; finest available was 'Radiotelephone Communications' at industry with 1 · group=Radiotelephone Communications · group_median=-0.7324331984386659; A3: FAIL · value=-0.5446 · threshold=0.8 · branch=profitable · reason=GAAP profit not backed by operating cash — the unrealised-gains pattern · ttm_ocf=-302741000.0 · ttm_net_income=555940901.0; A6: FAIL · value=0 · reason=satisfied no classification's criteria · considered=[]
+    A1: FAIL · value=0.9504 · threshold=1 · branch=current_ratio · reason=neither branch satisfied · current_ratio=0.9503743046770756 · ttm_ocf=-302741000.0; A3: FAIL · value=-0.5446 · threshold=0.8 · branch=profitable · reason=GAAP profit not backed by operating cash — the unrealised-gains pattern · ttm_ocf=-302741000.0 · ttm_net_income=555940901.0; A6: FAIL · value=0 · reason=satisfied no classification's criteria · considered=[]
   ADAM: stopped at Module A
     A2: FAIL · value=0.2446 · threshold=0.0787 · branch=sector · group=Finance, Insurance & Real Estate · group_median=0.05246993966228242 · debt_basis=summed · debt_plausibility=total debt 0.27bn is only 2.4% of 11.5bn in liabilities; the debt tag chain has probably read part of the balance sheet, not all of it · taxonomy=VENDOR-SUBSTITUTE; A3: FAIL · value=0.7826 · threshold=0.8 · branch=profitable · reason=GAAP profit not backed by operating cash — the unrealised-gains pattern · ttm_ocf=158187000.0 · ttm_net_income=202129000.0
   ADC: stopped at Module B
     DataUnavailable: adjusted_funds_from_operations: B4 needs AFFO or FFO; a REIT cannot be valued on earnings and P/E is banned on this path
   ADEA: stopped at Module A
-    A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA (fewer than 4 quarters carry it) · grouping=Cable & Other Pay Television Services · level=industry · debt_basis=summed
+    A2: NOT_COMPUTABLE · value=0.9004 · reason=no leverage median for grouping 'Cable & Other Pay Television Services' at industry level
   ADI: stopped at Module A
-    A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA (fewer than 4 quarters carry it) · grouping=Manufacturing · level=sector · debt_basis=summed; A4: NOT_COMPUTABLE · branch=share_count_growth · reason=share count history unavailable; dilution flag cannot be enforced · other_flags_hit=[] · checked=['restatement', 'auditor_change', 'going_concern', 'negative_equity_with_negative_ocf', 'delayed_filing', 'share_count_growth']
+    A2: FAIL · value=0.7039 · threshold=0.6347 · branch=sector · group=Manufacturing · group_median=0.42314064862842093 · debt_basis=summed · debt_plausibility=not questioned · taxonomy=VENDOR-SUBSTITUTE; A4: NOT_COMPUTABLE · branch=share_count_growth · reason=share count history unavailable; dilution flag cannot be enforced · other_flags_hit=[] · checked=['restatement', 'auditor_change', 'going_concern', 'negative_equity_with_negative_ocf', 'delayed_filing', 'share_count_growth']
   ADM: stopped at Module A
     A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA (fewer than 4 quarters carry it) · grouping=Manufacturing · level=sector · debt_basis=summed
   ADMA: stopped at Module A
     A6: FAIL · value=0 · reason=satisfied no classification's criteria · considered=[]
   ADNT: stopped at Module A
-    A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA (fewer than 4 quarters carry it) · grouping=Manufacturing · level=sector · debt_basis=summed; A4: NOT_COMPUTABLE · branch=share_count_growth · reason=share count history unavailable; dilution flag cannot be enforced · other_flags_hit=[] · checked=['restatement', 'auditor_change', 'going_concern', 'negative_equity_with_negative_ocf', 'delayed_filing', 'share_count_growth']; A6: FAIL · value=0 · reason=satisfied no classification's criteria · considered=[]
-  ADPT: stopped at Module A
-    A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA (fewer than 4 quarters carry it) · grouping=Manufacturing · level=sector · debt_basis=summed
+    A4: NOT_COMPUTABLE · branch=share_count_growth · reason=share count history unavailable; dilution flag cannot be enforced · other_flags_hit=[] · checked=['restatement', 'auditor_change', 'going_concern', 'negative_equity_with_negative_ocf', 'delayed_filing', 'share_count_growth']; A6: FAIL · value=0 · reason=satisfied no classification's criteria · considered=[]
+  ADPT: stopped at Module B
+    MethodRefused: ADPT: no positive base cash flow and no terminal margin; B2 refuses rather than approximating
   ADT: stopped at Module A
     A2: FAIL · value=2.877 · threshold=2.506 · branch=sector · group=Services · group_median=1.67099195391245 · debt_basis=summed · debt_plausibility=not questioned · taxonomy=VENDOR-SUBSTITUTE; A4: NOT_COMPUTABLE · branch=share_count_growth · reason=share count history unavailable; dilution flag cannot be enforced · other_flags_hit=[] · checked=['restatement', 'auditor_change', 'going_concern', 'negative_equity_with_negative_ocf', 'delayed_filing', 'share_count_growth']
   ADUS: stopped at Module A
@@ -187,52 +180,44 @@ DID NOT REACH A VERDICT: 124
     A6: FAIL · value=0 · reason=satisfied no classification's criteria · considered=[]
   AEM: stopped at Module A
     A2: NOT_COMPUTABLE · value=0.7595 · reason=no grouping reached 8 computable members; finest available was 'Gold and Silver Ores' at industry with 1 · group=Gold and Silver Ores · group_median=0.7595220891824938; A5: FAIL · value=145.1 · threshold=6 · reason=latest financials 145.1 months old (limit 6) · gap_count=1 · missing_fields=['stale_financials'] · growth_routed=True · source_capability_gaps=["corporate_actions unavailable: corporate_actions: neither the price feed nor the filings reported any action; an empty list must not be read as 'none occurred'"]
-  AEO: stopped at Module A
-    A2: NOT_COMPUTABLE · value=-0.139 · reason=no grouping reached 8 computable members; finest available was 'Retail-Family Clothing Stores' at industry with 1 · group=Retail-Family Clothing Stores · group_median=-0.13899684335976578
   AEP: stopped at Module A
     A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA (fewer than 4 quarters carry it) · grouping=Electric Services · level=industry · debt_basis=summed; A6: FAIL · value=0 · reason=could not be classified — these inputs were unavailable: 5yr positive-FCF count. This is a data gap, not a judgement about the company · considered=[]
   AER: stopped at Module A
     A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA (fewer than 4 quarters carry it) · grouping=Services · level=sector · debt_basis=long_term_only; A4: NOT_COMPUTABLE · branch=share_count_growth · reason=share count history unavailable; dilution flag cannot be enforced · other_flags_hit=[] · checked=['restatement', 'auditor_change', 'going_concern', 'negative_equity_with_negative_ocf', 'delayed_filing', 'share_count_growth']; A5: FAIL · value=13.53 · threshold=12 · reason=latest financials 13.5 months old (limit 12) · gap_count=1 · missing_fields=['stale_financials'] · growth_routed=False · source_capability_gaps=["corporate_actions unavailable: corporate_actions: neither the price feed nor the filings reported any action; an empty list must not be read as 'none occurred'"]; A6: FAIL · value=0 · reason=could not be classified — these inputs were unavailable: 5yr positive-FCF count, Rule of 40. This is a data gap, not a judgement about the company · considered=[]
   AES: stopped at Module A
-    A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA (fewer than 4 quarters carry it) · grouping=Cogeneration Services & Small Power Producers · level=industry · debt_basis=long_term_only; A6: FAIL · value=0 · reason=satisfied no classification's criteria · considered=[]
+    A6: FAIL · value=0 · reason=satisfied no classification's criteria · considered=[]
   AESI: stopped at Module A
     A2: NOT_COMPUTABLE · reason=leverage not computable — missing cash and equivalents · grouping=Crude Petroleum & Natural Gas · level=industry · debt_basis=summed
   AEVA: stopped at Module A
-    A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA is not positive (-126,708,000); the ratio has no meaning against a negative denominator · grouping=Manufacturing · level=sector · debt_basis=inferred_zero; A3: FAIL · value=4.654 · threshold=24 · branch=pre_profit_runway · ttm_ocf=-111476000.0; A6: FAIL · value=0 · reason=satisfied no classification's criteria · considered=[]
+    A3: FAIL · value=4.654 · threshold=24 · branch=pre_profit_runway · ttm_ocf=-111476000.0; A6: FAIL · value=0 · reason=satisfied no classification's criteria · considered=[]
   AFG: stopped at Module B
     DataUnavailable: sector_price_to_book: B5 values against the sector multiple
   AFL: stopped at Module B
     DataUnavailable: sector_price_to_book: B5 values against the sector multiple
   AGCO: stopped at Module A
-    A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA (fewer than 4 quarters carry it) · grouping=Manufacturing · level=sector · debt_basis=tagged; A6: FAIL · value=0 · reason=satisfied no classification's criteria · considered=[]
+    A2: FAIL · value=0.6616 · threshold=0.6347 · branch=sector · group=Manufacturing · group_median=0.42314064862842093 · debt_basis=tagged · debt_plausibility=not questioned · taxonomy=VENDOR-SUBSTITUTE; A6: FAIL · value=0 · reason=satisfied no classification's criteria · considered=[]
   AGIO: stopped at Module A
     A2: NOT_COMPUTABLE · reason=leverage not computable — missing total debt (no debt tag resolved, and a zero could not be safely inferred); TTM EBITDA (fewer than 4 quarters carry it) · grouping=Manufacturing · level=sector · debt_basis=None; A3: FAIL · value=3.316 · threshold=24 · branch=pre_profit_runway · ttm_ocf=-360596000.0
   AGL: stopped at Module A
-    A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA is not positive (-281,282,000); the ratio has no meaning against a negative denominator · grouping=Services · level=sector · debt_basis=summed; A3: FAIL · value=17.8 · threshold=24 · branch=pre_profit_runway · ttm_ocf=-72260000.0; A6: FAIL · value=0 · reason=satisfied no classification's criteria · considered=[]
+    A3: FAIL · value=17.8 · threshold=24 · branch=pre_profit_runway · ttm_ocf=-72260000.0; A6: FAIL · value=0 · reason=satisfied no classification's criteria · considered=[]
   AGM: stopped at Module B
     DataUnavailable: sector_price_to_book: B3 values against the sector multiple
   AGNC: stopped at Module A
-    A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA (fewer than 4 quarters carry it) · grouping=Finance, Insurance & Real Estate · level=sector · debt_basis=by_security; A3: FAIL · value=0.391 · threshold=0.8 · branch=profitable · reason=GAAP profit not backed by operating cash — the unrealised-gains pattern · ttm_ocf=886000000.0 · ttm_net_income=2266000000.0
-  AGNT: stopped at Module A
-    A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA is not positive (-9,201,000); the ratio has no meaning against a negative denominator · grouping=Finance, Insurance & Real Estate · level=sector · debt_basis=summed
+    A3: FAIL · value=0.391 · threshold=0.8 · branch=profitable · reason=GAAP profit not backed by operating cash — the unrealised-gains pattern · ttm_ocf=886000000.0 · ttm_net_income=2266000000.0
   AGO: stopped at Module B
     DataUnavailable: sector_price_to_book: B5 values against the sector multiple
   AGQ: stopped at Module A
-    A1: FAIL · value=-2,526,758,450 · threshold=1 · branch=operating_cash_flow · reason=neither branch satisfied · current_ratio=None · ttm_ocf=-2526758450.0; A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA (fewer than 4 quarters carry it) · grouping=Finance, Insurance & Real Estate · level=sector · debt_basis=inferred_zero; A3: FAIL · value=-6.491 · threshold=0.8 · branch=profitable · reason=GAAP profit not backed by operating cash — the unrealised-gains pattern · ttm_ocf=-2526758450.0 · ttm_net_income=389267153.0; A4: NOT_COMPUTABLE · branch=share_count_growth · reason=share count history unavailable; dilution flag cannot be enforced · other_flags_hit=[] · checked=['restatement', 'auditor_change', 'going_concern', 'negative_equity_with_negative_ocf', 'delayed_filing', 'share_count_growth']; A6: FAIL · value=0 · reason=could not be classified — these inputs were unavailable: annual revenue, revenue growth, 2yr revenue CAGR, 5yr positive-FCF count, Rule of 40. This is a data gap, not a judgement about the company · considered=[]
+    A1: FAIL · value=-2,526,758,450 · threshold=1 · branch=operating_cash_flow · reason=neither branch satisfied · current_ratio=None · ttm_ocf=-2526758450.0; A3: FAIL · value=-6.491 · threshold=0.8 · branch=profitable · reason=GAAP profit not backed by operating cash — the unrealised-gains pattern · ttm_ocf=-2526758450.0 · ttm_net_income=389267153.0; A4: NOT_COMPUTABLE · branch=share_count_growth · reason=share count history unavailable; dilution flag cannot be enforced · other_flags_hit=[] · checked=['restatement', 'auditor_change', 'going_concern', 'negative_equity_with_negative_ocf', 'delayed_filing', 'share_count_growth']; A6: FAIL · value=0 · reason=could not be classified — these inputs were unavailable: annual revenue, revenue growth, 2yr revenue CAGR, 5yr positive-FCF count, Rule of 40. This is a data gap, not a judgement about the company · considered=[]
   AGRO: stopped at Module A
     A1: NOT_COMPUTABLE · reason=neither current ratio nor four quarters of operating cash flow available; A2: NOT_COMPUTABLE · reason=leverage not computable — missing cash and equivalents; TTM EBITDA (fewer than 4 quarters carry it) · grouping=Agricultural Production-Crops · level=industry · debt_basis=tagged; A3: NOT_COMPUTABLE · reason=only 3 trailing quarters available, need 4; A4: NOT_COMPUTABLE · branch=share_count_growth · reason=share count history unavailable; dilution flag cannot be enforced · other_flags_hit=[] · checked=['restatement', 'auditor_change', 'going_concern', 'negative_equity_with_negative_ocf', 'delayed_filing', 'share_count_growth']; A6: FAIL · value=0 · reason=could not be classified — these inputs were unavailable: TTM profitability, 5yr positive-FCF count, Rule of 40. This is a data gap, not a judgement about the company · considered=[]
-  AGX: stopped at Module A
-    A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA (fewer than 4 quarters carry it) · grouping=Construction - Special Trade Contractors · level=industry · debt_basis=by_security
-  AGYS: stopped at Module A
-    A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA (fewer than 4 quarters carry it) · grouping=Services · level=sector · debt_basis=summed
   AHCO: stopped at Module A
     A2: FAIL · value=6.616 · threshold=2.506 · branch=sector · group=Services · group_median=1.67099195391245 · debt_basis=summed · debt_plausibility=not questioned · taxonomy=VENDOR-SUBSTITUTE; A6: FAIL · value=0 · reason=satisfied no classification's criteria · considered=[]
   AHR: stopped at Module A
     A2: FAIL · value=0.9898 · threshold=0.0787 · branch=sector · group=Finance, Insurance & Real Estate · group_median=0.05246993966228242 · debt_basis=by_security · debt_plausibility=not questioned · taxonomy=VENDOR-SUBSTITUTE
   AHRT: stopped at Module A
-    A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA (fewer than 4 quarters carry it) · grouping=Finance, Insurance & Real Estate · level=sector · debt_basis=by_security; A6: FAIL · value=0 · reason=could not be classified — these inputs were unavailable: 5yr positive-FCF count, Rule of 40. This is a data gap, not a judgement about the company · considered=[]
+    A2: FAIL · value=1.81 · threshold=0.0787 · branch=sector · group=Finance, Insurance & Real Estate · group_median=0.05246993966228242 · debt_basis=by_security · debt_plausibility=not questioned · taxonomy=VENDOR-SUBSTITUTE; A6: FAIL · value=0 · reason=could not be classified — these inputs were unavailable: 5yr positive-FCF count, Rule of 40. This is a data gap, not a judgement about the company · considered=[]
   AI: stopped at Module A
-    A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA is not positive (-458,405,000); the ratio has no meaning against a negative denominator · grouping=Services · level=sector · debt_basis=inferred_zero; A3: FAIL · value=10.59 · threshold=24 · branch=pre_profit_runway · ttm_ocf=-154621000.0; A6: FAIL · value=0 · reason=satisfied no classification's criteria · considered=[]
+    A3: FAIL · value=10.59 · threshold=24 · branch=pre_profit_runway · ttm_ocf=-154621000.0; A6: FAIL · value=0 · reason=satisfied no classification's criteria · considered=[]
   AIG: stopped at Module B
     DataUnavailable: sector_price_to_book: B5 values against the sector multiple
   AII: stopped at Module B
@@ -252,7 +237,7 @@ DID NOT REACH A VERDICT: 124
   AKR: stopped at Module B
     DataUnavailable: adjusted_funds_from_operations: B4 needs AFFO or FFO; a REIT cannot be valued on earnings and P/E is banned on this path
   AKTS: stopped at Module A
-    A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA is not positive (-88,144,000); the ratio has no meaning against a negative denominator · grouping=Manufacturing · level=sector · debt_basis=inferred_zero; A3: FAIL · value=12.61 · threshold=24 · branch=pre_profit_runway · ttm_ocf=-78491000.0; A4: NOT_COMPUTABLE · branch=share_count_growth · reason=share count history unavailable; dilution flag cannot be enforced · other_flags_hit=[] · checked=['restatement', 'auditor_change', 'going_concern', 'negative_equity_with_negative_ocf', 'delayed_filing', 'share_count_growth']; A5: FAIL · value=1.084 · threshold=12 · reason=no annual financials; annual unavailable: financials: no revenue or net-income facts for AKTS (annual) · gap_count=2 · missing_fields=['annual_financials', 'annual'] · growth_routed=False · source_capability_gaps=["corporate_actions unavailable: corporate_actions: neither the price feed nor the filings reported any action; an empty list must not be read as 'none occurred'"]; A6: FAIL · value=0 · reason=could not be classified — these inputs were unavailable: annual revenue, revenue growth, 2yr revenue CAGR, 3yr profitability, 5yr positive-FCF count, Rule of 40. This is a data gap, not a judgement about the company · considered=[]
+    A3: FAIL · value=12.61 · threshold=24 · branch=pre_profit_runway · ttm_ocf=-78491000.0; A4: NOT_COMPUTABLE · branch=share_count_growth · reason=share count history unavailable; dilution flag cannot be enforced · other_flags_hit=[] · checked=['restatement', 'auditor_change', 'going_concern', 'negative_equity_with_negative_ocf', 'delayed_filing', 'share_count_growth']; A5: FAIL · value=1.084 · threshold=12 · reason=no annual financials; annual unavailable: financials: no revenue or net-income facts for AKTS (annual) · gap_count=2 · missing_fields=['annual_financials', 'annual'] · growth_routed=False · source_capability_gaps=["corporate_actions unavailable: corporate_actions: neither the price feed nor the filings reported any action; an empty list must not be read as 'none occurred'"]; A6: FAIL · value=0 · reason=could not be classified — these inputs were unavailable: annual revenue, revenue growth, 2yr revenue CAGR, 3yr profitability, 5yr positive-FCF count, Rule of 40. This is a data gap, not a judgement about the company · considered=[]
   ALAB: stopped at Module C5
     both anchors uncomputable — automatic FAIL; no valuation is possible
   ALB: stopped at Module A
@@ -261,8 +246,6 @@ DID NOT REACH A VERDICT: 124
     A6: FAIL · value=0 · reason=satisfied no classification's criteria · considered=[]
   ALC: stopped at Module A
     A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA (fewer than 4 quarters carry it) · grouping=Manufacturing · level=sector · debt_basis=tagged; A3: NOT_COMPUTABLE · reason=TTM net income not computable; A4: NOT_COMPUTABLE · branch=share_count_growth · reason=share count history unavailable; dilution flag cannot be enforced · other_flags_hit=[] · checked=['restatement', 'auditor_change', 'going_concern', 'negative_equity_with_negative_ocf', 'delayed_filing', 'share_count_growth']; A5: FAIL · value=12.88 · threshold=12 · reason=latest financials 12.9 months old (limit 12) · gap_count=1 · missing_fields=['stale_financials'] · growth_routed=False · source_capability_gaps=["corporate_actions unavailable: corporate_actions: neither the price feed nor the filings reported any action; an empty list must not be read as 'none occurred'"]; A6: FAIL · value=0 · reason=could not be classified — these inputs were unavailable: TTM profitability, 5yr positive-FCF count, Rule of 40. This is a data gap, not a judgement about the company · considered=[]
-  ALG: stopped at Module A
-    A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA (fewer than 4 quarters carry it) · grouping=Manufacturing · level=sector · debt_basis=summed
   ALGM: stopped at Module A
     A2: FAIL · value=1.089 · threshold=0.6347 · branch=sector · group=Manufacturing · group_median=0.42314064862842093 · debt_basis=summed · debt_plausibility=not questioned · taxonomy=VENDOR-SUBSTITUTE; A6: FAIL · value=0 · reason=satisfied no classification's criteria · considered=[]
   ALGT: stopped at Module A
@@ -286,27 +269,27 @@ DID NOT REACH A VERDICT: 124
   ALLO: stopped at Module A
     A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA is not positive (-168,649,000); the ratio has no meaning against a negative denominator · grouping=Manufacturing · level=sector · debt_basis=long_term_only; A3: FAIL · value=4.536 · threshold=24 · branch=pre_profit_runway · ttm_ocf=-102196000.0; A6: FAIL · value=0 · reason=could not be classified — these inputs were unavailable: Rule of 40. This is a data gap, not a judgement about the company · considered=[]
   ALLT: stopped at Module A
-    UNIVERSE: FAIL · value=2,545,623 · threshold=5,000,000 · branch=adv; A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA is not positive (-2,030,000); the ratio has no meaning against a negative denominator · grouping=Manufacturing · level=sector · debt_basis=summed; A4: NOT_COMPUTABLE · branch=share_count_growth · reason=share count history unavailable; dilution flag cannot be enforced · other_flags_hit=[] · checked=['restatement', 'auditor_change', 'going_concern', 'negative_equity_with_negative_ocf', 'delayed_filing', 'share_count_growth']; A5: FAIL · value=13.04 · threshold=6 · reason=latest financials 13.0 months old (limit 6) · gap_count=1 · missing_fields=['stale_financials'] · growth_routed=True · source_capability_gaps=["corporate_actions unavailable: corporate_actions: neither the price feed nor the filings reported any action; an empty list must not be read as 'none occurred'"]
+    UNIVERSE: FAIL · value=2,545,623 · threshold=5,000,000 · branch=adv; A4: NOT_COMPUTABLE · branch=share_count_growth · reason=share count history unavailable; dilution flag cannot be enforced · other_flags_hit=[] · checked=['restatement', 'auditor_change', 'going_concern', 'negative_equity_with_negative_ocf', 'delayed_filing', 'share_count_growth']; A5: FAIL · value=13.04 · threshold=6 · reason=latest financials 13.0 months old (limit 6) · gap_count=1 · missing_fields=['stale_financials'] · growth_routed=True · source_capability_gaps=["corporate_actions unavailable: corporate_actions: neither the price feed nor the filings reported any action; an empty list must not be read as 'none occurred'"]
   ALLY: stopped at Module B
     DataUnavailable: sector_price_to_book: B3 values against the sector multiple
   ALMR: stopped at Module A
-    A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA is not positive (-38,243,000); the ratio has no meaning against a negative denominator · grouping=Manufacturing · level=sector · debt_basis=inferred_zero; A4: NOT_COMPUTABLE · branch=share_count_growth · reason=share count history unavailable; dilution flag cannot be enforced · other_flags_hit=[] · checked=['restatement', 'auditor_change', 'going_concern', 'negative_equity_with_negative_ocf', 'delayed_filing', 'share_count_growth']; A5: FAIL · value=1.15 · threshold=12 · reason=no annual financials; annual unavailable: financials: no revenue or net-income facts for ALMR (annual) · gap_count=2 · missing_fields=['annual_financials', 'annual'] · growth_routed=False · source_capability_gaps=["corporate_actions unavailable: corporate_actions: neither the price feed nor the filings reported any action; an empty list must not be read as 'none occurred'"]; A6: FAIL · value=0 · reason=could not be classified — these inputs were unavailable: annual revenue, revenue growth, 2yr revenue CAGR, 3yr profitability, 5yr positive-FCF count, Rule of 40. This is a data gap, not a judgement about the company · considered=[]
+    A4: NOT_COMPUTABLE · branch=share_count_growth · reason=share count history unavailable; dilution flag cannot be enforced · other_flags_hit=[] · checked=['restatement', 'auditor_change', 'going_concern', 'negative_equity_with_negative_ocf', 'delayed_filing', 'share_count_growth']; A5: FAIL · value=1.15 · threshold=12 · reason=no annual financials; annual unavailable: financials: no revenue or net-income facts for ALMR (annual) · gap_count=2 · missing_fields=['annual_financials', 'annual'] · growth_routed=False · source_capability_gaps=["corporate_actions unavailable: corporate_actions: neither the price feed nor the filings reported any action; an empty list must not be read as 'none occurred'"]; A6: FAIL · value=0 · reason=could not be classified — these inputs were unavailable: annual revenue, revenue growth, 2yr revenue CAGR, 3yr profitability, 5yr positive-FCF count, Rule of 40. This is a data gap, not a judgement about the company · considered=[]
   ALMS: stopped at Module A
-    A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA is not positive (-455,473,000); the ratio has no meaning against a negative denominator · grouping=Manufacturing · level=sector · debt_basis=inferred_zero; A3: FAIL · value=2.176 · threshold=24 · branch=pre_profit_runway · ttm_ocf=-351398000.0; A6: FAIL · value=0 · reason=could not be classified — these inputs were unavailable: revenue growth, 2yr revenue CAGR, 5yr positive-FCF count, Rule of 40. This is a data gap, not a judgement about the company · considered=[]
+    A3: FAIL · value=2.176 · threshold=24 · branch=pre_profit_runway · ttm_ocf=-351398000.0; A6: FAIL · value=0 · reason=could not be classified — these inputs were unavailable: revenue growth, 2yr revenue CAGR, 5yr positive-FCF count, Rule of 40. This is a data gap, not a judgement about the company · considered=[]
   ALMU: stopped at Module A
-    A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA is not positive (-4,223,000); the ratio has no meaning against a negative denominator · grouping=Manufacturing · level=sector · debt_basis=summed; A6: FAIL · value=0 · reason=could not be classified — these inputs were unavailable: 5yr positive-FCF count. This is a data gap, not a judgement about the company · considered=[]
+    A6: FAIL · value=0 · reason=could not be classified — these inputs were unavailable: 5yr positive-FCF count. This is a data gap, not a judgement about the company · considered=[]
   ALNT: stopped at Module A
     A2: FAIL · value=1.784 · threshold=0.6347 · branch=sector · group=Manufacturing · group_median=0.42314064862842093 · debt_basis=summed · debt_plausibility=not questioned · taxonomy=VENDOR-SUBSTITUTE
   ALNY: stopped at Module A
-    A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA (fewer than 4 quarters carry it) · grouping=Manufacturing · level=sector · debt_basis=summed; A3: NOT_COMPUTABLE · reason=TTM operating cash flow not computable
+    A3: NOT_COMPUTABLE · reason=TTM operating cash flow not computable
   ALOY: stopped at Module A
-    A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA (fewer than 4 quarters carry it) · grouping=Metal Mining · level=industry · debt_basis=tagged; A6: FAIL · value=0 · reason=could not be classified — these inputs were unavailable: 5yr positive-FCF count, Rule of 40. This is a data gap, not a judgement about the company · considered=[]
+    A6: FAIL · value=0 · reason=could not be classified — these inputs were unavailable: 5yr positive-FCF count, Rule of 40. This is a data gap, not a judgement about the company · considered=[]
   ALRS: stopped at Module B
     DataUnavailable: sector_price_to_book: B3 values against the sector multiple
   ALSN: stopped at Module A
-    A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA (fewer than 4 quarters carry it) · grouping=Manufacturing · level=sector · debt_basis=summed
+    A2: FAIL · value=2.81 · threshold=0.6347 · branch=sector · group=Manufacturing · group_median=0.42314064862842093 · debt_basis=summed · debt_plausibility=not questioned · taxonomy=VENDOR-SUBSTITUTE
   ALT: stopped at Module A
-    A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA (fewer than 4 quarters carry it) · grouping=Manufacturing · level=sector · debt_basis=summed; A3: FAIL · value=9.883 · threshold=24 · branch=pre_profit_runway · ttm_ocf=-76508000.0; A6: FAIL · value=0 · reason=could not be classified — these inputs were unavailable: 5yr positive-FCF count. This is a data gap, not a judgement about the company · considered=[]
+    A3: FAIL · value=9.883 · threshold=24 · branch=pre_profit_runway · ttm_ocf=-76508000.0; A6: FAIL · value=0 · reason=could not be classified — these inputs were unavailable: 5yr positive-FCF count. This is a data gap, not a judgement about the company · considered=[]
   ALTO: stopped at Module A
     A2: FAIL · value=1.28 · threshold=0.6347 · branch=sector · group=Manufacturing · group_median=0.42314064862842093 · debt_basis=summed · debt_plausibility=not questioned · taxonomy=VENDOR-SUBSTITUTE; A6: FAIL · value=0 · reason=satisfied no classification's criteria · considered=[]
   ALV: stopped at Module A
@@ -314,7 +297,7 @@ DID NOT REACH A VERDICT: 124
   ALX: stopped at Module A
     A2: NOT_COMPUTABLE · reason=leverage not computable — missing total debt (no debt tag resolved, and a zero could not be safely inferred); TTM EBITDA (fewer than 4 quarters carry it) · grouping=Finance, Insurance & Real Estate · level=sector · debt_basis=None; A3: FAIL · value=0.1599 · threshold=0.8 · branch=profitable · reason=GAAP profit not backed by operating cash — the unrealised-gains pattern · ttm_ocf=27162000.0 · ttm_net_income=169816000.0
   AM: stopped at Module A
-    A2: NOT_COMPUTABLE · reason=leverage not computable — missing TTM EBITDA (fewer than 4 quarters carry it) · grouping=Natural Gas Transmission · level=industry · debt_basis=summed; A6: FAIL · value=0 · reason=could not be classified — these inputs were unavailable: 5yr positive-FCF count, Rule of 40. This is a data gap, not a judgement about the company · considered=[]
+    A2: NOT_COMPUTABLE · value=3.017 · reason=no leverage median for grouping 'Natural Gas Transmission' at industry level; A6: FAIL · value=0 · reason=could not be classified — these inputs were unavailable: 5yr positive-FCF count, Rule of 40. This is a data gap, not a judgement about the company · considered=[]
   AMAL: stopped at Module B
     DataUnavailable: sector_price_to_book: B3 values against the sector multiple
 ------------------------------------------------------------------------------
@@ -329,30 +312,38 @@ DIAGNOSTICS — why the screen produced what it produced
              3  operating_cash_flow
              3  current_ratio
              2  neither current ratio nor four quarters of operating cash fl
-    A2               81  (60.4%)
-            34  leverage not computable — missing TTM EBITDA (fewer than 4 q
-            17  leverage not computable — missing TTM EBITDA is not positive
-            16  sector
-            10  no grouping reached 8 computable members
+    A2               47  (35.1%)
+            22  sector
+             9  leverage not computable — missing TTM EBITDA (fewer than 4 q
+             8  no grouping reached 8 computable members
              3  leverage not computable — missing total debt (no debt tag re
+             2  leverage not computable — missing TTM EBITDA is not positive
+             1  no leverage median for grouping 'Cable & Other Pay Televisio
              1  leverage not computable — missing cash and equivalents
-    A3                3  (2.2%)
-             3  profitable
-    A4                3  (2.2%)
-             3  share count history unavailable
-    A6                5  (3.7%)
-             5  failed
-    B                 2  (1.5%)
+             1  no leverage median for grouping 'Natural Gas Transmission' a
+    A3               19  (14.2%)
+            12  pre_profit_runway
+             6  profitable
+             1  TTM operating cash flow not computable
+    A4                7  (5.2%)
+             6  share count history unavailable
+             1  failed
+    A6               10  (7.5%)
+            10  failed
+    B                 3  (2.2%)
              2  DataUnavailable
+             1  MethodRefused
     C5                1  (0.7%)
              1  both anchors uncomputable
-    E                 8  (6.0%)
-             8  discount not met
+    E                16  (11.9%)
+            12  discount not met
+             2  conviction not met
+             2  anchors confirm not met
   
-    DOMINANT CAUSE: A2 / leverage not computable — missing TTM EBITDA (fewer than 4 q — 34 names (25.4%)
+    DOMINANT CAUSE: A2 / sector — 22 names (16.4%)
   
   C2 PEER AVAILABILITY
-    formed a set (>= 4 peers): 0/6 (0.0%)
+    formed a set (>= 4 peers): 0/7 (0.0%)
     median peers found: 1
     candidates removed, by screen:
            4  (80.0%)  multiple not computable
@@ -362,28 +353,30 @@ DIAGNOSTICS — why the screen produced what it produced
     Fewer than half of names can form a peer set, so most run in SINGLE-ANCHOR MODE — a 10pp higher buy bar and conviction capped at 70. If this holds on real data it is a design-level finding (§18 stop condition 4), not a data gap: the screen above is the thing to change, and that is an annual-review decision.
   
   CONVICTION COMPONENT INDEPENDENCE
-    scored names: 10
+    scored names: 18
     correlations shown for reference only — fewer than 20 scored names, so any value here is noise and no redundancy verdict is given.
-      +0.75  anchor conservatism <-> business quality
-      +0.65  anchor conservatism <-> health margin
-      -0.53  business quality <-> momentum tiebreaker
-      -0.47  anchor conservatism <-> momentum tiebreaker
-      +0.43  business quality <-> health margin
-      +0.43  anchor conservatism <-> valuation excess
-      -0.34  health margin <-> momentum tiebreaker
-      +0.17  health margin <-> valuation excess
-      +0.16  business quality <-> valuation excess
-      -0.13  momentum tiebreaker <-> valuation excess
+      +0.51  business quality <-> health margin
+      -0.46  anchor conservatism <-> momentum tiebreaker
+      +0.39  anchor conservatism <-> business quality
+      -0.27  health margin <-> valuation excess
+      +0.22  anchor conservatism <-> valuation excess
+      -0.09  business quality <-> valuation excess
+      -0.09  momentum tiebreaker <-> valuation excess
+      -0.06  anchor conservatism <-> health margin
+      +0.05  health margin <-> momentum tiebreaker
+      -0.01  business quality <-> momentum tiebreaker
 ------------------------------------------------------------------------------
   VALUATION SENSITIVITY
-    valuations analysed: 11
+    valuations analysed: 19
     FRAGILE (>25% swing on 1pp discount rate): 0
-    verdict does not survive perturbation: 4
-    more than 60% of value in the terminal assumption: 1
+    verdict does not survive perturbation: 6
+    more than 60% of value in the terminal assumption: 3
   
     Names whose buy case rests on the assumptions rather than the business:
+      ABBV
       ACIW
       ACLS
+      AGYS
       ALGN
       ALLE
 ==============================================================================
