@@ -107,10 +107,28 @@ TAG_CHAINS: dict[str, tuple[str, ...]] = {
         "IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments",
         "IncomeLossFromContinuingOperationsBeforeIncomeTaxesDomestic",
     ),
+    #: Filers that never tag a combined figure.  Depreciation and amortisation
+    #: are then two separate lines, and a first-match chain finds neither —
+    #: which is why 34 names in a 134-name screen could not produce EBITDA and
+    #: were blocked at A2.  ``EdgarAdapter`` sums these when the combined tag
+    #: above misses.  They are separate fields rather than extra entries in
+    #: that chain because a chain picks one tag; this case needs both.
+    "depreciation": (
+        "Depreciation",
+        "DepreciationNonproduction",
+        "PropertyPlantAndEquipmentDepreciationMethodsAmount",
+    ),
+    "amortization": (
+        "AmortizationOfIntangibleAssets",
+        "AmortizationOfFiniteLivedIntangibleAssets",
+        "AdjustmentForAmortization",
+    ),
     "depreciation_amortization": (
         "DepreciationDepletionAndAmortization",
         "DepreciationAmortizationAndAccretionNet",
         "DepreciationAndAmortization",
+        "DepreciationAmortisationAndImpairmentLossReversalOfImpairmentLossRecognisedInProfitOrLoss",
+        "DepreciationAndAmortisationExpense",
     ),
     "total_assets": ("Assets",),
     "total_current_assets": ("AssetsCurrent",),

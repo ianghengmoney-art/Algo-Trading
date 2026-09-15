@@ -467,7 +467,8 @@ class EdgarAdapter(DataAdapter):
         fields = [
             "revenue", "net_income", "operating_cash_flow", "capital_expenditure",
             "operating_income", "gross_profit", "interest_expense", "tax_expense",
-            "pretax_income", "depreciation_amortization", "shares_diluted",
+            "pretax_income", "depreciation_amortization",
+            "depreciation", "amortization", "shares_diluted",
             "shares_basic", "dividends_paid", "cost_of_revenue",
             "funds_from_operations",
             "adjusted_funds_from_operations",
@@ -546,6 +547,15 @@ class EdgarAdapter(DataAdapter):
 
             operating_income = duration("operating_income")
             da = duration("depreciation_amortization")
+            if da is None:
+                # A filer that never tags a combined figure reports the two as
+                # separate lines.  Summing them is not a substitution — it is
+                # the same quantity, written down in two places — so it is
+                # taken whenever either part resolves, and the absence of both
+                # still yields None.
+                parts = [duration("depreciation"), duration("amortization")]
+                if any(v is not None for v in parts):
+                    da = sum(v for v in parts if v is not None)
             ebitda = (
                 operating_income + da
                 if operating_income is not None and da is not None

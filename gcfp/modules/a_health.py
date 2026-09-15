@@ -337,6 +337,36 @@ def gate_a2_leverage(
             "reported number."
         )
 
+    # A company holding more cash than debt cannot be over-levered, and the
+    # ratio it would be judged on does not exist: dividing net cash by a
+    # negative or missing EBITDA produces either a meaningless number or
+    # nothing at all.  Seventeen names in a 134-name screen were blocked here
+    # for having negative EBITDA, several of them sitting on net cash, which
+    # is the opposite of a leverage problem.  Checked before the ratio so the
+    # EBITDA leg is not required to reach the conclusion.
+    latest_q = data.latest_quarter
+    net_cash = latest_q.net_debt if latest_q is not None else None
+    if net_cash is not None and net_cash <= 0:
+        return (
+            gate_pass(
+                "A2",
+                net_cash,
+                threshold=0.0,
+                branch="net_cash",
+                reason=(
+                    "net cash — more cash than debt, so there is no leverage "
+                    "for a ratio to measure"
+                ),
+                detail={
+                    "group": grouping.key,
+                    "net_debt": net_cash,
+                    "debt_basis": latest_q.debt_basis,
+                    "debt_plausibility": implausible or "not questioned",
+                },
+            ),
+            grouping,
+        )
+
     if ratio is None:
         return (
             gate_uncomputable(

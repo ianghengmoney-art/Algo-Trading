@@ -882,3 +882,65 @@ class TestReitIssuanceIsNotDilution:
         result = a_health.gate_a4_red_flags(data, Config(), date(2026, 1, 1))
         assert result.outcome is Outcome.FAIL
         assert "share count +" in result.reason
+
+
+class TestA2NetCashAndSplitDepreciation:
+    """A2 blocked 81 of 134 names in the first real screen — 60% of everything
+    the universe offered, and the top two causes were both fixable here.
+    """
+
+    def test_net_cash_clears_without_an_ebitda(self):
+        """Seventeen names were blocked for negative EBITDA, several of them
+        sitting on net cash. A company holding more cash than debt cannot be
+        over-levered, and the ratio it would be judged on does not exist."""
+        data = build_company(
+            quarterly_kw={"total_debt": 1e9, "cash_and_equivalents": 5e9,
+                          "ebitda": None},
+            annual_kw={"total_debt": 1e9, "cash_and_equivalents": 5e9},
+        )
+        result, _ = a_health.gate_a2_leverage(
+            data, MarketData(), Config(), None
+        )
+        assert result.outcome is Outcome.PASS
+        assert result.branch == "net_cash"
+
+    def test_net_debt_with_no_ebitda_still_refuses(self):
+        """The net-cash branch must not become a way around the gate for a
+        company that genuinely carries debt."""
+        data = build_company(
+            quarterly_kw={"total_debt": 5e9, "cash_and_equivalents": 1e9,
+                          "ebitda": None},
+            annual_kw={"total_debt": 5e9, "cash_and_equivalents": 1e9},
+        )
+        result, _ = a_health.gate_a2_leverage(
+            data, MarketData(), Config(), None
+        )
+        assert result.outcome is Outcome.NOT_COMPUTABLE
+
+    def test_depreciation_and_amortisation_are_summed_when_split(self):
+        """Many filers never tag a combined figure. A first-match chain then
+        finds neither line, and 34 names could not produce EBITDA at all."""
+        from unittest.mock import Mock
+
+        from gcfp.data.edgar import EdgarAdapter
+
+        def dur(val, end, start, filed, tag):
+            return tag, {"val": val, "end": end, "start": start,
+                         "filed": filed, "form": "10-Q"}
+
+        facts = {}
+        for tag, entry in [
+            dur(1000, "2025-03-31", "2025-01-01", "2025-04-30", "Revenues"),
+            dur(100, "2025-03-31", "2025-01-01", "2025-04-30", "OperatingIncomeLoss"),
+            dur(30, "2025-03-31", "2025-01-01", "2025-04-30", "Depreciation"),
+            dur(12, "2025-03-31", "2025-01-01", "2025-04-30",
+                "AmortizationOfIntangibleAssets"),
+        ]:
+            facts.setdefault(tag, {"units": {"USD": []}})["units"]["USD"].append(entry)
+
+        adapter = EdgarAdapter(user_agent="t t@example.com", session=Mock())
+        adapter._facts = lambda symbol: {
+            "cik": 1, "entityName": "X", "facts": {"us-gaap": facts}
+        }
+        period = adapter._periods("X", annual=False, limit=4)[0]
+        assert period.ebitda == 142, "100 operating income + 30 depreciation + 12 amortisation"
