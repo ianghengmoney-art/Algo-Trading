@@ -18,10 +18,12 @@ from __future__ import annotations
 
 import csv
 import io
+import json
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
+from pathlib import Path
 from typing import Any, Sequence
 
 from ..types import CorporateAction, CorporateActionType, PricePoint
@@ -306,6 +308,111 @@ class FallbackPriceSource(PriceSource):
         return self._try("get_index_level", symbol)
 
 
+@dataclass
+class CachedPriceSource(PriceSource):
+    """A disk cache in front of another price source.
+
+    Without it an interrupted run started from nothing on the price side:
+    SEC filings were already cached, but every price series was downloaded
+    again, so a laptop going to sleep halfway through a 1,400-company probe
+    cost the whole run.  With it, re-running the same command picks up where
+    the last one stopped — everything already fetched comes off disk.
+
+    A cached series is reused when it covers the requested window and either
+    the window ends before the day it was fetched (history does not change)
+    or it was fetched today (anything reaching the present is refreshed
+    daily).  A symbol the source could not price is remembered for the day
+    too, so a re-run does not retry hundreds of dead tickers.
+    """
+
+    inner: PriceSource = field(default=None)  # type: ignore[assignment]
+    cache_dir: Path = field(default=Path(".cache/prices"))
+    name: str = field(default="", init=False)
+
+    def __post_init__(self) -> None:
+        if self.inner is None:
+            raise ValueError("CachedPriceSource needs a source to wrap")
+        # Reports name the underlying feed, not the cache.
+        self.name = self.inner.name
+        self.cache_dir = Path(self.cache_dir)
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
+
+    def _path(self, symbol: str) -> Path:
+        safe = "".join(c if c.isalnum() or c in "-_." else "_" for c in symbol.upper())
+        return self.cache_dir / f"{safe}.json"
+
+    def _load(self, symbol: str) -> dict | None:
+        path = self._path(symbol)
+        if not path.exists():
+            return None
+        try:
+            return json.loads(path.read_text())
+        except (OSError, ValueError):
+            return None
+
+    def get_prices(self, symbol: str, start: date, end: date) -> Sequence[PricePoint]:
+        today = date.today().isoformat()
+        cached = self._load(symbol)
+        if cached is not None:
+            fetched_on = cached.get("fetched_on", "")
+            current = fetched_on == today or end.isoformat() < fetched_on
+            if cached.get("unavailable") and fetched_on == today:
+                raise DataUnavailable("prices", cached["unavailable"])
+            if (
+                current
+                and not cached.get("unavailable")
+                and cached["start"] <= start.isoformat()
+                and cached["end"] >= end.isoformat()
+            ):
+                return [
+                    PricePoint(
+                        price_date=date.fromisoformat(r[0]),
+                        close=r[1],
+                        adjusted_close=r[2],
+                        volume=r[3],
+                    )
+                    for r in cached["rows"]
+                    if start.isoformat() <= r[0] <= end.isoformat()
+                ]
+            # Widen to the union so a later, longer request does not refetch
+            # what a shorter one already had.
+            if current and not cached.get("unavailable"):
+                start = min(start, date.fromisoformat(cached["start"]))
+                end = max(end, date.fromisoformat(cached["end"]))
+
+        try:
+            points = list(self.inner.get_prices(symbol, start, end))
+        except DataUnavailable as exc:
+            self._save(symbol, {"fetched_on": today, "unavailable": str(exc)})
+            raise
+        self._save(
+            symbol,
+            {
+                "fetched_on": today,
+                "start": start.isoformat(),
+                "end": end.isoformat(),
+                "rows": [
+                    [p.price_date.isoformat(), p.close, p.adjusted_close, p.volume]
+                    for p in points
+                ],
+            },
+        )
+        return points
+
+    def _save(self, symbol: str, payload: dict) -> None:
+        try:
+            self._path(symbol).write_text(json.dumps(payload))
+        except OSError:
+            pass  # a cache that cannot be written is a slower run, not a wrong one
+
+    def get_splits(self, symbol: str, start: date, end: date) -> Sequence[CorporateAction]:
+        return self.inner.get_splits(symbol, start, end)
+
+    def get_index_level(self, symbol: str) -> float | None:
+        # A live yield, read once per run; caching it would only risk staleness.
+        return self.inner.get_index_level(symbol)
+
+
 def average_dollar_volume(prices: Sequence[PricePoint], days: int = 63) -> float | None:
     """Dollar ADV over roughly three months of trading.
 
@@ -326,6 +433,7 @@ __all__ = [
     "StooqPriceSource",
     "YahooPriceSource",
     "FallbackPriceSource",
+    "CachedPriceSource",
     "average_dollar_volume",
     "TEN_YEAR_YIELD_SYMBOL",
     "BENCHMARK_SYMBOL",

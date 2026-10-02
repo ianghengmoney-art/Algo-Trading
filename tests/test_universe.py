@@ -213,3 +213,101 @@ class TestUniverseSampling:
         ledger.universe_total = 10_000
         text = " ".join(ledger.as_report_lines())
         assert "SAMPLE" in text and "10000" in text.replace(",", "")
+
+
+class TestPriceCache:
+    """An interrupted run must resume, not start over.
+
+    SEC filings were cached but prices were not, so a laptop going to sleep
+    halfway through a 1,400-company probe meant downloading every price
+    series again.
+    """
+
+    class Counting:
+        name = "counting"
+
+        def __init__(self, fail=False):
+            self.calls = 0
+            self.fail = fail
+
+        def get_prices(self, symbol, start, end):
+            from datetime import timedelta
+
+            from gcfp.data.adapter import DataUnavailable
+            from gcfp.types import PricePoint
+
+            self.calls += 1
+            if self.fail:
+                raise DataUnavailable("prices", "no such ticker")
+            out, d = [], end
+            while d >= start:
+                out.append(PricePoint(price_date=d, close=100.0, volume=1e6))
+                d -= timedelta(days=1)
+            return out
+
+        def get_splits(self, symbol, start, end):
+            return []
+
+        def get_index_level(self, symbol):
+            return 4.5
+
+    def cached(self, tmp_path, fail=False):
+        from gcfp.data.prices import CachedPriceSource
+
+        inner = self.Counting(fail=fail)
+        return CachedPriceSource(inner=inner, cache_dir=tmp_path), inner
+
+    def test_a_second_run_reads_from_disk(self, tmp_path):
+        from datetime import timedelta
+
+        today = date.today()
+        first, inner = self.cached(tmp_path)
+        first.get_prices("CAT", today - timedelta(days=30), today)
+
+        # A fresh object, as after a restart: only the files survive.
+        second, inner2 = self.cached(tmp_path)
+        bars = second.get_prices("CAT", today - timedelta(days=30), today)
+        assert inner2.calls == 0, "a restarted run downloaded again"
+        assert len(bars) == 31
+
+    def test_a_longer_window_is_fetched_once_then_served(self, tmp_path):
+        from datetime import timedelta
+
+        today = date.today()
+        src, inner = self.cached(tmp_path)
+        src.get_prices("CAT", today - timedelta(days=30), today)
+        src.get_prices("CAT", today - timedelta(days=3000), today)
+        src.get_prices("CAT", today - timedelta(days=500), today - timedelta(days=100))
+        assert inner.calls == 2
+
+    def test_an_unpriceable_ticker_is_not_retried_the_same_day(self, tmp_path):
+        from datetime import timedelta
+
+        from gcfp.data.adapter import DataUnavailable
+
+        today = date.today()
+        src, inner = self.cached(tmp_path, fail=True)
+        for _ in range(2):
+            with pytest.raises(DataUnavailable):
+                src.get_prices("DEAD", today - timedelta(days=30), today)
+        assert inner.calls == 1
+
+    def test_a_series_reaching_today_is_refreshed_on_a_later_day(self, tmp_path):
+        """Yesterday's file must not stand in for today's close."""
+        import json
+        from datetime import timedelta
+
+        today = date.today()
+        src, inner = self.cached(tmp_path)
+        src.get_prices("CAT", today - timedelta(days=30), today)
+        path = tmp_path / "CAT.json"
+        stale = json.loads(path.read_text())
+        stale["fetched_on"] = (today - timedelta(days=1)).isoformat()
+        path.write_text(json.dumps(stale))
+
+        src.get_prices("CAT", today - timedelta(days=30), today)
+        assert inner.calls == 2
+
+    def test_reports_still_name_the_underlying_feed(self, tmp_path):
+        src, _ = self.cached(tmp_path)
+        assert src.name == "counting"

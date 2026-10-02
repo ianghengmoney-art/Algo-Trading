@@ -35,13 +35,19 @@ def build_free_adapter(
     """
     from .data.composite import CompositeAdapter
     from .data.edgar import EdgarAdapter
-    from .data.prices import FallbackPriceSource
+    from .data.prices import CachedPriceSource, FallbackPriceSource
+
+    prices = FallbackPriceSource()
+    if cache_dir is not None:
+        # Prices are cached alongside the filings so an interrupted run
+        # resumes instead of starting over.
+        prices = CachedPriceSource(inner=prices, cache_dir=Path(cache_dir) / "prices")
 
     return CompositeAdapter(
         fundamentals=EdgarAdapter(
             user_agent=user_agent, cache_dir=cache_dir, as_of=as_of
         ),
-        prices=FallbackPriceSource(),
+        prices=prices,
         as_of=as_of,
     )
 
