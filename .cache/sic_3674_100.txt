@@ -1,0 +1,2080 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+  <feed xmlns="http://www.w3.org/2005/Atom">
+    <author>
+      <email>webmaster@sec.gov</email>
+      <name>Webmaster</name>
+    </author>
+    <entry title="ARRAY(0x564e48890b20)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e48869a20)">
+          <addresses>
+            <address type="business">
+              <state>TX</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0000772406</cik>
+          <irs-number>
+            <former-name-0 DATE="2019-06-13" NAME="CIRRUS LOGIC INC" />
+          </irs-number>
+          <last-date>04 Manufacturing</last-date>
+          <sic>3674</sic>
+          <state>TX</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0000772406</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0000772406&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0000772406, &lt;strong&gt;State:&lt;/strong&gt; TX</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e48870768)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e488731b0)">
+          <addresses>
+            <address type="business">
+              <state>IL</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001102934</cik>
+          <irs-number>
+            <former-name-0 DATE="2020-09-01" NAME="CABOT MICROELECTRONICS CORP" />
+          </irs-number>
+          <sic>3674</sic>
+          <state>IL</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001102934</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001102934&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001102934, &lt;strong&gt;State:&lt;/strong&gt; IL</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e48871260)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e48827a98)">
+          <addresses>
+            <address type="business">
+              <state>CA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001127946</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>CA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001127946</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001127946&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001127946, &lt;strong&gt;State:&lt;/strong&gt; CA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e4884a498)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e48849fd0)">
+          <addresses>
+            <address type="business">
+              <state>CA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001069353</cik>
+          <irs-number>
+            <former-name-0 DATE="1998-09-28" NAME="ROCKWELL SEMICONDUCTOR SYSTMES INC" />
+          </irs-number>
+          <sic>3674</sic>
+          <state>CA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001069353</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001069353&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001069353, &lt;strong&gt;State:&lt;/strong&gt; CA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e485e7fe8)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e4884a6a8)">
+          <addresses>
+            <address type="business">
+              <state>CA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001164975</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>CA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001164975</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001164975&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001164975, &lt;strong&gt;State:&lt;/strong&gt; CA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e48846b00)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e487dfeb8)">
+          <addresses>
+            <address type="business">
+              <state>MN</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001057095</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>MN</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001057095</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001057095&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001057095, &lt;strong&gt;State:&lt;/strong&gt; MN</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e4856ecb8)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e48776fe8)">
+          <addresses>
+            <address type="business">
+              <state>E9</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001807794</cik>
+          <irs-number></irs-number>
+          <last-date>04 Manufacturing</last-date>
+          <sic>3674</sic>
+          <state>E9</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001807794</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001807794&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001807794, &lt;strong&gt;State:&lt;/strong&gt; E9</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e487af288)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e48827288)">
+          <addresses>
+            <address type="business">
+              <state>X0</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001368358</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>X0</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001368358</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001368358&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001368358, &lt;strong&gt;State:&lt;/strong&gt; X0</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e487aa608)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e4882eed8)">
+          <addresses>
+            <address type="business">
+              <state>NY</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001047427</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>NY</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001047427</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001047427&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001047427, &lt;strong&gt;State:&lt;/strong&gt; NY</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e4888a090)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e487de4c8)">
+          <addresses>
+            <address type="business">
+              <state>NC</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001138169</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>NC</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001138169</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001138169&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001138169, &lt;strong&gt;State:&lt;/strong&gt; NC</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e488917b0)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e487e8bf8)">
+          <addresses>
+            <address type="business">
+              <state>PA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001126994</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>PA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001126994</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001126994&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001126994, &lt;strong&gt;State:&lt;/strong&gt; PA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e48870510)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e48823a68)">
+          <addresses>
+            <address type="business">
+              <state>CA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0000791915</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>CA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0000791915</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0000791915&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0000791915, &lt;strong&gt;State:&lt;/strong&gt; CA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e485e7d30)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e48868ce8)">
+          <addresses>
+            <address type="business">
+              <state>TX</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0000867105</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>TX</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0000867105</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0000867105&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0000867105, &lt;strong&gt;State:&lt;/strong&gt; TX</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e48827990)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e4880cb08)">
+          <addresses>
+            <address type="business">
+              <state>TX</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0000749420</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>TX</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0000749420</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0000749420&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0000749420, &lt;strong&gt;State:&lt;/strong&gt; TX</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e4887f2a0)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e48787b78)">
+          <addresses>
+            <address type="business" />
+            <address type="mailing" />
+          </addresses>
+          <cik>0001477641</cik>
+          <irs-number></irs-number>
+          <last-date>04 Manufacturing</last-date>
+          <sic>3674</sic>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001477641</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001477641&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001477641</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e487f0a00)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e485e7c10)">
+          <addresses>
+            <address type="business">
+              <state>A1</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001262200</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>A1</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001262200</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001262200&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001262200, &lt;strong&gt;State:&lt;/strong&gt; A1</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e48562200)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e4876a5b8)">
+          <addresses>
+            <address type="business">
+              <state>X0</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001116581</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>X0</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001116581</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001116581&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001116581, &lt;strong&gt;State:&lt;/strong&gt; X0</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e487830a0)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e4882f310)">
+          <addresses>
+            <address type="business">
+              <state>TX</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0000029002</cik>
+          <irs-number></irs-number>
+          <last-date>04 Manufacturing</last-date>
+          <sic>3674</sic>
+          <state>TX</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0000029002</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0000029002&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0000029002, &lt;strong&gt;State:&lt;/strong&gt; TX</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e48872f10)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e4887f648)">
+          <addresses>
+            <address type="business">
+              <state>CO</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0000821256</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>CO</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0000821256</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0000821256&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0000821256, &lt;strong&gt;State:&lt;/strong&gt; CO</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e487d6400)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e4888a948)">
+          <addresses>
+            <address type="business">
+              <state>AZ</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001118344</cik>
+          <irs-number>
+            <former-name-0 DATE="2002-09-27" NAME="ZURICKIRCH CORP" />
+          </irs-number>
+          <sic>3674</sic>
+          <state>AZ</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001118344</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001118344&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001118344, &lt;strong&gt;State:&lt;/strong&gt; AZ</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e487af240)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e48873408)">
+          <addresses>
+            <address type="business">
+              <state>X1</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0000915778</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>X1</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0000915778</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0000915778&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0000915778, &lt;strong&gt;State:&lt;/strong&gt; X1</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e48544ad8)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e4888a9d8)">
+          <addresses>
+            <address type="business">
+              <state>CA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0000784770</cik>
+          <irs-number>
+            <former-name-0 DATE="2001-05-29" NAME="DENSE PAC MICROSYSTEMS INC" />
+            <former-name-1 DATE="2011-10-18" NAME="DPAC TECHNOLOGIES CORP" />
+          </irs-number>
+          <sic>3674</sic>
+          <state>CA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0000784770</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0000784770&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0000784770, &lt;strong&gt;State:&lt;/strong&gt; CA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e4884aa38)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e4876a510)">
+          <addresses>
+            <address type="business">
+              <state>CA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0000886328</cik>
+          <irs-number>
+            <former-name-0 DATE="1998-11-12" NAME="NORRIS COMMUNICATIONS CORP" />
+          </irs-number>
+          <sic>3674</sic>
+          <state>CA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0000886328</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0000886328&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0000886328, &lt;strong&gt;State:&lt;/strong&gt; CA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e487f0940)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e48864888)">
+          <addresses>
+            <address type="business">
+              <state>CA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001044007</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>CA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001044007</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001044007&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001044007, &lt;strong&gt;State:&lt;/strong&gt; CA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e487be2d0)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e48893820)">
+          <addresses>
+            <address type="business">
+              <state>CA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001109898</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>CA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001109898</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001109898&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001109898, &lt;strong&gt;State:&lt;/strong&gt; CA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e487aa848)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e48870708)">
+          <addresses>
+            <address type="business">
+              <state>CA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001432242</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>CA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001432242</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001432242&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001432242, &lt;strong&gt;State:&lt;/strong&gt; CA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e48770100)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e48875d28)">
+          <addresses>
+            <address type="business">
+              <state>CA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0000949872</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>CA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0000949872</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0000949872&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0000949872, &lt;strong&gt;State:&lt;/strong&gt; CA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e48886038)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e4878a418)">
+          <addresses>
+            <address type="business">
+              <state>NY</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001690717</cik>
+          <irs-number></irs-number>
+          <last-date>04 Manufacturing</last-date>
+          <sic>3674</sic>
+          <state>NY</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001690717</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001690717&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001690717, &lt;strong&gt;State:&lt;/strong&gt; NY</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e487c3dd8)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e48782818)">
+          <addresses>
+            <address type="business">
+              <state>NY</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001046995</cik>
+          <irs-number>
+            <former-name-0 DATE="2000-02-09" NAME="FASHION DYNAMICS CORP" />
+          </irs-number>
+          <sic>3674</sic>
+          <state>NY</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001046995</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001046995&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001046995, &lt;strong&gt;State:&lt;/strong&gt; NY</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e4888e1f0)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e488758c0)">
+          <addresses>
+            <address type="business">
+              <state>MA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001101322</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>MA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001101322</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001101322&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001101322, &lt;strong&gt;State:&lt;/strong&gt; MA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e48893040)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e488910f0)">
+          <addresses>
+            <address type="business">
+              <state>CA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0000808326</cik>
+          <irs-number></irs-number>
+          <last-date>04 Manufacturing</last-date>
+          <sic>3674</sic>
+          <state>CA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0000808326</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0000808326&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0000808326, &lt;strong&gt;State:&lt;/strong&gt; CA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e4888a0c0)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e487c3f40)">
+          <addresses>
+            <address type="business">
+              <state>MI</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0000032878</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>MI</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0000032878</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0000032878&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0000032878, &lt;strong&gt;State:&lt;/strong&gt; MI</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e48776670)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e4888d998)">
+          <addresses>
+            <address type="business">
+              <state>CA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001463101</cik>
+          <irs-number></irs-number>
+          <last-date>04 Manufacturing</last-date>
+          <sic>3674</sic>
+          <state>CA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001463101</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001463101&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001463101, &lt;strong&gt;State:&lt;/strong&gt; CA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e4877efa8)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e484f3aa0)">
+          <addresses>
+            <address type="business">
+              <state>TX</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0000866830</cik>
+          <irs-number>
+            <former-name-0 DATE="2008-02-26" NAME="STAKTEK HOLDINGS INC" />
+          </irs-number>
+          <sic>3674</sic>
+          <state>TX</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0000866830</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0000866830&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0000866830, &lt;strong&gt;State:&lt;/strong&gt; TX</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e48823ed0)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e4856e7f0)">
+          <addresses>
+            <address type="business">
+              <state>CA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001227930</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>CA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001227930</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001227930&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001227930, &lt;strong&gt;State:&lt;/strong&gt; CA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e487d2438)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e48783040)">
+          <addresses>
+            <address type="business">
+              <state>PA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001422153</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>PA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001422153</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001422153&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001422153, &lt;strong&gt;State:&lt;/strong&gt; PA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e48784130)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e48885e28)">
+          <addresses>
+            <address type="business">
+              <state>NJ</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001053469</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>NJ</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001053469</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001053469&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001053469, &lt;strong&gt;State:&lt;/strong&gt; NJ</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e4884e7c0)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e487be198)">
+          <addresses>
+            <address type="business">
+              <state>CA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0000907410</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>CA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0000907410</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0000907410&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0000907410, &lt;strong&gt;State:&lt;/strong&gt; CA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e4884a618)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e4878a988)">
+          <addresses>
+            <address type="business">
+              <state>P7</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001596089</cik>
+          <irs-number>
+            <former-name-0 DATE="2014-06-26" NAME="TEL-APPLIED HOLDINGS B.V." />
+          </irs-number>
+          <sic>3674</sic>
+          <state>P7</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001596089</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001596089&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001596089, &lt;strong&gt;State:&lt;/strong&gt; P7</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e488434b0)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e48870ba0)">
+          <addresses>
+            <address type="business">
+              <state>MA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0000947397</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>MA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0000947397</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0000947397&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0000947397, &lt;strong&gt;State:&lt;/strong&gt; MA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e48872cd0)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e4856ee98)">
+          <addresses>
+            <address type="business">
+              <state>AZ</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001438423</cik>
+          <irs-number>
+            <former-name-0 DATE="2025-01-08" NAME="EVERSPIN TECHNOLOGIES INC" />
+          </irs-number>
+          <last-date>04 Manufacturing</last-date>
+          <sic>3674</sic>
+          <state>AZ</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001438423</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001438423&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001438423, &lt;strong&gt;State:&lt;/strong&gt; AZ</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e487de0a8)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e48893058)">
+          <addresses>
+            <address type="business">
+              <state>CA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0000753568</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>CA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0000753568</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0000753568&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0000753568, &lt;strong&gt;State:&lt;/strong&gt; CA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e4884ead8)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e48750418)">
+          <addresses>
+            <address type="business">
+              <state>ME</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001038272</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>ME</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001038272</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001038272&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001038272, &lt;strong&gt;State:&lt;/strong&gt; ME</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e487dfca8)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e48544e38)">
+          <addresses>
+            <address type="business">
+              <state>CA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001036960</cik>
+          <irs-number>
+            <former-name-0 DATE="1999-06-02" NAME="FSC SEMICONDUCTOR CORP" />
+          </irs-number>
+          <sic>3674</sic>
+          <state>CA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001036960</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001036960&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001036960, &lt;strong&gt;State:&lt;/strong&gt; CA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e488915a0)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e487de180)">
+          <addresses>
+            <address type="business">
+              <state>CA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001261733</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>CA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001261733</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001261733&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001261733, &lt;strong&gt;State:&lt;/strong&gt; CA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e4888a990)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e4884ea48)">
+          <addresses>
+            <address type="business">
+              <state>CA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001094739</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>CA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001094739</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001094739&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001094739, &lt;strong&gt;State:&lt;/strong&gt; CA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e4877ea08)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e48875998)">
+          <addresses>
+            <address type="business">
+              <state>AZ</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001274494</cik>
+          <irs-number>
+            <former-name-0 DATE="2003-12-23" NAME="FIRST SOLAR HOLDINGS LLC" />
+          </irs-number>
+          <last-date>04 Manufacturing</last-date>
+          <sic>3674</sic>
+          <state>AZ</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001274494</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001274494&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001274494, &lt;strong&gt;State:&lt;/strong&gt; AZ</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e4887d148)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e48504a70)">
+          <addresses>
+            <address type="business">
+              <state>CA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001039399</cik>
+          <irs-number></irs-number>
+          <last-date>04 Manufacturing</last-date>
+          <sic>3674</sic>
+          <state>CA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001039399</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001039399&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001039399, &lt;strong&gt;State:&lt;/strong&gt; CA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e487de030)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e487fc560)">
+          <addresses>
+            <address type="business" />
+            <address type="mailing" />
+          </addresses>
+          <cik>0001057097</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001057097</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001057097&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001057097</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e487c47b0)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e4884e658)">
+          <addresses>
+            <address type="business">
+              <state>TX</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001272547</cik>
+          <irs-number>
+            <former-name-0 DATE="2003-12-17" NAME="SPS SPINCO INC" />
+          </irs-number>
+          <sic>3674</sic>
+          <state>TX</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001272547</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001272547&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001272547, &lt;strong&gt;State:&lt;/strong&gt; TX</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e4886bb18)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e487d2798)">
+          <addresses>
+            <address type="business">
+              <state>D0</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001392522</cik>
+          <irs-number>
+            <former-name-0 DATE="2012-04-27" NAME="Freescale Semiconductor Holdings I, Ltd." />
+          </irs-number>
+          <sic>3674</sic>
+          <state>D0</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001392522</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001392522&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001392522, &lt;strong&gt;State:&lt;/strong&gt; D0</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e4882f8b0)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e487c3f88)">
+          <addresses>
+            <address type="business">
+              <state>TX</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001828161</cik>
+          <irs-number>
+            <former-name-0 DATE="2026-09-01" NAME="FTC Solar, Inc." />
+          </irs-number>
+          <last-date>04 Manufacturing</last-date>
+          <sic>3674</sic>
+          <state>TX</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001828161</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001828161&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001828161, &lt;strong&gt;State:&lt;/strong&gt; TX</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e4878c638)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e48750460)">
+          <addresses>
+            <address type="business">
+              <state>CA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001041840</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>CA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001041840</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001041840&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001041840, &lt;strong&gt;State:&lt;/strong&gt; CA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e487d5d58)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e4888e3a0)">
+          <addresses>
+            <address type="business">
+              <state>K3</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001439969</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>K3</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001439969</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001439969&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001439969, &lt;strong&gt;State:&lt;/strong&gt; K3</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e4888e508)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e4884ef40)">
+          <addresses>
+            <address type="business">
+              <state>CA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001851961</cik>
+          <irs-number>
+            <former-name-0 DATE="2024-03-28" NAME="Concord Acquisition Corp III" />
+          </irs-number>
+          <last-date>04 Manufacturing</last-date>
+          <sic>3674</sic>
+          <state>CA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001851961</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001851961&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001851961, &lt;strong&gt;State:&lt;/strong&gt; CA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e48840e90)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e487c4180)">
+          <addresses>
+            <address type="business">
+              <state>CA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001421365</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>CA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001421365</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001421365&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001421365, &lt;strong&gt;State:&lt;/strong&gt; CA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e488abb80)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e4888dc20)">
+          <addresses>
+            <address type="business">
+              <state>CA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001052188</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>CA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001052188</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001052188&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001052188, &lt;strong&gt;State:&lt;/strong&gt; CA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e48893e08)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e48893d78)">
+          <addresses>
+            <address type="business">
+              <state>A6</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001053782</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>A6</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001053782</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001053782&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001053782, &lt;strong&gt;State:&lt;/strong&gt; A6</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e488abbf8)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e487aaaa0)">
+          <addresses>
+            <address type="business">
+              <state>CA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001161396</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>CA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001161396</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001161396&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001161396, &lt;strong&gt;State:&lt;/strong&gt; CA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e4889d030)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e488ab880)">
+          <addresses>
+            <address type="business">
+              <state>CA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001432150</cik>
+          <irs-number>
+            <former-name-0 DATE="2016-04-04" NAME="GigOptix, Inc." />
+          </irs-number>
+          <sic>3674</sic>
+          <state>CA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001432150</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001432150&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001432150, &lt;strong&gt;State:&lt;/strong&gt; CA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e4889cdd8)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e4889cd48)">
+          <addresses>
+            <address type="business">
+              <state>TX</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001069562</cik>
+          <irs-number>
+            <former-name-0 DATE="2001-03-01" NAME="ESPOS INC" />
+            <former-name-1 DATE="2006-11-17" NAME="INTEGRATED PERFORMANCE SYSTEMS INC" />
+          </irs-number>
+          <sic>3674</sic>
+          <state>TX</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001069562</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001069562&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001069562, &lt;strong&gt;State:&lt;/strong&gt; TX</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e4889d750)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e4889d540)">
+          <addresses>
+            <address type="business">
+              <state>NY</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001709048</cik>
+          <irs-number></irs-number>
+          <last-date>04 Manufacturing</last-date>
+          <sic>3674</sic>
+          <state>NY</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001709048</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001709048&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001709048, &lt;strong&gt;State:&lt;/strong&gt; NY</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e4889d858)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e4889d498)">
+          <addresses>
+            <address type="business">
+              <state>U0</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001095270</cik>
+          <irs-number>
+            <former-name-0 DATE="2009-12-29" NAME="CHARTERED SEMICONDUCTOR MANUFACTURING LTD" />
+            <former-name-1 DATE="2010-03-16" NAME="Globalfoundries Singapore PTE. LTD." />
+          </irs-number>
+          <sic>3674</sic>
+          <state>U0</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001095270</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001095270&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001095270, &lt;strong&gt;State:&lt;/strong&gt; U0</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e4877cd90)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e4889d288)">
+          <addresses>
+            <address type="business">
+              <state>NJ</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001081197</cik>
+          <irs-number>
+            <former-name-0 DATE="2002-02-14" NAME="GLOBESPAN INC/DE" />
+            <former-name-1 DATE="1999-11-15" NAME="GLOBESPAN SEMICONDUCTOR INC" />
+          </irs-number>
+          <sic>3674</sic>
+          <state>NJ</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001081197</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001081197&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001081197, &lt;strong&gt;State:&lt;/strong&gt; NJ</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e4877cc28)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e4889dbb8)">
+          <addresses>
+            <address type="business">
+              <state>CA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001126741</cik>
+          <irs-number></irs-number>
+          <last-date>04 Manufacturing</last-date>
+          <sic>3674</sic>
+          <state>CA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001126741</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001126741&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001126741, &lt;strong&gt;State:&lt;/strong&gt; CA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e4877d5a0)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e4877d0c0)">
+          <addresses>
+            <address type="business">
+              <state>MA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001224128</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>MA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001224128</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001224128&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001224128, &lt;strong&gt;State:&lt;/strong&gt; MA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e4877d6a8)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e4877d4e0)">
+          <addresses>
+            <address type="business">
+              <state>NH</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001394954</cik>
+          <irs-number>
+            <former-name-0 DATE="2011-07-20" NAME="GT Solar International, Inc." />
+          </irs-number>
+          <sic>3674</sic>
+          <state>NH</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001394954</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001394954&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001394954, &lt;strong&gt;State:&lt;/strong&gt; NH</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e488b1218)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e4877d900)">
+          <addresses>
+            <address type="business">
+              <state>NC</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001832487</cik>
+          <irs-number>
+            <former-name-0 DATE="2021-10-27" NAME="Laffin Acquisition Corp." />
+          </irs-number>
+          <last-date>04 Manufacturing</last-date>
+          <sic>3674</sic>
+          <state>NC</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001832487</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001832487&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001832487, &lt;strong&gt;State:&lt;/strong&gt; NC</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e488b1a58)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e4877d258)">
+          <addresses>
+            <address type="business">
+              <state>F4</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001371541</cik>
+          <irs-number>
+            <former-name-0 DATE="2015-02-06" NAME="Hanwha SolarOne Co., Ltd." />
+            <former-name-1 DATE="2010-12-27" NAME="Solarfun Power Holdings Co., Ltd." />
+          </irs-number>
+          <sic>3674</sic>
+          <state>F4</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001371541</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001371541&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001371541, &lt;strong&gt;State:&lt;/strong&gt; F4</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e488b94a0)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e488b15a8)">
+          <addresses>
+            <address type="business">
+              <state>MN</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0000351298</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>MN</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0000351298</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0000351298&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0000351298, &lt;strong&gt;State:&lt;/strong&gt; MN</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e488b93c8)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e488b19b0)">
+          <addresses>
+            <address type="business">
+              <state>CA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001065246</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>CA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001065246</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001065246&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001065246, &lt;strong&gt;State:&lt;/strong&gt; CA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e488b95a8)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e488b1e00)">
+          <addresses>
+            <address type="business" />
+            <address type="mailing" />
+          </addresses>
+          <cik>0001342338</cik>
+          <irs-number></irs-number>
+          <last-date>04 Manufacturing</last-date>
+          <sic>3674</sic>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001342338</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001342338&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001342338</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e488b9ce0)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e488b1cf8)">
+          <addresses>
+            <address type="business">
+              <state>MA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001130866</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>MA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001130866</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001130866&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001130866, &lt;strong&gt;State:&lt;/strong&gt; MA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e48870b40)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e488b9788)">
+          <addresses>
+            <address type="business">
+              <state>CA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001080909</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>CA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001080909</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001080909&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001080909, &lt;strong&gt;State:&lt;/strong&gt; CA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e48875578)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e48826f40)">
+          <addresses>
+            <address type="business">
+              <state>NV</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0000715593</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>NV</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0000715593</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0000715593&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0000715593, &lt;strong&gt;State:&lt;/strong&gt; NV</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e4884e6b8)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e48847088)">
+          <addresses>
+            <address type="business">
+              <state>MA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0000855182</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>MA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0000855182</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0000855182&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0000855182, &lt;strong&gt;State:&lt;/strong&gt; MA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e48864990)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e4886bf50)">
+          <addresses>
+            <address type="business">
+              <state>CA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001652535</cik>
+          <irs-number></irs-number>
+          <last-date>04 Manufacturing</last-date>
+          <sic>3674</sic>
+          <state>CA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001652535</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001652535&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001652535, &lt;strong&gt;State:&lt;/strong&gt; CA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e484f9600)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e48843270)">
+          <addresses>
+            <address type="business">
+              <state>A8</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001281872</cik>
+          <irs-number>
+            <former-name-0 DATE="2006-11-30" NAME="FC FINANCIAL SERVICES INC" />
+          </irs-number>
+          <sic>3674</sic>
+          <state>A8</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001281872</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001281872&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001281872, &lt;strong&gt;State:&lt;/strong&gt; A8</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e488910a8)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e48890fd0)">
+          <addresses>
+            <address type="business">
+              <state>PA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001096491</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>PA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001096491</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001096491&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001096491, &lt;strong&gt;State:&lt;/strong&gt; PA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e4880c448)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e48891258)">
+          <addresses>
+            <address type="business">
+              <state>PA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001096492</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>PA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001096492</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001096492&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001096492, &lt;strong&gt;State:&lt;/strong&gt; PA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e4884e8c8)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e4888af30)">
+          <addresses>
+            <address type="business">
+              <state>TX</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001507957</cik>
+          <irs-number>
+            <former-name-0 DATE="2012-11-05" NAME="Ideal Power Converters, Inc." />
+          </irs-number>
+          <last-date>04 Manufacturing</last-date>
+          <sic>3674</sic>
+          <state>TX</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001507957</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001507957&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001507957, &lt;strong&gt;State:&lt;/strong&gt; TX</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e48806668)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e487aad70)">
+          <addresses>
+            <address type="business">
+              <state>CA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0000812927</cik>
+          <irs-number>
+            <former-name-0 DATE="1994-03-10" NAME="INTERNATIONAL MICROELECTRONIC PRODUCTS INC" />
+          </irs-number>
+          <sic>3674</sic>
+          <state>CA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0000812927</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0000812927&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0000812927, &lt;strong&gt;State:&lt;/strong&gt; CA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e4878c2c0)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e4856dfb0)">
+          <addresses>
+            <address type="business">
+              <state>CA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001841925</cik>
+          <irs-number>
+            <former-name-0 DATE="2021-06-01" NAME="Thunder Bridge II Surviving Pubco, Inc." />
+          </irs-number>
+          <last-date>04 Manufacturing</last-date>
+          <sic>3674</sic>
+          <state>CA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001841925</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001841925&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001841925, &lt;strong&gt;State:&lt;/strong&gt; CA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e48875908)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e488739d8)">
+          <addresses>
+            <address type="business">
+              <state>TX</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001816696</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>TX</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001816696</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001816696&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001816696, &lt;strong&gt;State:&lt;/strong&gt; TX</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e48750e08)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e4888e388)">
+          <addresses>
+            <address type="business">
+              <state>2M</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001107457</cik>
+          <irs-number></irs-number>
+          <last-date>04 Manufacturing</last-date>
+          <sic>3674</sic>
+          <state>2M</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001107457</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001107457&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001107457, &lt;strong&gt;State:&lt;/strong&gt; 2M</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e487d5e18)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e482081e0)">
+          <addresses>
+            <address type="business">
+              <state>U0</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001280707</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>U0</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001280707</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001280707&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001280707, &lt;strong&gt;State:&lt;/strong&gt; U0</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e4878aad8)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e4882f448)">
+          <addresses>
+            <address type="business">
+              <state>CA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0000932980</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>CA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0000932980</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0000932980&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0000932980, &lt;strong&gt;State:&lt;/strong&gt; CA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e487c3c10)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e4877abe0)">
+          <addresses>
+            <address type="business">
+              <state>F4</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001450040</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>F4</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001450040</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001450040&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001450040, &lt;strong&gt;State:&lt;/strong&gt; F4</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e488756f8)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e487f07d8)">
+          <addresses>
+            <address type="business">
+              <state>CA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001160958</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>CA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001160958</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001160958&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001160958, &lt;strong&gt;State:&lt;/strong&gt; CA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e488432d0)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e487af480)">
+          <addresses>
+            <address type="business">
+              <state>CA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001099425</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>CA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001099425</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001099425&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001099425, &lt;strong&gt;State:&lt;/strong&gt; CA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e48882408)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e488915e8)">
+          <addresses>
+            <address type="business">
+              <state>CA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0000909211</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>CA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0000909211</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0000909211&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0000909211, &lt;strong&gt;State:&lt;/strong&gt; CA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e48885e40)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e4886b968)">
+          <addresses>
+            <address type="business" />
+            <address type="mailing" />
+          </addresses>
+          <cik>0001895597</cik>
+          <irs-number></irs-number>
+          <last-date>04 Manufacturing</last-date>
+          <sic>3674</sic>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001895597</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001895597&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001895597</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e4887f828)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e487ab298)">
+          <addresses>
+            <address type="business">
+              <state>PA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0000874689</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>PA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0000874689</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0000874689&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0000874689, &lt;strong&gt;State:&lt;/strong&gt; PA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e48505988)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e4884e9a0)">
+          <addresses>
+            <address type="business">
+              <state>CA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0000929846</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>CA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0000929846</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0000929846&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0000929846, &lt;strong&gt;State:&lt;/strong&gt; CA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e48875e48)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e4876a3d8)">
+          <addresses>
+            <address type="business">
+              <state>CA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0000854701</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>CA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0000854701</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0000854701&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0000854701, &lt;strong&gt;State:&lt;/strong&gt; CA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e48869978)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e48790fc8)">
+          <addresses>
+            <address type="business">
+              <state>CA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0000050863</cik>
+          <irs-number></irs-number>
+          <last-date>04 Manufacturing</last-date>
+          <sic>3674</sic>
+          <state>CA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0000050863</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0000050863&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0000050863, &lt;strong&gt;State:&lt;/strong&gt; CA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e487d61c0)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e48791b38)">
+          <addresses>
+            <address type="business">
+              <state>CA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0000768545</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>CA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0000768545</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0000768545&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0000768545, &lt;strong&gt;State:&lt;/strong&gt; CA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e48783da0)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e48805c00)">
+          <addresses>
+            <address type="business">
+              <state>FL</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001120105</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>FL</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001120105</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001120105&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001120105, &lt;strong&gt;State:&lt;/strong&gt; FL</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e4884f1e0)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e48842ad8)">
+          <addresses>
+            <address type="business" />
+            <address type="mailing" />
+          </addresses>
+          <cik>0001041256</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001041256</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001041256&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001041256</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <entry title="ARRAY(0x564e48787d40)">
+      <content type="text/xml">
+        <company-info name="ARRAY(0x564e484f3ab8)">
+          <addresses>
+            <address type="business">
+              <state>CA</state>
+            </address>
+            <address type="mailing" />
+          </addresses>
+          <cik>0001311241</cik>
+          <irs-number></irs-number>
+          <sic>3674</sic>
+          <state>CA</state>
+        </company-info>
+      </content>
+      <id>urn:tag:www.sec.gov:cik=0001311241</id>
+      <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001311241&amp;owner=exclude&amp;hidefilings=0" type="text/html" />
+      <summary type="html">&lt;strong&gt;CIK:&lt;/strong&gt; 0001311241, &lt;strong&gt;State:&lt;/strong&gt; CA</summary>
+      <updated>2026-09-06T08:23:32-04:00</updated>
+    </entry>
+    <id>https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;SIC=3674&amp;type=10-K&amp;owner=include&amp;count=100</id>
+    <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;SIC=3674&amp;type=10-K&amp;owner=include&amp;count=100&amp;start=100&amp;output=atom" rel="self" type="application/atom+xml" />
+    <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;SIC=3674&amp;type=10-K&amp;owner=include&amp;count=100&amp;start=100" rel="alternate" type="text/html" />
+    <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;SIC=3674&amp;type=10-K&amp;owner=include&amp;count=100&amp;output=atom&amp;start=0" rel="prev" type="application/atom+xml" />
+    <link href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;SIC=3674&amp;type=10-K&amp;owner=include&amp;count=100&amp;output=atom&amp;start=200" rel="next" type="application/atom+xml" />
+    <title>Company Search Feed</title>
+    <updated>2026-09-06T08:23:32-04:00</updated>
+  </feed>
