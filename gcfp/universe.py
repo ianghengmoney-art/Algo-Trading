@@ -220,7 +220,10 @@ def build_universe(
     universe = Universe(as_of=as_of, source=adapter.name)
 
     for index, symbol in enumerate(symbols):
-        if progress and index % 100 == 0:
+        # Every 10, not every 100: each name can take several seconds when it
+        # is not cached, so a 100-name gap was ten minutes of silence that
+        # looked exactly like a hang.
+        if progress and index % 10 == 0:
             print(f"  universe: {index}/{len(symbols)} ({symbol})", flush=True)
         try:
             # Pin the price window to the evaluation date. Without this the

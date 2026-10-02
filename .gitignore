@@ -9,3 +9,9 @@ venv/
 reports/
 .pytest_cache/
 .env
+
+# Cached SEC and price responses. Re-downloadable, and large: one
+# push carried 1,855 of them, about 1.7 GB. Files already tracked stay
+# tracked so nobody's local cache is deleted on the next pull; this
+# stops new ones being added.
+.cache/

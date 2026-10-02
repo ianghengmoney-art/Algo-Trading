@@ -537,3 +537,83 @@ class TestRealFilingPatternEndToEnd:
         assert len(year) == 4
         assert sum(q.net_income for q in year) == pytest.approx(10e9)
         assert sum(q.operating_cash_flow for q in year) == pytest.approx(12e9)
+
+
+class TestFirstFiledDate:
+    """A period is known from the day it was first published, not the last
+    day it was reprinted as a comparative.
+
+    Every 10-Q repeats last year's quarter and every 10-K repeats two prior
+    years, so taking the latest filing dated Caterpillar's Q1 2016 to February
+    2018. Live, that scrambled which quarters the C1 reconstruction treated as
+    known and cut CAT's usable history from about 6.8 years to 5.5.
+    """
+
+    @staticmethod
+    def reprinted():
+        return payload(Revenues=[
+            fact(100, "2024-03-31", "2024-01-01", filed="2024-04-30", form="10-Q"),
+            # The same quarter, reprinted as a comparative a year later.
+            fact(100, "2024-03-31", "2024-01-01", filed="2025-04-29", form="10-Q"),
+        ])
+
+    def test_the_period_is_dated_by_its_first_filing(self):
+        q = xbrl.select_facts(self.reprinted(), "revenue", annual=False)
+        assert q[date(2024, 3, 31)].filed == date(2024, 4, 30)
+
+    def test_a_restated_value_still_wins_but_keeps_the_original_date(self):
+        data = payload(Revenues=[
+            fact(100, "2024-03-31", "2024-01-01", filed="2024-04-30", form="10-Q"),
+            fact(104, "2024-03-31", "2024-01-01", filed="2024-09-15", form="10-Q/A"),
+        ])
+        q = xbrl.select_facts(data, "revenue", annual=False)
+        assert q[date(2024, 3, 31)].value == 104
+        assert q[date(2024, 3, 31)].filed == date(2024, 4, 30)
+
+    def test_point_in_time_is_unchanged(self):
+        """Under as_of the later reprint is invisible, so nothing moves."""
+        q = xbrl.select_facts(
+            self.reprinted(), "revenue", annual=False, as_of=date(2024, 12, 31)
+        )
+        assert q[date(2024, 3, 31)].filed == date(2024, 4, 30)
+
+
+class TestFourthQuarterShareCounts:
+    """Share counts are time-weighted averages, not flows.
+
+    Deriving Q4 as the year minus nine months is right for earnings and wrong
+    for shares: it gave Caterpillar about minus four million shares, which
+    either dropped C1 observations or produced a P/E near zero, and would
+    have corrupted every per-share value between a 10-K and the next 10-Q.
+    """
+
+    @staticmethod
+    def year(fy_avg, nine_month_avg):
+        def dur(val, end, start, filed, form):
+            return {"val": val, "end": end, "start": start, "filed": filed, "form": form}
+        return {"cik": 1, "entityName": "X", "facts": {"us-gaap": {
+            "WeightedAverageNumberOfDilutedSharesOutstanding": {"units": {"shares": [
+                dur(nine_month_avg, "2025-09-30", "2025-01-01", "2025-10-30", "10-Q"),
+                dur(fy_avg, "2025-12-31", "2025-01-01", "2026-02-13", "10-K"),
+            ]}},
+        }}}
+
+    def test_q4_is_recovered_by_duration_weighting(self):
+        q = xbrl.select_facts(self.year(474e6, 476e6), "shares_diluted", annual=False)
+        q4 = q[date(2025, 12, 31)].value
+        # (474 x 364 - 476 x 272) / 92, the exact time-weighted remainder.
+        assert q4 == pytest.approx((474e6 * 364 - 476e6 * 272) / 92)
+        assert 440e6 < q4 < 476e6
+
+    def test_a_share_count_is_never_derived_as_non_positive(self):
+        q = xbrl.select_facts(self.year(100.0, 1e9), "shares_diluted", annual=False)
+        assert date(2025, 12, 31) not in q
+
+    def test_flows_are_still_subtracted(self):
+        """Earnings are additive and keep the subtraction."""
+        data = payload(NetIncomeLoss=[
+            fact(300, "2025-09-30", "2025-01-01", filed="2025-10-30", form="10-Q"),
+            fact(420, "2025-12-31", "2025-01-01", filed="2026-02-13", form="10-K"),
+        ])
+        q = xbrl.select_facts(data, "net_income", annual=False)
+        assert q[date(2025, 12, 31)].value == 120

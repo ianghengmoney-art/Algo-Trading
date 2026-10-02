@@ -21,7 +21,7 @@ Three things make raw XBRL unusable as-is:
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, datetime
 from typing import Any, Callable, Iterable, Sequence
 
@@ -387,6 +387,13 @@ def _facts_for_tag(payload: dict[str, Any], tag: str) -> list[Fact]:
 #: fiscal year.  A fourth would be the annual figure.
 YTD_DAYS = (75, 290)
 
+#: Duration fields that are *time-weighted averages*, not flows.  A year's
+#: weighted-average share count is not the sum of its quarters, so Q4 cannot
+#: be the year minus nine months: that produced about minus four million
+#: shares for Caterpillar.  It is recovered by duration weighting instead —
+#: exact, by the definition of a time-weighted average.
+AVERAGE_FIELDS: frozenset[str] = frozenset({"shares_diluted", "shares_basic"})
+
 #: A three-quarter cumulation is ~273 days.  Widened for 52/53-week filers and
 #: for the odd fiscal calendar; the band must not reach ANNUAL_DAYS or a full
 #: year would be mistaken for nine months and Q4 would come out near zero.
@@ -492,6 +499,8 @@ def _resolve(
 ) -> dict[date, Fact]:
     """Best fact per period end among those ``keep`` admits."""
     chosen: dict[date, Fact] = {}
+    #: When each period first became public, under any tag in the chain.
+    first_filed: dict[date, date] = {}
     chain = TAG_CHAINS.get(field, ())
     for tag in chain:
         for fact in _facts_for_tag(payload, tag):
@@ -499,6 +508,9 @@ def _resolve(
                 continue
             if not keep(fact):
                 continue
+            known = first_filed.get(fact.period_end)
+            if known is None or fact.filed < known:
+                first_filed[fact.period_end] = fact.filed
             existing = chosen.get(fact.period_end)
             if existing is None:
                 chosen[fact.period_end] = fact
@@ -509,7 +521,20 @@ def _resolve(
                 chosen[fact.period_end] = fact
             elif fact.tag == existing.tag and fact.filed > existing.filed:
                 chosen[fact.period_end] = fact
-    return chosen
+
+    # The *value* comes from the latest filing, but the *date* must be the
+    # first.  Every 10-Q repeats last year's quarter as a comparative and
+    # every 10-K repeats two prior years, so "latest filing" dated each
+    # period by the last time it was reprinted — about two years after it
+    # became public.  Caterpillar's Q1 2016 read as filed in February 2018.
+    # Live, that scrambled which quarters counted as known at each date in
+    # the C1 reconstruction and cut CAT's usable history to 5.5 years.
+    # Under ``as_of`` nothing filed later is ever seen, so a backtest was not
+    # affected; the first-filed date is what it already used.
+    return {
+        end: replace(fact, filed=first_filed[end]) if fact.filed != first_filed[end] else fact
+        for end, fact in chosen.items()
+    }
 
 
 def _with_derived_fourth_quarter(
@@ -566,8 +591,19 @@ def _with_derived_fourth_quarter(
             low, high = QUARTER_DAYS
             if not (low <= gap <= high):
                 continue
+            if field in AVERAGE_FIELDS:
+                fy_days, ytd_days = full_year.duration_days, ytd.duration_days
+                if not fy_days or not ytd_days or gap <= 0:
+                    continue
+                value = (full_year.value * fy_days - ytd.value * ytd_days) / gap
+                if value <= 0:
+                    # A share count cannot be non-positive.  Report nothing
+                    # rather than a number that is plainly impossible.
+                    continue
+            else:
+                value = full_year.value - ytd.value
             out[year_end] = Fact(
-                value=full_year.value - ytd.value,
+                value=value,
                 period_end=year_end,
                 period_start=ytd.period_end,
                 # The subtraction is only known once both halves are filed.
@@ -646,6 +682,7 @@ __all__ = [
     "ANNUAL_DAYS",
     "YTD_DAYS",
     "NINE_MONTH_DAYS",
+    "AVERAGE_FIELDS",
     "YTD_FIELDS",
     "select_facts",
     "has_any_fact",
