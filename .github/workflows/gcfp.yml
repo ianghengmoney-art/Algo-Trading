@@ -29,6 +29,16 @@ on:
           - probe          # §18 feasibility probe, full (1,400-company peer sample)
           - probe-quick    # §18 probe on the 10 roster companies only
           - screen         # the weekly screen (500-company sample)
+          - backtest       # §13 backtest on a random sample incl. dead companies
+      sample:
+        description: "backtest only: how many companies to sample"
+        default: "300"
+      start:
+        description: "backtest only: first date (YYYY-MM-DD)"
+        default: "2015-01-01"
+      end:
+        description: "backtest only: last date (YYYY-MM-DD)"
+        default: "2025-09-30"
       branch:
         description: "Branch whose code to run"
         default: claude/new-session-nohmxx
@@ -36,6 +46,9 @@ on:
 env:
   STRATEGY_BRANCH: ${{ github.event.inputs.branch || 'claude/new-session-nohmxx' }}
   JOB: ${{ github.event.inputs.job || 'screen' }}
+  SAMPLE: ${{ github.event.inputs.sample || '300' }}
+  START: ${{ github.event.inputs.start || '2015-01-01' }}
+  END: ${{ github.event.inputs.end || '2025-09-30' }}
 
 # One run at a time; a second request waits rather than racing the first.
 concurrency:
@@ -48,7 +61,9 @@ permissions:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 300
+    # GitHub's ceiling is 360. The run step stops at 330 so the cache is
+    # still saved; running the job again then resumes instead of restarting.
+    timeout-minutes: 355
     steps:
       - name: Check the SEC contact secret is set
         env:
@@ -72,9 +87,10 @@ jobs:
 
       # Filings and prices downloaded by earlier runs, so each run only fetches
       # what is new. Saved under a fresh key every run and restored from the
-      # most recent, which is how a GitHub cache is kept current.
+      # most recent, which is how a GitHub cache is kept current. Saved even
+      # when the run is cut off, so the next run carries on from there.
       - name: Restore download cache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: .cache
           key: gcfp-cache-${{ github.run_id }}
@@ -82,6 +98,7 @@ jobs:
 
       - name: Run
         id: run
+        timeout-minutes: 330
         env:
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
         run: |
@@ -101,22 +118,35 @@ jobs:
                 --user-agent "$SEC_USER_AGENT" --limit 500 \
                 --symbols-out symbols.txt --progress
               ;;
+            backtest)
+              python scripts/run_backtest.py --source edgar \
+                --user-agent "$SEC_USER_AGENT" --pit-sample "$SAMPLE" \
+                --start "$START" --end "$END" --progress --out backtest.txt
+              ;;
             *)
               echo "::error::unknown job $JOB"; exit 2 ;;
           esac
           code=$?
           echo "exit_code=$code" >> "$GITHUB_OUTPUT"
-          # The probe exits 1 when a §18 stop condition trips. That is a
-          # finding, not a crash, so the report is still committed.
+          # The probe exits 1 when a §18 stop condition trips, the backtest
+          # when a strategy-break criterion does. Both are findings, not
+          # crashes, so the report is still committed.
           if [ "$code" -gt 1 ]; then exit "$code"; fi
           exit 0
+
+      - name: Save download cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: .cache
+          key: gcfp-cache-${{ github.run_id }}
 
       - name: Commit the report back
         if: always() && steps.run.outcome == 'success'
         run: |
           git config user.name  "gcfp-bot"
           git config user.email "gcfp-bot@users.noreply.github.com"
-          git add -f report.txt symbols.txt reports/ 2>/dev/null || true
+          git add -f report.txt symbols.txt backtest.txt reports/ 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "Nothing new to commit."
             exit 0
@@ -133,6 +163,7 @@ jobs:
           path: |
             report.txt
             symbols.txt
+            backtest.txt
             reports/
           if-no-files-found: ignore
           retention-days: 30
