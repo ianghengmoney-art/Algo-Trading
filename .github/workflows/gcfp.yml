@@ -1,0 +1,138 @@
+# Runs GCFP on GitHub's machines, so nothing depends on your computer being on.
+#
+#   * Every Sunday 22:00 UTC (Monday 06:00 Singapore): the weekly screen.
+#   * Any time, from the Actions tab → "GCFP" → "Run workflow": pick a job.
+#
+# Alert-only, like everything else in this repo: it writes report files and
+# commits them back. It cannot place an order — there is nothing here to place
+# one with.
+#
+# Needs one repository secret, SEC_USER_AGENT, holding a contact string the SEC
+# accepts, e.g. "Your Name you@example.com". Settings → Secrets and variables →
+# Actions → New repository secret.
+#
+# GitHub only runs scheduled and manual workflows from the default branch, so
+# this file has to live on main. The code it runs comes from STRATEGY_BRANCH.
+
+name: GCFP
+
+on:
+  schedule:
+    - cron: "0 22 * * 0"
+  workflow_dispatch:
+    inputs:
+      job:
+        description: "What to run"
+        type: choice
+        default: probe
+        options:
+          - probe          # §18 feasibility probe, full (1,400-company peer sample)
+          - probe-quick    # §18 probe on the 10 roster companies only
+          - screen         # the weekly screen (500-company sample)
+      branch:
+        description: "Branch whose code to run"
+        default: claude/new-session-nohmxx
+
+env:
+  STRATEGY_BRANCH: ${{ github.event.inputs.branch || 'claude/new-session-nohmxx' }}
+  JOB: ${{ github.event.inputs.job || 'screen' }}
+
+# One run at a time; a second request waits rather than racing the first.
+concurrency:
+  group: gcfp
+  cancel-in-progress: false
+
+permissions:
+  contents: write   # to commit the report back
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - name: Check the SEC contact secret is set
+        env:
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+        run: |
+          if [ -z "$SEC_USER_AGENT" ]; then
+            echo "::error::Repository secret SEC_USER_AGENT is not set. Settings → Secrets and variables → Actions → New repository secret. Value like: Your Name you@example.com"
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.STRATEGY_BRANCH }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install
+        run: pip install -r requirements.txt
+
+      # Filings and prices downloaded by earlier runs, so each run only fetches
+      # what is new. Saved under a fresh key every run and restored from the
+      # most recent, which is how a GitHub cache is kept current.
+      - name: Restore download cache
+        uses: actions/cache@v4
+        with:
+          path: .cache
+          key: gcfp-cache-${{ github.run_id }}
+          restore-keys: gcfp-cache-
+
+      - name: Run
+        id: run
+        env:
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+        run: |
+          set +e
+          case "$JOB" in
+            probe)
+              python scripts/data_feasibility_probe.py --source edgar \
+                --user-agent "$SEC_USER_AGENT" --peer-sample 1400 --progress \
+                --out report.txt
+              ;;
+            probe-quick)
+              python scripts/data_feasibility_probe.py --source edgar \
+                --user-agent "$SEC_USER_AGENT" --progress --out report.txt
+              ;;
+            screen)
+              python scripts/run_screen.py --source edgar \
+                --user-agent "$SEC_USER_AGENT" --limit 500 \
+                --symbols-out symbols.txt --progress
+              ;;
+            *)
+              echo "::error::unknown job $JOB"; exit 2 ;;
+          esac
+          code=$?
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          # The probe exits 1 when a §18 stop condition trips. That is a
+          # finding, not a crash, so the report is still committed.
+          if [ "$code" -gt 1 ]; then exit "$code"; fi
+          exit 0
+
+      - name: Commit the report back
+        if: always() && steps.run.outcome == 'success'
+        run: |
+          git config user.name  "gcfp-bot"
+          git config user.email "gcfp-bot@users.noreply.github.com"
+          git add -f report.txt symbols.txt reports/ 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "Nothing new to commit."
+            exit 0
+          fi
+          git commit -m "GCFP $JOB report $(date -u +%Y-%m-%d)"
+          git pull --rebase origin "$STRATEGY_BRANCH"
+          git push origin "HEAD:$STRATEGY_BRANCH"
+
+      - name: Keep a downloadable copy
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gcfp-${{ env.JOB }}-${{ github.run_id }}
+          path: |
+            report.txt
+            symbols.txt
+            reports/
+          if-no-files-found: ignore
+          retention-days: 30
