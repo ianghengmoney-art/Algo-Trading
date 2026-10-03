@@ -14,6 +14,8 @@ remember.
 
 from __future__ import annotations
 
+import time
+
 from dataclasses import dataclass, field, replace
 from datetime import date, timedelta
 from typing import Callable, Iterable, Sequence
@@ -249,7 +251,10 @@ class Backtester:
         symbols = self.symbols
         if self.eligibility is not None:
             symbols = [s for s in symbols if self.eligibility(s, as_of)]
-        return build_universe(adapter, symbols, config, as_of=as_of)
+        return build_universe(
+            adapter, symbols, config, as_of=as_of,
+            progress=getattr(self, "_universe_progress", False),
+        )
 
     # -- prices -----------------------------------------------------------
     def _price_on(self, symbol: str, as_of: date) -> float | None:
@@ -290,11 +295,25 @@ class Backtester:
             result.notes.append("no rebalance dates in the requested period")
             return result
 
+        started = time.monotonic()
         for index, as_of in enumerate(dates):
-            if progress and index % 12 == 0:
-                print(f"  {as_of.isoformat()} ...", flush=True)
+            # The first month downloads every company's filings and prices, so
+            # it reports per company; later months run from memory and report
+            # one line each. A line a year looked exactly like a hang.
+            self._universe_progress = progress and index == 0
+            if self._universe_progress:
+                print(f"  {as_of.isoformat()}: first month — downloading "
+                      f"{len(self.symbols)} companies", flush=True)
             record = self._rebalance(book, as_of, result)
             result.rebalances.append(record)
+            if progress:
+                minutes = (time.monotonic() - started) / 60
+                print(
+                    f"  {as_of.isoformat()} ({index + 1}/{len(dates)}, "
+                    f"{minutes:.0f} min): screened {record.evaluated}, "
+                    f"passed {record.passers}, holding {len(book.positions)}",
+                    flush=True,
+                )
 
         # Close everything at the end so every position becomes a closed one
         # and the return distribution covers the whole run.

@@ -432,7 +432,7 @@ class TestEligibility:
         seen: list[list[str]] = []
         monkeypatch.setattr(
             engine_module, "build_universe",
-            lambda adapter, symbols, config, as_of=None: seen.append(list(symbols)),
+            lambda adapter, symbols, config, as_of=None, progress=False: seen.append(list(symbols)),
         )
         settings = BacktestSettings(start=date(2020, 1, 1), end=date(2021, 1, 1))
         engine = Backtester(
