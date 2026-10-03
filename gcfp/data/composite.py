@@ -58,6 +58,9 @@ DEFAULT_HISTORY_DAYS = int(365.25 * 8)
 #: fundamentals side, where the whole filing history arrives in one response.
 _WARM_UP_YEARS = 2
 
+#: Start of the Treasury-yield history read for the risk-free rate.
+_YIELD_HISTORY_START = date(2000, 1, 1)
+
 
 @dataclass
 class CompositeAdapter(DataAdapter):
@@ -75,6 +78,7 @@ class CompositeAdapter(DataAdapter):
     _ticker_cache: dict[str, tuple[str, date | None] | None] = field(
         default_factory=dict, repr=False
     )
+    _yield_history: tuple[PricePoint, ...] | None = field(default=None, repr=False)
 
     def __post_init__(self) -> None:
         self.name = f"{self.fundamentals.name}+{self.prices.name}"
@@ -245,23 +249,38 @@ class CompositeAdapter(DataAdapter):
 
     # -- market -----------------------------------------------------------
     def get_market_data(self) -> MarketData:
-        """The risk-free rate, from the 10-year Treasury yield.
+        """The risk-free rate: the 10-year Treasury yield *on the as-of date*.
 
         B1 raises if this is missing rather than assuming a rate, so a failure
         here stops valuation loudly instead of quietly shifting every fair
         value.
+
+        This used to read the latest quote whatever the as-of date, so a
+        backtest valued 2015 with the current yield — lookahead in the one
+        input every DCF shares. The whole yield history is now read once and
+        the last close on or before the as-of date is used.
         """
-        risk_free = None
-        stamp = None
-        try:
-            level = self.prices.get_index_level(TEN_YEAR_YIELD_SYMBOL)
-            if level is not None:
-                # ^TNX quotes the yield in percent.
-                risk_free = level / 100.0
-                stamp = self.as_of or date.today()
-        except DataUnavailable:
-            pass
-        return MarketData(risk_free_rate=risk_free, risk_free_rate_date=stamp)
+        as_of = self.as_of or date.today()
+        if self._yield_history is None:
+            try:
+                self._yield_history = tuple(
+                    self.prices.get_prices(
+                        TEN_YEAR_YIELD_SYMBOL, _YIELD_HISTORY_START, date.today()
+                    )
+                )
+            except DataUnavailable:
+                self._yield_history = ()
+        usable = [
+            p for p in self._yield_history
+            if as_of - timedelta(days=14) <= p.price_date <= as_of
+        ]
+        if not usable:
+            return MarketData(risk_free_rate=None, risk_free_rate_date=None)
+        latest = max(usable, key=lambda p: p.price_date)
+        # ^TNX quotes the yield in percent.
+        return MarketData(
+            risk_free_rate=latest.close / 100.0, risk_free_rate_date=latest.price_date
+        )
 
     # -- C1 reconstruction ------------------------------------------------
     def get_historical_multiples(

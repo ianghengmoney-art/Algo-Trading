@@ -34,6 +34,10 @@ YAHOO_CHART_URL = "https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
 
 #: Yahoo's symbol for the 10-year US Treasury yield, quoted in percent.
 TEN_YEAR_YIELD_SYMBOL = "^TNX"
+
+#: How far back a split lookup reaches. One wide request per symbol, filtered
+#: locally, instead of one request per window asked for.
+SPLIT_HISTORY_START = date(1990, 1, 1)
 #: The benchmark D5 momentum and the beta regression are measured against.
 BENCHMARK_SYMBOL = "^GSPC"
 
@@ -328,6 +332,10 @@ class CachedPriceSource(PriceSource):
     inner: PriceSource = field(default=None)  # type: ignore[assignment]
     cache_dir: Path = field(default=Path(".cache/prices"))
     name: str = field(default="", init=False)
+    #: Parsed files kept in memory. A backtest asks for the same company's
+    #: prices several times a month for ten years; re-reading and re-parsing
+    #: the file each time was most of the CPU in a run.
+    _memory: dict[str, dict | None] = field(default_factory=dict, init=False, repr=False)
 
     def __post_init__(self) -> None:
         if self.inner is None:
@@ -342,13 +350,17 @@ class CachedPriceSource(PriceSource):
         return self.cache_dir / f"{safe}.json"
 
     def _load(self, symbol: str) -> dict | None:
+        if symbol in self._memory:
+            return self._memory[symbol]
         path = self._path(symbol)
-        if not path.exists():
-            return None
-        try:
-            return json.loads(path.read_text())
-        except (OSError, ValueError):
-            return None
+        payload = None
+        if path.exists():
+            try:
+                payload = json.loads(path.read_text())
+            except (OSError, ValueError):
+                payload = None
+        self._memory[symbol] = payload
+        return payload
 
     def get_prices(self, symbol: str, start: date, end: date) -> Sequence[PricePoint]:
         today = date.today().isoformat()
@@ -400,13 +412,55 @@ class CachedPriceSource(PriceSource):
         return points
 
     def _save(self, symbol: str, payload: dict) -> None:
+        self._memory[symbol] = payload
         try:
             self._path(symbol).write_text(json.dumps(payload))
         except OSError:
             pass  # a cache that cannot be written is a slower run, not a wrong one
 
     def get_splits(self, symbol: str, start: date, end: date) -> Sequence[CorporateAction]:
-        return self.inner.get_splits(symbol, start, end)
+        """Splits, fetched once per symbol per day over the whole history and
+        filtered to the window.
+
+        Uncached, a backtest asked the feed for the same company's splits at
+        every monthly rebalance; with the feed throttling and the client
+        backing off, those calls alone could outlast a six-hour job.
+        """
+        key = f"{symbol}.splits"
+        today = date.today().isoformat()
+        cached = self._load(key)
+        stale = cached is None or (
+            cached.get("fetched_on") != today
+            # A past "unavailable" is a rate limit or an outage, not a fact.
+            and (cached.get("unavailable") or end.isoformat() >= cached.get("fetched_on", ""))
+        )
+        if stale:
+            try:
+                actions = self.inner.get_splits(symbol, SPLIT_HISTORY_START, date.today())
+            except DataUnavailable as exc:
+                cached = {"fetched_on": today, "unavailable": str(exc)}
+            else:
+                cached = {
+                    "fetched_on": today,
+                    "rows": [
+                        [a.action_type.value, a.effective_date.isoformat(), a.ratio,
+                         a.description]
+                        for a in actions
+                    ],
+                }
+            self._save(key, cached)
+        if cached.get("unavailable"):
+            raise DataUnavailable("splits", cached["unavailable"])
+        return tuple(
+            CorporateAction(
+                action_type=CorporateActionType(r[0]),
+                effective_date=date.fromisoformat(r[1]),
+                ratio=r[2],
+                description=r[3],
+            )
+            for r in cached["rows"]
+            if start.isoformat() <= r[1] <= end.isoformat()
+        )
 
     def get_index_level(self, symbol: str) -> float | None:
         # A live yield, read once per run; caching it would only risk staleness.

@@ -21,6 +21,8 @@ Three things make raw XBRL unusable as-is:
 
 from __future__ import annotations
 
+from functools import lru_cache
+
 from dataclasses import dataclass, replace
 from datetime import date, datetime
 from typing import Any, Callable, Iterable, Sequence
@@ -327,10 +329,23 @@ class Fact:
 def _parse_date(value: Any) -> date | None:
     if not value:
         return None
+    return _parse_iso_day(str(value)[:10])
+
+
+@lru_cache(maxsize=65536)
+def _parse_iso_day(text: str) -> date | None:
+    # A filing history repeats the same few thousand dates hundreds of
+    # thousands of times; strptime on each was most of a backtest's runtime.
     try:
-        return datetime.strptime(str(value)[:10], "%Y-%m-%d").date()
+        return date.fromisoformat(text)
     except ValueError:
         return None
+
+
+#: Keys under which parsed results are memoised *inside* the payload dict, so
+#: the memo lives exactly as long as the payload and needs no invalidation.
+_PARSED_KEY = "__gcfp_parsed_facts__"
+_SELECTED_KEY = "__gcfp_selected__"
 
 
 #: Namespaces searched, in order.  Foreign private issuers file 20-F under
@@ -342,6 +357,13 @@ NAMESPACES: tuple[str, ...] = ("us-gaap", "ifrs-full", "dei")
 
 def _facts_for_tag(payload: dict[str, Any], tag: str) -> list[Fact]:
     """Every USD (or share) fact recorded under one tag, in any namespace."""
+    memo = payload.setdefault(_PARSED_KEY, {})
+    if tag not in memo:
+        memo[tag] = tuple(_parse_facts_for_tag(payload, tag))
+    return list(memo[tag])
+
+
+def _parse_facts_for_tag(payload: dict[str, Any], tag: str) -> list[Fact]:
     facts = payload.get("facts", {})
     concept = None
     for namespace in NAMESPACES:
@@ -481,6 +503,27 @@ def select_facts(
     sees only what had actually been filed by 2015, restatements included or
     excluded on their real dates.
     """
+    # Memoised for one as-of date at a time: a single evaluation asks for the
+    # same field dozens of times (once per period end for balance-sheet
+    # items), while a backtest moves to a new date each month — so only the
+    # current date is worth keeping, and keeping only it bounds the memory.
+    memo = payload.get(_SELECTED_KEY)
+    if memo is None or memo["as_of"] != as_of:
+        memo = {"as_of": as_of, "results": {}}
+        payload[_SELECTED_KEY] = memo
+    key = (field, annual)
+    if key not in memo["results"]:
+        memo["results"][key] = _select_facts(payload, field, annual=annual, as_of=as_of)
+    return dict(memo["results"][key])
+
+
+def _select_facts(
+    payload: dict[str, Any],
+    field: str,
+    *,
+    annual: bool,
+    as_of: date | None,
+) -> dict[date, Fact]:
     chosen = _resolve(
         payload, field, lambda f: _matches_period(f, annual, field), as_of=as_of
     )

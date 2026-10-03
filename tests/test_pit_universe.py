@@ -159,3 +159,44 @@ class TestCompositeMapping:
         adapter, _ = self.composite(None)
         with pytest.raises(DataUnavailable):
             adapter.get_prices("CIK0000000777", date(2015, 1, 1), date(2015, 12, 31))
+
+
+class TestRiskFreeRateIsPointInTime:
+    """A backtest must value each date with that date's yield, not today's."""
+
+    def test_the_yield_on_the_as_of_date_is_used_and_fetched_once(self):
+        from gcfp.data.composite import CompositeAdapter
+
+        fundamentals = Mock()
+        fundamentals.name = "edgar"
+        prices = Mock()
+        prices.name = "feed"
+        prices.get_prices = Mock(return_value=(
+            PricePoint(date(2026, 9, 30), 4.5),
+            PricePoint(date(2015, 6, 30), 2.3),
+        ))
+        prices.get_index_level = Mock(return_value=4.5)
+        adapter = CompositeAdapter(
+            fundamentals=fundamentals, prices=prices, as_of=date(2015, 7, 3)
+        )
+        market = adapter.get_market_data()
+        assert market.risk_free_rate == pytest.approx(0.023)
+        assert market.risk_free_rate_date == date(2015, 6, 30)
+
+        adapter.as_of = date(2026, 10, 1)
+        assert adapter.get_market_data().risk_free_rate == pytest.approx(0.045)
+        assert prices.get_prices.call_count == 1
+        prices.get_index_level.assert_not_called()
+
+    def test_no_quote_near_the_date_is_a_gap_not_a_stale_value(self):
+        from gcfp.data.composite import CompositeAdapter
+
+        fundamentals = Mock()
+        fundamentals.name = "edgar"
+        prices = Mock()
+        prices.name = "feed"
+        prices.get_prices = Mock(return_value=(PricePoint(date(2026, 9, 30), 4.5),))
+        adapter = CompositeAdapter(
+            fundamentals=fundamentals, prices=prices, as_of=date(2015, 7, 3)
+        )
+        assert adapter.get_market_data().risk_free_rate is None

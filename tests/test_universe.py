@@ -305,8 +305,28 @@ class TestPriceCache:
         stale["fetched_on"] = (today - timedelta(days=1)).isoformat()
         path.write_text(json.dumps(stale))
 
+        # A later day is a later run: a fresh process reading the file.
+        src, inner = self.cached(tmp_path)
         src.get_prices("CAT", today - timedelta(days=30), today)
-        assert inner.calls == 2
+        assert inner.calls == 1
+
+    def test_splits_are_fetched_once_and_filtered_by_window(self, tmp_path):
+        from datetime import timedelta
+
+        from gcfp.types import CorporateAction, CorporateActionType
+
+        today = date.today()
+        src, inner = self.cached(tmp_path)
+        split = CorporateAction(CorporateActionType.SPLIT, today - timedelta(days=400), ratio=2.0)
+        calls = []
+        inner.get_splits = lambda symbol, start, end: calls.append(1) or [split]
+
+        for months in range(12):
+            end = today - timedelta(days=30 * months)
+            src.get_splits("CAT", end - timedelta(days=365), end)
+        assert len(calls) == 1, "the feed was asked for splits at every rebalance"
+        assert src.get_splits("CAT", today - timedelta(days=100), today) == ()
+        assert src.get_splits("CAT", today - timedelta(days=800), today) == (split,)
 
     def test_reports_still_name_the_underlying_feed(self, tmp_path):
         src, _ = self.cached(tmp_path)
