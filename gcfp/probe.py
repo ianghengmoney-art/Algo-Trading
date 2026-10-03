@@ -835,7 +835,7 @@ def _evaluate_stop_conditions(
         and not limited
     )
 
-    if availability is not None and roster_rate is not None:
+    if availability is not None and availability.rate is not None and roster_rate is not None:
         finding4 = (
             f"{availability.rate:.0%} of {availability.assessed} universe names "
             f"could not reach {config.anchors.peer_min} size-band peers "
@@ -1032,6 +1032,21 @@ def run_probe(
     )
     if availability is not None:
         availability.requested = len(sampled)
+    # Nothing in the sample could be measured — usually because the price
+    # feed refused every request, so no name had a market cap.  Formatting the
+    # empty rate used to crash the probe at its very last step, after every
+    # download had finished, so a 40-minute run wrote no report at all.  Say
+    # what happened instead and fall back to the roster figure.
+    unmeasured_universe: str | None = None
+    if availability is not None and not availability.assessed:
+        unmeasured_universe = (
+            f"PEER UNIVERSE NOT MEASURED — none of the {len(peer_universe.members)} "
+            f"names sampled cleared the universe screen "
+            f"({len(peer_universe.unreachable)} could not be loaded at all). "
+            "Most often the price feed refused requests, so no company had a "
+            "market cap. Stop condition 4 falls back to the roster figure below."
+        )
+        availability = None
 
     coverages = [
         _probe_target(adapter, t, market, config, peer_universe) for t in targets
@@ -1048,6 +1063,8 @@ def run_probe(
     notes: list[str] = []
     if peer_warning:
         notes.append(peer_warning)
+    if unmeasured_universe:
+        notes.append(unmeasured_universe)
     unreached = [c.target.symbol for c in coverages if not c.reached]
     if unreached:
         notes.append(

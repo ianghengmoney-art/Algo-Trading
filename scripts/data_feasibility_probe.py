@@ -91,11 +91,29 @@ def main() -> int:
 
         config = free_stack_config(DEFAULT_CONFIG)
 
-    report = run_probe(
-        adapter, config, DEFAULT_TARGETS,
-        peer_sample=args.peer_sample, progress=args.progress,
-    )
-    text = report.render()
+    try:
+        report = run_probe(
+            adapter, config, DEFAULT_TARGETS,
+            peer_sample=args.peer_sample, progress=args.progress,
+        )
+        text = report.render()
+    except Exception:
+        # A crash late in a long run used to leave report.txt untouched, so
+        # the old report was pushed as though it were new. Write the failure
+        # where the report would have gone instead: it gets pushed and read.
+        import traceback
+
+        failure = (
+            "GCFP §18 PROBE FAILED — no report was produced.\n"
+            f"generated {__import__('datetime').date.today().isoformat()}\n\n"
+            + traceback.format_exc()
+        )
+        print(failure, file=sys.stderr)
+        if args.out:
+            args.out.parent.mkdir(parents=True, exist_ok=True)
+            args.out.write_text(failure)
+            print(f"\nfailure written to {args.out}", file=sys.stderr)
+        return 3
     print(text)
 
     if args.out:

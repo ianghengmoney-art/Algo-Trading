@@ -226,3 +226,18 @@ class TestPeerCandidateOrdering:
     def test_the_real_peer_survives_the_fetch_budget(self):
         """In universe order it sits at position 26 and is never fetched."""
         assert "BIG" in self.ordered()[:24]
+
+
+class TestUnmeasurableUniverse:
+    """The probe died at its last step when no sampled name could be priced,
+    after every download had finished, and wrote no report at all."""
+
+    def test_an_empty_universe_measure_does_not_crash_the_stop_conditions(self):
+        from gcfp.config import Config
+        from gcfp.diagnostics import UniversePeerAvailability
+        from gcfp.probe import _evaluate_stop_conditions, assess_taxonomy
+
+        empty = UniversePeerAvailability()
+        assert empty.rate is None
+        stops = _evaluate_stop_conditions([], assess_taxonomy([]), Config(), True, empty)
+        assert len(stops) == 4
