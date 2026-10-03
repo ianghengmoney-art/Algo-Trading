@@ -92,6 +92,16 @@ class BacktestSettings:
     min_cash_weight: float = 0.45
     #: Applied to every simulated fill, as a stand-in for spread and slippage.
     transaction_cost: float = 0.001
+    #: What a holding is assumed to return when its price stops for good.
+    #: The free price feeds drop delisted tickers, so the real exit price is
+    #: usually unknowable.  Studies of performance-related delistings put the
+    #: typical loss at roughly a third; takeovers, the other common cause,
+    #: usually exit at a premium.  -30% is a stated middle, not a measurement,
+    #: and every position it touches is labelled so the result can be judged.
+    delisting_return: float = -0.30
+    #: Rebalances a holding may go unpriced before it is treated as delisted.
+    #: One allows for a feed hiccup without carrying a dead name for months.
+    delisting_grace_rebalances: int = 1
 
 
 @dataclass
@@ -123,6 +133,8 @@ class BacktestResult:
     benchmark_curve: list[tuple[date, float]] = field(default_factory=list)
     config_fingerprint: str = ""
     notes: list[str] = field(default_factory=list)
+    #: Holdings closed because their price stopped, at the assumed return.
+    assumed_delistings: int = 0
 
     @property
     def equity_curve(self) -> list[tuple[date, float]]:
@@ -148,6 +160,10 @@ class BacktestResult:
     def reclassification_count(self) -> int:
         """§13.10."""
         return sum(len(r.reclassifications) for r in self.rebalances)
+
+
+#: Prefix on the exit reason of a holding closed because its price stopped.
+DELISTED_REASON = "price stopped — treated as delisted"
 
 
 def month_ends(start: date, end: date, step_months: int = 1) -> list[date]:
@@ -280,8 +296,38 @@ class Backtester:
             if price is not None:
                 book.sell(symbol, price * (1 - settings.transaction_cost), final,
                           "end of backtest period")
+            else:
+                # Previously left open, which removed it from every return
+                # statistic — a company that went bust never counted as a loss.
+                self._close_as_delisted(book, symbol, final, result)
 
         return result
+
+    def _close_as_delisted(
+        self, book: BacktestBook, symbol: str, as_of: date, result: BacktestResult
+    ) -> None:
+        """Close a holding whose price has stopped, at an assumed return.
+
+        The price feeds drop delisted tickers, so the true exit is unknown.
+        Leaving the position open silently removed it from every return
+        statistic; closing it at its last price would assume nothing was lost.
+        The assumed delisting return sits between, and is labelled on the
+        closed position so the report can count and judge it.
+        """
+        position = book.positions.get(symbol)
+        if position is None:
+            return
+        rate = self.settings.delisting_return
+        exit_price = max(position.last_price * (1.0 + rate), 0.0)
+        book.sell(
+            symbol,
+            exit_price,
+            as_of,
+            f"{DELISTED_REASON} at an assumed {rate:+.0%} from last close "
+            f"{position.last_price:,.2f}",
+            allow_zero=True,
+        )
+        result.assumed_delistings += 1
 
     def _rebalance(
         self, book: BacktestBook, as_of: date, result: BacktestResult
@@ -296,6 +342,15 @@ class Backtester:
         held = list(book.positions)
         prices = self._prices_on(set(candidates) | set(held), as_of)
         book.mark(prices)
+        for symbol in held:
+            position = book.positions.get(symbol)
+            if (
+                position is not None
+                and position.missed_marks > settings.delisting_grace_rebalances
+            ):
+                self._close_as_delisted(book, symbol, as_of, result)
+                record.sells.append((symbol, "assumed delisted"))
+        held = list(book.positions)
 
         total_value = book.total_value(prices)
         portfolio_state = self._portfolio_state(book, prices, total_value)

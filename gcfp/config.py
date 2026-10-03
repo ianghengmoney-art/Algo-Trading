@@ -26,6 +26,17 @@ class UniverseConfig:
     min_adv_usd: float = 2_000_000.0
     # Growth-routed names need deeper liquidity before we size into them.
     min_adv_usd_growth: float = 5_000_000.0
+    #: Operator decision after §18 (October 2026).  REITs are valued on
+    #: P/AFFO, and AFFO is a custom XBRL extension EDGAR does not expose, so on
+    #: the free stack every REIT fails C5 with both anchors uncomputable.
+    #: Excluding them up front says so once, instead of 100+ times a screen.
+    #: Set False only alongside a data source that supplies AFFO.
+    exclude_reits: bool = True
+    #: Same decision.  Foreign private issuers file 20-F or 40-F with no
+    #: quarterly reports, so every TTM gate and the C1 series are structurally
+    #: unavailable — TSM came back at 21% coverage.  Set False only alongside
+    #: a semi-annual valuation path.
+    exclude_foreign_filers: bool = True
 
 
 @dataclass(frozen=True)

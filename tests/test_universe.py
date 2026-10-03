@@ -311,3 +311,69 @@ class TestPriceCache:
     def test_reports_still_name_the_underlying_feed(self, tmp_path):
         src, _ = self.cached(tmp_path)
         assert src.name == "counting"
+
+
+class TestStructuralExclusions:
+    """Operator decision after §18: REITs and 20-F filers cannot be valued on
+    this data source, so they are excluded up front with the reason named."""
+
+    @staticmethod
+    def build(config=None, **profile_kw):
+        from dataclasses import replace as dc_replace
+
+        from gcfp.config import Config
+        from gcfp.universe import build_universe
+        from tests.conftest import build_company, stable_profile
+
+        data = build_company(profile=stable_profile(**profile_kw))
+
+        class Stub:
+            name = "stub"
+
+            def load_company(self, symbol, **kw):
+                return data
+
+        return build_universe(Stub(), ["X"], config or Config()).members[0]
+
+    def test_a_reit_is_excluded_with_the_reason_named(self):
+        member = self.build(is_reit=True)
+        assert not member.included
+        assert "REIT" in member.excluded_reason and "AFFO" in member.excluded_reason
+
+    def test_a_20f_filer_is_excluded_with_the_reason_named(self):
+        from gcfp.types import ReportingFrequency
+
+        member = self.build(reporting_frequency=ReportingFrequency.SEMIANNUAL)
+        assert not member.included
+        assert "foreign filer" in member.excluded_reason
+
+    def test_an_ordinary_company_is_unaffected(self):
+        assert self.build().included
+
+    def test_the_exclusions_can_be_switched_off(self):
+        """Reversible when a data source that supplies AFFO is added."""
+        from dataclasses import replace as dc_replace
+
+        from gcfp.config import Config
+
+        cfg = Config()
+        cfg = dc_replace(
+            cfg,
+            universe=dc_replace(cfg.universe, exclude_reits=False, exclude_foreign_filers=False),
+        )
+        assert self.build(config=cfg, is_reit=True).included
+
+    def test_an_old_universe_snapshot_still_loads(self, tmp_path):
+        """Snapshots saved before is_foreign_filer existed must not break."""
+        import json
+
+        from gcfp.universe import Universe
+
+        path = tmp_path / "u.json"
+        path.write_text(json.dumps({"as_of": "2026-09-01", "members": [{
+            "symbol": "X", "name": "X", "market_cap": 1e9, "adv_3m_usd": 1e7,
+            "sector": "S", "industry": "I", "sub_industry": None,
+            "net_debt_to_ebitda": 1.0, "gross_margin_stdev": None,
+            "revenue_growth": 0.05, "beta": 1.0,
+        }]}))
+        assert Universe.load(path).members[0].is_foreign_filer is False

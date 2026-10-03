@@ -53,6 +53,11 @@ class BacktestPosition:
     peak_price: float = 0.0
     #: Set when H3 fires, so the reclassification-frequency report can count it.
     reclassified_to: Classification | None = None
+    #: Last close seen, and how many rebalances in a row have had none.  A
+    #: holding whose price stops has usually delisted; these let the engine
+    #: value it honestly meanwhile and close it out rather than lose it.
+    last_price: float = 0.0
+    missed_marks: int = 0
 
     @property
     def regime(self) -> Regime:
@@ -68,6 +73,8 @@ class BacktestPosition:
 
     def observe(self, price: float) -> None:
         self.peak_price = max(self.peak_price, price)
+        self.last_price = price
+        self.missed_marks = 0
 
     def drawdown_from_peak(self, price: float) -> float:
         if self.peak_price <= 0:
@@ -152,6 +159,11 @@ class BacktestBook:
         total = 0.0
         for symbol, position in self.positions.items():
             price = prices.get(symbol)
+            if price is None:
+                # A holding with no price this rebalance used to count as
+                # worth nothing, then reappear when a price came back.  Carry
+                # it at its last close until the engine decides it has gone.
+                price = position.last_price or None
             if price is not None:
                 total += position.market_value(price)
             else:
@@ -195,6 +207,7 @@ class BacktestBook:
                 anchor_mode=anchor_mode,
                 thesis_invalidation=thesis_invalidation,
                 peak_price=price,
+                last_price=price,
             )
             self._drawdowns[symbol] = 0.0
         else:
@@ -215,10 +228,16 @@ class BacktestBook:
         reason: str,
         *,
         fraction: float = 1.0,
+        allow_zero: bool = False,
     ) -> SimulatedFill | None:
-        """Close or trim a position.  ``fraction`` under 1.0 is a TRIM-TO-CAP."""
+        """Close or trim a position.  ``fraction`` under 1.0 is a TRIM-TO-CAP.
+
+        A zero price is refused unless ``allow_zero`` — a market sale at zero
+        is a data error, but a company written off entirely is not, and
+        refusing that close would leave a total loss open forever.
+        """
         position = self.positions.get(symbol)
-        if position is None or price <= 0:
+        if position is None or price < 0 or (price == 0 and not allow_zero):
             return None
 
         fraction = max(0.0, min(fraction, 1.0))
@@ -257,6 +276,7 @@ class BacktestBook:
         for symbol, position in self.positions.items():
             price = prices.get(symbol)
             if price is None or price <= 0:
+                position.missed_marks += 1
                 continue
             position.observe(price)
             drawdown = position.drawdown_from_peak(price)

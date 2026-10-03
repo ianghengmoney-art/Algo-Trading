@@ -366,3 +366,58 @@ class TestEngineRun:
             market, bt_config, settings, [f"IND{i}" for i in range(9)]
         ).run()
         assert not result.book.positions
+
+
+class TestDelistedHoldings:
+    """A holding whose price stops has usually delisted. It used to be valued
+    at zero for that month and then never closed, so it vanished from every
+    return statistic — a company that went bust never counted as a loss."""
+
+    @staticmethod
+    def book_with(symbol="DEAD", price=50.0):
+        from gcfp.backtest.portfolio import BacktestBook
+        from gcfp.classification import Classification
+
+        book = BacktestBook(cash=10_000.0)
+        book.buy(symbol, Classification.CORE_STABLE, 5_000.0, price, date(2020, 1, 31),
+                 conviction=65.0, intended_weight=0.05, anchor_mode="DUAL",
+                 thesis_invalidation="test")
+        return book
+
+    def test_a_missing_month_is_carried_at_the_last_close_not_at_zero(self):
+        book = self.book_with()
+        book.mark({"DEAD": 40.0})
+        book.mark({})
+        assert book.invested_value({}) == pytest.approx(100 * 40.0)
+        assert book.positions["DEAD"].missed_marks == 1
+
+    def test_a_holding_unpriced_past_the_grace_period_is_closed_at_a_loss(self):
+        from gcfp.backtest.engine import DELISTED_REASON, BacktestResult, Backtester, BacktestSettings
+        from gcfp.config import Config
+
+        book = self.book_with()
+        book.mark({"DEAD": 40.0})
+        settings = BacktestSettings(start=date(2020, 1, 1), end=date(2021, 1, 1))
+        engine = Backtester(adapter=None, config=Config(), settings=settings, symbols=[])
+        result = BacktestResult(label="t", settings=settings, split=None, book=book,
+                                config_fingerprint="x")
+        engine._close_as_delisted(book, "DEAD", date(2020, 6, 30), result)
+
+        assert "DEAD" not in book.positions, "a dead holding must not stay open"
+        closed = book.closed[-1]
+        assert DELISTED_REASON in closed.exit_reason
+        assert closed.total_return < 0, "a delisting must count as a loss"
+        assert result.assumed_delistings == 1
+
+    def test_the_assumed_delisting_return_is_configurable(self):
+        from gcfp.backtest.engine import BacktestResult, Backtester, BacktestSettings
+        from gcfp.config import Config
+
+        book = self.book_with(price=50.0)
+        settings = BacktestSettings(start=date(2020, 1, 1), end=date(2021, 1, 1),
+                                    delisting_return=-1.0)
+        engine = Backtester(adapter=None, config=Config(), settings=settings, symbols=[])
+        result = BacktestResult(label="t", settings=settings, split=None, book=book,
+                                config_fingerprint="x")
+        engine._close_as_delisted(book, "DEAD", date(2020, 6, 30), result)
+        assert book.closed[-1].total_return == pytest.approx(-1.0)

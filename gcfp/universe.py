@@ -34,7 +34,7 @@ from .config import Config
 from .data.adapter import DataAdapter, DataUnavailable
 from .data.taxonomy import group_key
 from .modules import a_health, c_anchors
-from .types import CompanyData, MarketData, TaxonomyLevel
+from .types import CompanyData, MarketData, ReportingFrequency, TaxonomyLevel
 
 
 @dataclass
@@ -59,6 +59,9 @@ class UniverseMember:
     is_reit: bool = False
     is_bank: bool = False
     is_insurer: bool = False
+    #: Files 20-F or 40-F rather than 10-Q.  Defaulted so universe snapshots
+    #: saved before the field existed still load.
+    is_foreign_filer: bool = False
     #: Why this name was dropped, when it was.
     excluded_reason: str | None = None
 
@@ -259,9 +262,24 @@ def build_universe(
             is_reit=profile.is_reit,
             is_bank=profile.is_bank,
             is_insurer=profile.is_insurer,
+            is_foreign_filer=(
+                profile.reporting_frequency is ReportingFrequency.SEMIANNUAL
+            ),
         )
 
-        if member.market_cap is None:
+        # Structural exclusions first, so the logged reason names the real
+        # cause rather than whichever liquidity test happened to fail.
+        if config.universe.exclude_reits and member.is_reit:
+            member.excluded_reason = (
+                "REIT — excluded by configuration: AFFO is not available from "
+                "this data source, so the REIT path cannot value it"
+            )
+        elif config.universe.exclude_foreign_filers and member.is_foreign_filer:
+            member.excluded_reason = (
+                "foreign filer (20-F/40-F) — excluded by configuration: no "
+                "quarterly reports, so the TTM gates and C1 cannot run"
+            )
+        elif member.market_cap is None:
             member.excluded_reason = "market cap not computable"
         elif member.market_cap < config.universe.min_market_cap_usd:
             member.excluded_reason = (
