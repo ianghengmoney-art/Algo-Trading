@@ -203,6 +203,7 @@ class Backtester:
         signal_filter: Callable[[Evaluation], bool] | None = None,
         sizer: Callable[[Evaluation, PortfolioState, Config], float] | None = None,
         conviction_scorer: Callable[..., object] | None = None,
+        eligibility: Callable[[str, date], bool] | None = None,
     ) -> None:
         self.adapter = adapter
         self.config = config
@@ -217,6 +218,11 @@ class Backtester:
         self.signal_filter = signal_filter or (lambda e: True)
         self.sizer = sizer
         self.conviction_scorer = conviction_scorer
+        #: Which symbols existed as reporting companies on a date.  A
+        #: point-in-time universe passes its filing index here so a company
+        #: is screened only while it was actually filing — before its first
+        #: report it did not exist, after its last it was gone.
+        self.eligibility = eligibility
 
     # -- point-in-time ----------------------------------------------------
     def _pin(self, as_of: date) -> DataAdapter:
@@ -240,7 +246,10 @@ class Backtester:
     def _default_universe(
         self, adapter: DataAdapter, config: Config, as_of: date
     ) -> Universe:
-        return build_universe(adapter, self.symbols, config, as_of=as_of)
+        symbols = self.symbols
+        if self.eligibility is not None:
+            symbols = [s for s in symbols if self.eligibility(s, as_of)]
+        return build_universe(adapter, symbols, config, as_of=as_of)
 
     # -- prices -----------------------------------------------------------
     def _price_on(self, symbol: str, as_of: date) -> float | None:

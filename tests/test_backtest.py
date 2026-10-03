@@ -421,3 +421,24 @@ class TestDelistedHoldings:
                                 config_fingerprint="x")
         engine._close_as_delisted(book, "DEAD", date(2020, 6, 30), result)
         assert book.closed[-1].total_return == pytest.approx(-1.0)
+
+
+class TestEligibility:
+    def test_a_symbol_is_screened_only_while_it_was_filing(self, monkeypatch):
+        from gcfp.backtest import engine as engine_module
+        from gcfp.backtest.engine import Backtester, BacktestSettings
+        from gcfp.config import Config
+
+        seen: list[list[str]] = []
+        monkeypatch.setattr(
+            engine_module, "build_universe",
+            lambda adapter, symbols, config, as_of=None: seen.append(list(symbols)),
+        )
+        settings = BacktestSettings(start=date(2020, 1, 1), end=date(2021, 1, 1))
+        engine = Backtester(
+            None, Config(), settings, ["ALIVE", "DEAD"],
+            eligibility=lambda s, as_of: s == "ALIVE" or as_of < date(2020, 6, 1),
+        )
+        engine._default_universe(None, Config(), date(2020, 3, 31))
+        engine._default_universe(None, Config(), date(2020, 9, 30))
+        assert seen == [["ALIVE", "DEAD"], ["ALIVE"]]

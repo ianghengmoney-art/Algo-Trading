@@ -9,6 +9,11 @@
         --user-agent "you you@example.com" \
         --symbols AAPL MSFT CAT DE --start 2010-01-01 --end 2024-12-31
 
+    # survivorship-aware: a random sample of everyone who filed during the
+    # period, dead companies included
+    python scripts/run_backtest.py --source edgar \
+        --user-agent "you you@example.com" --pit-sample 300
+
 Exits non-zero when a Module I strategy-break criterion trips, so a broken
 system fails the run rather than producing a report nobody reads to the end.
 """
@@ -52,6 +57,15 @@ def parse_args() -> argparse.Namespace:
             "lines ignored. run_screen.py --symbols-out writes one."
         ),
     )
+    parser.add_argument(
+        "--pit-sample", type=int, metavar="N",
+        help=(
+            "draw N companies at random from the SEC filing index over the "
+            "backtest period, including companies that later died, and "
+            "screen each one only while it was filing. Fixes the "
+            "survivors-only bias of --symbols."
+        ),
+    )
     parser.add_argument("--start", type=_date, default=date(2012, 1, 1))
     parser.add_argument("--end", type=_date, default=date(2020, 12, 31))
     parser.add_argument("--capital", type=float, default=100_000.0)
@@ -80,6 +94,8 @@ def read_symbol_file(path: Path) -> list[str]:
 
 def main() -> int:
     args = parse_args()
+    filer_index = None
+    eligibility = None
 
     if args.source == "synthetic":
         from gcfp.backtest.fixtures import build_synthetic_market
@@ -100,9 +116,28 @@ def main() -> int:
         if args.symbols_from:
             symbols.extend(read_symbol_file(args.symbols_from))
         symbols = list(dict.fromkeys(s.upper() for s in symbols))
+        adapter = build_free_adapter(args.user_agent, cache_dir=args.cache_dir)
+        if args.pit_sample:
+            from gcfp.data.pit_universe import (
+                load_filer_index, sample_symbols, symbol_cik,
+            )
+
+            print("reading the SEC filing index (includes dead companies)",
+                  file=sys.stderr)
+            filer_index = load_filer_index(
+                adapter.fundamentals._get_text, args.start, args.end,
+                cache_dir=args.cache_dir,
+                progress=(lambda m: print(m, file=sys.stderr)) if args.progress else None,
+            )
+            sampled = sample_symbols(filer_index, args.start, args.end, args.pit_sample)
+            symbols.extend(s for s in sampled if s not in symbols)
+
+            def eligibility(symbol: str, as_of: date) -> bool:
+                cik = symbol_cik(symbol)
+                return cik is None or filer_index.is_live(cik, as_of)
         if not symbols:
             raise SystemExit(
-                "--symbols or --symbols-from is required for an EDGAR "
+                "--pit-sample, --symbols or --symbols-from is required for an EDGAR "
                 "backtest: screening every filer at every rebalance over 15 "
                 "years is not tractable.\n\n"
                 "  --symbols-from FILE   one ticker per line; '#' comments and "
@@ -114,7 +149,6 @@ def main() -> int:
                 "still exist, and backtesting it measures survival rather "
                 "than the strategy."
             )
-        adapter = build_free_adapter(args.user_agent, cache_dir=args.cache_dir)
         config = free_stack_config(DEFAULT_CONFIG)
 
     settings = BacktestSettings(
@@ -126,7 +160,8 @@ def main() -> int:
           f"{args.start.isoformat()}..{args.end.isoformat()}", file=sys.stderr)
 
     primary = Backtester(
-        adapter, config, settings, symbols, label="GCFP v4", split=split
+        adapter, config, settings, symbols, label="GCFP v4", split=split,
+        eligibility=eligibility,
     ).run(progress=args.progress)
 
     # §13.4 benchmarks.
@@ -147,6 +182,7 @@ def main() -> int:
                 signal_filter=variant.signal_filter,
                 sizer=variant.sizer,
                 conviction_scorer=variant.conviction_scorer,
+                eligibility=eligibility,
             ).run()
             benchmarks.append(
                 (variant.name, variant.proves,
@@ -174,13 +210,39 @@ def main() -> int:
         )
         sweep = run_sweep(
             lambda cfg: Backtester(
-                adapter, cfg, train_settings, symbols, label="sweep"
+                adapter, cfg, train_settings, symbols, label="sweep",
+                eligibility=eligibility,
             ).run(),
             config,
             split=split,
             period_start=split.train_start,
             period_end=split.train_end,
             progress=args.progress,
+        )
+
+    notes = [
+        "Simulated fills assume the operator transacts at the rebalance "
+        "close. That is optimistic about liquidity and is stated rather "
+        "than modelled away.",
+        f"Holdings whose price stopped and were closed as delisted at "
+        f"{settings.delisting_return:+.0%}: {primary.assumed_delistings}.",
+    ]
+    if filer_index is not None:
+        from gcfp.data.pit_universe import survivorship_coverage
+
+        def has_prices(symbol: str) -> bool:
+            try:
+                return bool(adapter.get_prices(symbol, args.start, args.end))
+            except Exception:
+                return False
+
+        coverage = survivorship_coverage(filer_index, symbols, args.end, has_prices)
+        notes.extend(coverage.lines())
+    elif args.source == "edgar":
+        notes.append(
+            "SURVIVORSHIP: the symbol list was chosen today, so it holds only "
+            "companies that survived. The CAGR is an upper bound; rerun with "
+            "--pit-sample for a survivorship-aware result."
         )
 
     report = ValidationReport(
@@ -192,11 +254,7 @@ def main() -> int:
         # the same filing-date discipline.
         point_in_time=True,
         paper_traded_months=0.0,
-        notes=[
-            "Simulated fills assume the operator transacts at the rebalance "
-            "close. That is optimistic about liquidity and is stated rather "
-            "than modelled away.",
-        ],
+        notes=notes,
     )
     text = report.render(config)
     print(text)

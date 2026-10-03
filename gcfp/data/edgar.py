@@ -288,6 +288,60 @@ class EdgarAdapter(DataAdapter):
             out.setdefault(cik, ticker)
         return out
 
+    def price_ticker(self, symbol: str) -> tuple[str, date | None] | None:
+        """The ticker a price feed would know this filer by, and the last
+        date that ticker can be trusted to mean this company.
+
+        A plain ticker passes through.  A CIK-addressed filer — the way dead
+        companies enter a point-in-time universe — is looked up in order:
+
+        1. today's ticker index (the filer is still listed);
+        2. the ``tickers`` field of its submissions record;
+        3. the prefix of its own periodic-report filenames.  XBRL-era filers
+           conventionally name the document ``<ticker>-<yyyymmdd>``, so
+           ``tribune-20131229.htm``-style names recover a ticker the index
+           has forgotten.
+
+        Routes 2 and 3 return a cut-off: tickers are recycled, and once the
+        company stops filing, prices under its old symbol may belong to
+        someone else.  ``None`` when no route yields a ticker; that company
+        cannot be priced and is reported as such, never silently skipped.
+        """
+        try:
+            cik = self.ticker_to_cik(symbol)
+        except DataUnavailable:
+            return None
+        if not symbol.strip().upper().startswith("CIK"):
+            return symbol.strip().upper(), None
+
+        current = self.cik_to_ticker().get(cik)
+        if current:
+            return current, None
+
+        try:
+            subs = self._submissions(symbol)
+        except Exception:
+            return None
+        periodic = [d for d, form in self._recent_filings(subs) if form in ("10-K", "10-Q")]
+        cutoff = max(periodic) + timedelta(days=120) if periodic else None
+
+        for ticker in subs.get("tickers") or []:
+            if ticker:
+                return str(ticker).upper(), cutoff
+
+        recent = (subs.get("filings") or {}).get("recent") or {}
+        votes: dict[str, int] = {}
+        for form, doc in zip(recent.get("form") or [], recent.get("primaryDocument") or []):
+            if form not in ("10-K", "10-Q"):
+                continue
+            match = re.fullmatch(r"([a-z]{1,5})-\d{8}(?:x10[kq])?\.html?", str(doc).lower())
+            if match:
+                votes[match.group(1)] = votes.get(match.group(1), 0) + 1
+        if votes:
+            best = max(sorted(votes), key=votes.__getitem__)
+            return best.upper(), cutoff
+        return None
+
     def symbols_by_sic(self, sic: str | int, limit: int = 80) -> list[str]:
         """Tickers of other filers sharing an SIC code.
 

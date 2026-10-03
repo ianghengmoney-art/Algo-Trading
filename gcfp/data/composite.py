@@ -72,9 +72,44 @@ class CompositeAdapter(DataAdapter):
     name: str = "composite"
     _benchmark_cache: tuple[PricePoint, ...] | None = field(default=None, repr=False)
     _beta_cache: dict[str, BetaEstimate | None] = field(default_factory=dict, repr=False)
+    _ticker_cache: dict[str, tuple[str, date | None] | None] = field(
+        default_factory=dict, repr=False
+    )
 
     def __post_init__(self) -> None:
         self.name = f"{self.fundamentals.name}+{self.prices.name}"
+
+    # -- price symbols ----------------------------------------------------
+    def _price_symbol(self, symbol: str) -> tuple[str, date | None] | None:
+        """The price-feed ticker for ``symbol`` and the date it stops being
+        trustworthy.  Dead companies enter a point-in-time universe by CIK;
+        the price feed only knows tickers."""
+        if symbol not in self._ticker_cache:
+            resolve = getattr(self.fundamentals, "price_ticker", None)
+            self._ticker_cache[symbol] = (
+                resolve(symbol) if resolve is not None else (symbol, None)
+            )
+        return self._ticker_cache[symbol]
+
+    def _symbol_prices(self, symbol: str, start: date, end: date) -> Sequence[PricePoint]:
+        resolved = self._price_symbol(symbol)
+        if resolved is None:
+            raise DataUnavailable(
+                "prices", f"{symbol}: no ticker on record, so no price feed can serve it"
+            )
+        ticker, cutoff = resolved
+        if cutoff is not None:
+            # The company stopped filing; anything later under that ticker may
+            # be a different company that inherited the symbol.
+            if start > cutoff:
+                raise DataUnavailable(
+                    "prices", f"{symbol} ({ticker}) stopped filing before {start}"
+                )
+            end = min(end, cutoff)
+        history = self.prices.get_prices(ticker, start, end)
+        if cutoff is not None:
+            history = tuple(p for p in history if p.price_date <= cutoff)
+        return history
 
     # -- identity ---------------------------------------------------------
     def get_profile(self, symbol: str) -> CompanyProfile:
@@ -83,7 +118,7 @@ class CompositeAdapter(DataAdapter):
         start = end - timedelta(days=DEFAULT_HISTORY_DAYS)
 
         try:
-            history = self.prices.get_prices(symbol, start, end)
+            history = self._symbol_prices(symbol, start, end)
         except DataUnavailable:
             # No prices means no market cap, no ADV, and no beta.  Every one of
             # those is an A5 data gap; none of them gets a substitute.
@@ -147,7 +182,7 @@ class CompositeAdapter(DataAdapter):
         end = self.as_of or date.today()
         start = end - timedelta(days=DEFAULT_HISTORY_DAYS)
         try:
-            history = self.prices.get_prices(symbol, start, end)
+            history = self._symbol_prices(symbol, start, end)
         except DataUnavailable:
             return None
         return self._beta(symbol, history)
@@ -160,7 +195,7 @@ class CompositeAdapter(DataAdapter):
         return self.fundamentals.get_quarterly_financials(symbol, quarters)
 
     def get_prices(self, symbol: str, start: date, end: date) -> Sequence[PricePoint]:
-        return self.prices.get_prices(symbol, start, end)
+        return self._symbol_prices(symbol, start, end)
 
     def get_corporate_actions(self, symbol: str, years: int) -> Sequence[CorporateAction]:
         """Splits from the price source.
@@ -176,7 +211,9 @@ class CompositeAdapter(DataAdapter):
         actions: list[CorporateAction] = []
         # Splits from the price feed.
         try:
-            actions.extend(self.prices.get_splits(symbol, start, end))
+            resolved = self._price_symbol(symbol)
+            if resolved is not None:
+                actions.extend(self.prices.get_splits(resolved[0], start, end))
         except Exception:
             pass
         # Disposals and acquisitions from the fundamentals source's filings.
@@ -248,7 +285,7 @@ class CompositeAdapter(DataAdapter):
             raise DataUnavailable(
                 "historical_multiples", f"no quarterly financials for {symbol}"
             )
-        history = self.prices.get_prices(symbol, start, end)
+        history = self._symbol_prices(symbol, start, end)
         if not history:
             raise DataUnavailable("historical_multiples", f"no prices for {symbol}")
 
