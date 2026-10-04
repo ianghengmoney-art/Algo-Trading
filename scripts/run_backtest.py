@@ -21,7 +21,9 @@ system fails the run rather than producing a report nobody reads to the end.
 from __future__ import annotations
 
 import argparse
+import os
 import sys
+import time
 from datetime import date, datetime
 from pathlib import Path
 
@@ -75,6 +77,15 @@ def parse_args() -> argparse.Namespace:
                         help="run the §13.7 parameter sweep (slow)")
     parser.add_argument("--no-benchmarks", action="store_true")
     parser.add_argument("--progress", action="store_true")
+    parser.add_argument(
+        "--time-budget-min", type=float,
+        default=290.0 if os.environ.get("GITHUB_ACTIONS") == "true" else None,
+        help=(
+            "stop starting new benchmark runs once this many minutes would be "
+            "exceeded, and write the report with what finished. Defaults to "
+            "290 on GitHub Actions, whose job is killed at 330 with no report."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -94,6 +105,10 @@ def read_symbol_file(path: Path) -> list[str]:
 
 def main() -> int:
     args = parse_args()
+    started = time.monotonic()
+
+    def minutes() -> float:
+        return (time.monotonic() - started) / 60
     filer_index = None
     eligibility = None
 
@@ -159,16 +174,30 @@ def main() -> int:
     print(f"running {len(symbols)} symbols over "
           f"{args.start.isoformat()}..{args.end.isoformat()}", file=sys.stderr)
 
+    primary_started = minutes()
     primary = Backtester(
         adapter, config, settings, symbols, label="GCFP v4", split=split,
         eligibility=eligibility,
     ).run(progress=args.progress)
+    # Each benchmark replays the same months over the same companies, so the
+    # primary run is a fair estimate of how long one takes.
+    run_minutes = max(minutes() - primary_started, 0.1)
+    print(f"  main backtest done in {run_minutes:.0f} min", file=sys.stderr)
 
     # §13.4 benchmarks.
     benchmarks = []
+    skipped: list[str] = []
     if not args.no_benchmarks:
         for variant in build_variants(config, settings.benchmark_symbol):
-            print(f"  benchmark: {variant.name}", file=sys.stderr)
+            if (
+                not variant.is_passive
+                and args.time_budget_min is not None
+                and minutes() + run_minutes > args.time_budget_min
+            ):
+                skipped.append(variant.name)
+                continue
+            print(f"  benchmark: {variant.name} ({minutes():.0f} min elapsed)",
+                  file=sys.stderr)
             if variant.is_passive:
                 curve = passive_curve(primary.benchmark_curve, args.capital)
                 benchmarks.append(
@@ -183,7 +212,7 @@ def main() -> int:
                 sizer=variant.sizer,
                 conviction_scorer=variant.conviction_scorer,
                 eligibility=eligibility,
-            ).run()
+            ).run(progress=args.progress)
             benchmarks.append(
                 (variant.name, variant.proves,
                  summarise(variant.name, run.equity_curve, run.book.closed,
@@ -220,6 +249,9 @@ def main() -> int:
             progress=args.progress,
         )
 
+    if skipped:
+        print(f"  skipped for time: {', '.join(skipped)}", file=sys.stderr)
+
     notes = [
         "Simulated fills assume the operator transacts at the rebalance "
         "close. That is optimistic about liquidity and is stated rather "
@@ -227,6 +259,12 @@ def main() -> int:
         f"Holdings whose price stopped and were closed as delisted at "
         f"{settings.delisting_return:+.0%}: {primary.assumed_delistings}.",
     ]
+    if skipped:
+        notes.append(
+            "Benchmarks NOT run, to finish inside the time budget: "
+            + ", ".join(skipped)
+            + ". Their comparisons are missing from this report, not passed."
+        )
     if filer_index is not None:
         from gcfp.data.pit_universe import survivorship_coverage
 
