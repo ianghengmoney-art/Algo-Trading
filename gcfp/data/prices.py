@@ -38,6 +38,10 @@ TEN_YEAR_YIELD_SYMBOL = "^TNX"
 #: How far back a split lookup reaches. One wide request per symbol, filtered
 #: locally, instead of one request per window asked for.
 SPLIT_HISTORY_START = date(1990, 1, 1)
+
+#: Minimum history fetched on a cache miss, so the later, wider windows a
+#: backtest asks for (C1 reaches back nine years) are already on disk.
+FETCH_HISTORY_DAYS = int(365.25 * 12)
 #: The benchmark D5 momentum and the beta regression are measured against.
 BENCHMARK_SYMBOL = "^GSPC"
 
@@ -390,7 +394,15 @@ class CachedPriceSource(PriceSource):
             # what a shorter one already had.
             if current and not cached.get("unavailable"):
                 start = min(start, date.fromisoformat(cached["start"]))
-                end = max(end, date.fromisoformat(cached["end"]))
+
+        # Always fetch through today. A backtest walks forward a month at a
+        # time, so a cache that stopped at the requested end was missed —
+        # and the whole history downloaded again — at every single
+        # rebalance. Requests are still answered only up to their own end
+        # date, so nothing after the as-of date can leak out.
+        requested_start, requested_end = start, end
+        start = min(start, end - timedelta(days=FETCH_HISTORY_DAYS))
+        end = date.fromisoformat(today)
 
         try:
             points = list(self.inner.get_prices(symbol, start, end))
@@ -409,7 +421,10 @@ class CachedPriceSource(PriceSource):
                 ],
             },
         )
-        return points
+        return [
+            p for p in points
+            if requested_start <= p.price_date <= requested_end
+        ]
 
     def _save(self, symbol: str, payload: dict) -> None:
         self._memory[symbol] = payload

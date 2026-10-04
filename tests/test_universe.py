@@ -278,7 +278,25 @@ class TestPriceCache:
         src.get_prices("CAT", today - timedelta(days=30), today)
         src.get_prices("CAT", today - timedelta(days=3000), today)
         src.get_prices("CAT", today - timedelta(days=500), today - timedelta(days=100))
-        assert inner.calls == 2
+        # The first miss fetches twelve years through today, so both later
+        # windows are already on disk.
+        assert inner.calls == 1
+
+    def test_a_backtest_walking_forward_downloads_each_symbol_once(self, tmp_path):
+        """Each rebalance asks for one month more than the last. The cache
+        used to stop at the requested end, so every month was a miss and
+        every price history was downloaded again 129 times."""
+        from datetime import timedelta
+
+        src, inner = self.cached(tmp_path)
+        as_of = date(2015, 1, 31)
+        for _ in range(24):
+            history = src.get_prices("CAT", as_of - timedelta(days=2922), as_of)
+            recent = src.get_prices("CAT", as_of - timedelta(days=14), as_of)
+            assert max(p.price_date for p in [*history, *recent]) <= as_of, "lookahead"
+            assert min(p.price_date for p in history) >= as_of - timedelta(days=2922)
+            as_of += timedelta(days=30)
+        assert inner.calls == 1
 
     def test_an_unpriceable_ticker_is_not_retried_the_same_day(self, tmp_path):
         from datetime import timedelta
