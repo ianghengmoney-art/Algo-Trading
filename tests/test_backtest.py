@@ -442,3 +442,45 @@ class TestEligibility:
         engine._default_universe(None, Config(), date(2020, 3, 31))
         engine._default_universe(None, Config(), date(2020, 9, 30))
         assert seen == [["ALIVE", "DEAD"], ["ALIVE"]]
+
+
+class TestIndustryPeers:
+    """C2 needs same-industry peers; a random sample rarely has any."""
+
+    def test_peers_join_the_universe_but_never_the_candidate_list(self, monkeypatch):
+        from gcfp.backtest import engine as engine_module
+        from gcfp.backtest.engine import Backtester, BacktestSettings
+        from gcfp.config import Config
+        from gcfp.universe import Universe, UniverseMember
+
+        def member(symbol):
+            return UniverseMember(
+                symbol=symbol, name=symbol, market_cap=1e9, adv_3m_usd=1e7,
+                sector="S", industry="I", sub_industry=None,
+                net_debt_to_ebitda=None, gross_margin_stdev=None,
+                revenue_growth=None, beta=None,
+            )
+
+        calls: list[list[str]] = []
+
+        def fake_build(adapter, symbols, config, as_of=None, progress=False):
+            calls.append(list(symbols))
+            return Universe(as_of=as_of, members=[member(s) for s in symbols])
+
+        monkeypatch.setattr(engine_module, "build_universe", fake_build)
+        settings = BacktestSettings(start=date(2020, 1, 1), end=date(2021, 1, 1))
+        cache: dict = {}
+        engine = Backtester(None, Config(), settings, ["A"],
+                            peer_pool=lambda s: ["P1", "P2", "A"],
+                            peer_member_cache=cache)
+        base = Universe(as_of=date(2020, 3, 31), members=[member("A")])
+
+        merged = engine._with_industry_peers(None, base, ["A"], date(2020, 3, 31))
+        assert [m.symbol for m in merged.members] == ["A", "P1", "P2"]
+        assert [m.symbol for m in base.members] == ["A"], "the base universe was mutated"
+
+        # A benchmark run on the same date reuses the screened peers.
+        again = Backtester(None, Config(), settings, ["A"],
+                           peer_pool=lambda s: ["P1", "P2"], peer_member_cache=cache)
+        again._with_industry_peers(None, base, ["A"], date(2020, 3, 31))
+        assert calls == [["P1", "P2"]]

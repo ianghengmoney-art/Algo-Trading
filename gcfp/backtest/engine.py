@@ -206,6 +206,8 @@ class Backtester:
         sizer: Callable[[Evaluation, PortfolioState, Config], float] | None = None,
         conviction_scorer: Callable[..., object] | None = None,
         eligibility: Callable[[str, date], bool] | None = None,
+        peer_pool: Callable[[str], Sequence[str]] | None = None,
+        peer_member_cache: dict | None = None,
     ) -> None:
         self.adapter = adapter
         self.config = config
@@ -225,6 +227,14 @@ class Backtester:
         #: is screened only while it was actually filing — before its first
         #: report it did not exist, after its last it was gone.
         self.eligibility = eligibility
+        #: Same-industry names to offer C2 as peers, beyond the sample. A
+        #: random sample of a few hundred filers almost never holds two
+        #: companies in one industry, so peers drawn from it alone left C2
+        #: with nothing and put every candidate in SINGLE-ANCHOR MODE.
+        self.peer_pool = peer_pool
+        #: Screened peer members by (symbol, date), shared across the
+        #: benchmark runs, which replay the same dates over the same peers.
+        self.peer_member_cache = peer_member_cache if peer_member_cache is not None else {}
 
     # -- point-in-time ----------------------------------------------------
     def _pin(self, as_of: date) -> DataAdapter:
@@ -255,6 +265,38 @@ class Backtester:
             adapter, symbols, config, as_of=as_of,
             progress=getattr(self, "_universe_progress", False),
         )
+
+    def _with_industry_peers(
+        self,
+        adapter: DataAdapter,
+        universe: Universe,
+        candidates: Sequence[str],
+        as_of: date,
+    ) -> Universe:
+        present = {m.symbol for m in universe.members}
+        wanted: list[str] = []
+        for symbol in candidates:
+            try:
+                peers = self.peer_pool(symbol)
+            except Exception:
+                continue
+            for peer in peers:
+                if peer not in present and peer not in wanted:
+                    wanted.append(peer)
+
+        members = list(universe.members)
+        missing = [p for p in wanted if (p, as_of) not in self.peer_member_cache]
+        if missing:
+            screened = build_universe(adapter, missing, self.config, as_of=as_of)
+            for member in screened.members:
+                self.peer_member_cache[(member.symbol, as_of)] = member
+            for symbol in missing:
+                self.peer_member_cache.setdefault((symbol, as_of), None)
+        for peer in wanted:
+            member = self.peer_member_cache.get((peer, as_of))
+            if member is not None:
+                members.append(member)
+        return replace(universe, members=members)
 
     # -- prices -----------------------------------------------------------
     def _price_on(self, symbol: str, as_of: date) -> float | None:
@@ -366,6 +408,10 @@ class Backtester:
 
         universe = self.universe_builder(adapter, self.config, as_of)
         candidates = [m.symbol for m in universe.included]
+        if self.peer_pool is not None:
+            # Peers are added after the candidate list is fixed: they are
+            # reference points for C2, never things to buy.
+            universe = self._with_industry_peers(adapter, universe, candidates, as_of)
 
         held = list(book.positions)
         prices = self._prices_on(set(candidates) | set(held), as_of)

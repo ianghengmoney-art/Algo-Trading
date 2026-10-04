@@ -78,6 +78,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--no-benchmarks", action="store_true")
     parser.add_argument("--progress", action="store_true")
     parser.add_argument(
+        "--peers-per-name", type=int, default=25, metavar="N",
+        help=(
+            "same-industry companies (by SIC code, from EDGAR) offered to C2 "
+            "as peers for each candidate. 0 restricts peers to the sample."
+        ),
+    )
+    parser.add_argument(
         "--time-budget-min", type=float,
         default=290.0 if os.environ.get("GITHUB_ACTIONS") == "true" else None,
         help=(
@@ -103,6 +110,47 @@ def read_symbol_file(path: Path) -> list[str]:
     return out
 
 
+def industry_peer_pool(adapter, sample: list[str], per_name: int):
+    """Same-industry tickers for each candidate, looked up once per name.
+
+    The SEC lists *current* filers by SIC code, so these peers are survivors.
+    That biases the peer multiple, not which companies get bought — peers are
+    reference points only — and the report says so.
+    """
+    if per_name <= 0:
+        return None
+    edgar = getattr(adapter, "fundamentals", adapter)
+    lookup = getattr(edgar, "symbols_by_sic", None)
+    if lookup is None:
+        return None
+
+    def cik(symbol: str):
+        try:
+            return edgar.ticker_to_cik(symbol)
+        except Exception:
+            return None
+
+    sample_ciks = {c for c in (cik(s) for s in sample) if c is not None}
+    memo: dict[str, list[str]] = {}
+
+    def pool(symbol: str) -> list[str]:
+        if symbol not in memo:
+            peers: list[str] = []
+            try:
+                code = edgar.get_profile(symbol).industry_code
+                if code:
+                    # Ask for extra: some will be the sample's own companies.
+                    for peer in lookup(code, limit=per_name * 2):
+                        if cik(peer) not in sample_ciks and len(peers) < per_name:
+                            peers.append(peer)
+            except Exception:
+                peers = []
+            memo[symbol] = peers
+        return memo[symbol]
+
+    return pool
+
+
 def main() -> int:
     args = parse_args()
     started = time.monotonic()
@@ -111,6 +159,8 @@ def main() -> int:
         return (time.monotonic() - started) / 60
     filer_index = None
     eligibility = None
+    peer_pool = None
+    peer_member_cache: dict = {}
 
     if args.source == "synthetic":
         from gcfp.backtest.fixtures import build_synthetic_market
@@ -150,6 +200,7 @@ def main() -> int:
             def eligibility(symbol: str, as_of: date) -> bool:
                 cik = symbol_cik(symbol)
                 return cik is None or filer_index.is_live(cik, as_of)
+        peer_pool = industry_peer_pool(adapter, symbols, args.peers_per_name)
         if not symbols:
             raise SystemExit(
                 "--pit-sample, --symbols or --symbols-from is required for an EDGAR "
@@ -177,7 +228,8 @@ def main() -> int:
     primary_started = minutes()
     primary = Backtester(
         adapter, config, settings, symbols, label="GCFP v4", split=split,
-        eligibility=eligibility,
+        eligibility=eligibility, peer_pool=peer_pool,
+        peer_member_cache=peer_member_cache,
     ).run(progress=args.progress)
     # Each benchmark replays the same months over the same companies, so the
     # primary run is a fair estimate of how long one takes.
@@ -211,7 +263,8 @@ def main() -> int:
                 signal_filter=variant.signal_filter,
                 sizer=variant.sizer,
                 conviction_scorer=variant.conviction_scorer,
-                eligibility=eligibility,
+                eligibility=eligibility, peer_pool=peer_pool,
+                peer_member_cache=peer_member_cache,
             ).run(progress=args.progress)
             benchmarks.append(
                 (variant.name, variant.proves,
@@ -240,7 +293,8 @@ def main() -> int:
         sweep = run_sweep(
             lambda cfg: Backtester(
                 adapter, cfg, train_settings, symbols, label="sweep",
-                eligibility=eligibility,
+                eligibility=eligibility, peer_pool=peer_pool,
+                peer_member_cache=peer_member_cache,
             ).run(),
             config,
             split=split,
@@ -276,7 +330,19 @@ def main() -> int:
 
         coverage = survivorship_coverage(filer_index, symbols, args.end, has_prices)
         notes.extend(coverage.lines())
+    if peer_pool is not None:
+        notes.append(
+            f"C2 peers: up to {args.peers_per_name} same-industry companies per "
+            "candidate from EDGAR's SIC listing. That listing holds today's "
+            "filers, so peers are survivors; they set the comparison multiple "
+            "and are never bought."
+        )
     elif args.source == "edgar":
+        notes.append(
+            "C2 peers were drawn from the sample only, which rarely holds two "
+            "companies in one industry; expect SINGLE-ANCHOR MODE throughout."
+        )
+    if filer_index is None and args.source == "edgar":
         notes.append(
             "SURVIVORSHIP: the symbol list was chosen today, so it holds only "
             "companies that survived. The CAGR is an upper bound; rerun with "
