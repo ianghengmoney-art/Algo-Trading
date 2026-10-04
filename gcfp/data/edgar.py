@@ -412,8 +412,12 @@ class EdgarAdapter(DataAdapter):
     def _facts(self, symbol: str) -> dict[str, Any]:
         cik = self.ticker_to_cik(symbol)
         if cik not in self._facts_cache:
-            self._facts_cache[cik] = self._get_json(
-                COMPANYFACTS_URL.format(cik=cik), cache_key=f"facts_{cik:010d}"
+            # Held compacted: the raw document is ~17 MB in memory and a
+            # backtest with industry peers holds over a thousand of them.
+            self._facts_cache[cik] = xbrl.compact(
+                self._get_json(
+                    COMPANYFACTS_URL.format(cik=cik), cache_key=f"facts_{cik:010d}"
+                )
             )
         return self._facts_cache[cik]
 

@@ -429,11 +429,15 @@ class TestEligibility:
         from gcfp.backtest.engine import Backtester, BacktestSettings
         from gcfp.config import Config
 
+        from gcfp.universe import Universe
+
         seen: list[list[str]] = []
-        monkeypatch.setattr(
-            engine_module, "build_universe",
-            lambda adapter, symbols, config, as_of=None, progress=False: seen.append(list(symbols)),
-        )
+
+        def fake_build(adapter, symbols, config, as_of=None, progress=False):
+            seen.append(list(symbols))
+            return Universe(as_of=as_of)
+
+        monkeypatch.setattr(engine_module, "build_universe", fake_build)
         settings = BacktestSettings(start=date(2020, 1, 1), end=date(2021, 1, 1))
         engine = Backtester(
             None, Config(), settings, ["ALIVE", "DEAD"],
@@ -472,7 +476,7 @@ class TestIndustryPeers:
         cache: dict = {}
         engine = Backtester(None, Config(), settings, ["A"],
                             peer_pool=lambda s: ["P1", "P2", "A"],
-                            peer_member_cache=cache)
+                            member_cache=cache)
         base = Universe(as_of=date(2020, 3, 31), members=[member("A")])
 
         merged = engine._with_industry_peers(None, base, ["A"], date(2020, 3, 31))
@@ -481,7 +485,7 @@ class TestIndustryPeers:
 
         # A benchmark run on the same date reuses the screened peers.
         again = Backtester(None, Config(), settings, ["A"],
-                           peer_pool=lambda s: ["P1", "P2"], peer_member_cache=cache)
+                           peer_pool=lambda s: ["P1", "P2"], member_cache=cache)
         again._with_industry_peers(None, base, ["A"], date(2020, 3, 31))
         assert calls == [["P1", "P2"]]
 

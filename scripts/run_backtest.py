@@ -160,7 +160,7 @@ def main() -> int:
     filer_index = None
     eligibility = None
     peer_pool = None
-    peer_member_cache: dict = {}
+    member_cache: dict = {}
 
     if args.source == "synthetic":
         from gcfp.backtest.fixtures import build_synthetic_market
@@ -236,7 +236,7 @@ def main() -> int:
     primary = Backtester(
         adapter, config, settings, symbols, label="GCFP v4", split=split,
         eligibility=eligibility, peer_pool=peer_pool,
-        peer_member_cache=peer_member_cache,
+        member_cache=member_cache,
     ).run(progress=args.progress, deadline=deadline)
     # Each benchmark replays the same months over the same companies, so the
     # primary run is a fair estimate of how long one takes.
@@ -275,7 +275,7 @@ def main() -> int:
                 sizer=variant.sizer,
                 conviction_scorer=variant.conviction_scorer,
                 eligibility=eligibility, peer_pool=peer_pool,
-                peer_member_cache=peer_member_cache,
+                member_cache=member_cache,
             ).run(progress=args.progress)
             benchmarks.append(
                 (variant.name, variant.proves,
@@ -305,7 +305,7 @@ def main() -> int:
             lambda cfg: Backtester(
                 adapter, cfg, train_settings, symbols, label="sweep",
                 eligibility=eligibility, peer_pool=peer_pool,
-                peer_member_cache=peer_member_cache,
+                member_cache=member_cache,
             ).run(),
             config,
             split=split,

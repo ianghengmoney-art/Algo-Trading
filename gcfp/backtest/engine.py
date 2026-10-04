@@ -210,7 +210,7 @@ class Backtester:
         conviction_scorer: Callable[..., object] | None = None,
         eligibility: Callable[[str, date], bool] | None = None,
         peer_pool: Callable[[str], Sequence[str]] | None = None,
-        peer_member_cache: dict | None = None,
+        member_cache: dict | None = None,
     ) -> None:
         self.adapter = adapter
         self.config = config
@@ -235,9 +235,10 @@ class Backtester:
         #: companies in one industry, so peers drawn from it alone left C2
         #: with nothing and put every candidate in SINGLE-ANCHOR MODE.
         self.peer_pool = peer_pool
-        #: Screened peer members by (symbol, date), shared across the
-        #: benchmark runs, which replay the same dates over the same peers.
-        self.peer_member_cache = peer_member_cache if peer_member_cache is not None else {}
+        #: Screened universe members by (symbol, date, universe settings),
+        #: shared across the benchmark runs, which replay the same dates
+        #: over the same companies with the same screen.
+        self.member_cache = member_cache if member_cache is not None else {}
 
     # -- point-in-time ----------------------------------------------------
     def _pin(self, as_of: date) -> DataAdapter:
@@ -264,10 +265,42 @@ class Backtester:
         symbols = self.symbols
         if self.eligibility is not None:
             symbols = [s for s in symbols if self.eligibility(s, as_of)]
-        return build_universe(
-            adapter, symbols, config, as_of=as_of,
+        members = self._screened(
+            adapter, symbols, config, as_of,
             progress=getattr(self, "_universe_progress", False),
         )
+        return Universe(
+            as_of=as_of, members=members, source=getattr(adapter, "name", "unknown")
+        )
+
+    def _screened(
+        self,
+        adapter: DataAdapter,
+        symbols: Sequence[str],
+        config: Config,
+        as_of: date,
+        *,
+        progress: bool = False,
+    ) -> list:
+        """Universe members for ``symbols`` on ``as_of``, screening only the
+        ones no earlier run has screened with the same settings."""
+        settings_key = repr(config.universe)
+        missing = [
+            s for s in symbols if (s, as_of, settings_key) not in self.member_cache
+        ]
+        if missing:
+            screened = build_universe(
+                adapter, missing, config, as_of=as_of, progress=progress
+            )
+            for member in screened.members:
+                self.member_cache[(member.symbol, as_of, settings_key)] = member
+            for symbol in missing:
+                # Unreachable names are remembered too, so they are not retried.
+                self.member_cache.setdefault((symbol, as_of, settings_key), None)
+        return [
+            member for s in symbols
+            if (member := self.member_cache.get((s, as_of, settings_key))) is not None
+        ]
 
     def _with_industry_peers(
         self,
@@ -287,19 +320,8 @@ class Backtester:
                 if peer not in present and peer not in wanted:
                     wanted.append(peer)
 
-        members = list(universe.members)
-        missing = [p for p in wanted if (p, as_of) not in self.peer_member_cache]
-        if missing:
-            screened = build_universe(adapter, missing, self.config, as_of=as_of)
-            for member in screened.members:
-                self.peer_member_cache[(member.symbol, as_of)] = member
-            for symbol in missing:
-                self.peer_member_cache.setdefault((symbol, as_of), None)
-        for peer in wanted:
-            member = self.peer_member_cache.get((peer, as_of))
-            if member is not None:
-                members.append(member)
-        return replace(universe, members=members)
+        peers = self._screened(adapter, wanted, self.config, as_of)
+        return replace(universe, members=list(universe.members) + peers)
 
     # -- prices -----------------------------------------------------------
     def _price_on(self, symbol: str, as_of: date) -> float | None:

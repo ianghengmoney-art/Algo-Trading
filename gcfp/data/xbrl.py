@@ -306,7 +306,7 @@ QUARTER_DAYS = (75, 115)
 ANNUAL_DAYS = (330, 400)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Fact:
     """One XBRL fact, with the provenance that makes it auditable."""
 
@@ -361,6 +361,30 @@ def _facts_for_tag(payload: dict[str, Any], tag: str) -> list[Fact]:
     if tag not in memo:
         memo[tag] = tuple(_parse_facts_for_tag(payload, tag))
     return list(memo[tag])
+
+
+def compact(payload: dict[str, Any]) -> dict[str, Any]:
+    """The payload reduced to what this module reads, parsed once.
+
+    A companyfacts file carries every tag a company has ever filed — often
+    a thousand — and as parsed JSON it costs about 17 MB of memory. A
+    backtest holding a sample plus each candidate's industry peers kept
+    over a thousand of them, which outgrew a 16 GB runner and stalled the
+    job in swap. Only the tags in :data:`TAG_CHAINS` are ever read, so they
+    are parsed into :class:`Fact` tuples here and the raw document dropped.
+    The functions below behave identically on the result.
+    """
+    parsed = {
+        tag: tuple(_parse_facts_for_tag(payload, tag))
+        for tag in sorted({t for chain in TAG_CHAINS.values() for t in chain})
+    }
+    return {
+        "cik": payload.get("cik"),
+        "entityName": payload.get("entityName"),
+        "facts": {},
+        _PARSED_KEY: {tag: facts for tag, facts in parsed.items() if facts}
+        | {tag: () for tag, facts in parsed.items() if not facts},
+    }
 
 
 def _parse_facts_for_tag(payload: dict[str, Any], tag: str) -> list[Fact]:
@@ -717,6 +741,7 @@ def has_any_fact(
 
 
 __all__ = [
+    "compact",
     "Fact",
     "TAG_CHAINS",
     "NAMESPACES",
