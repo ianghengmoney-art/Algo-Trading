@@ -307,12 +307,16 @@ class EdgarAdapter(DataAdapter):
         someone else.  ``None`` when no route yields a ticker; that company
         cannot be priced and is reported as such, never silently skipped.
         """
+        # Anything not addressed by CIK is already a trading symbol — a
+        # ticker, or an index like ^GSPC that has no CIK at all. Resolving it
+        # through the SEC index first made the S&P 500 unpriceable, and with
+        # it the backtest's index benchmark.
+        if not symbol.strip().upper().startswith("CIK"):
+            return symbol.strip().upper(), None
         try:
             cik = self.ticker_to_cik(symbol)
         except DataUnavailable:
             return None
-        if not symbol.strip().upper().startswith("CIK"):
-            return symbol.strip().upper(), None
 
         current = self.cik_to_ticker().get(cik)
         if current:

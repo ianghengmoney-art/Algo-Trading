@@ -126,6 +126,13 @@ class TestPriceTicker:
         assert ticker == "RSH"
         assert cutoff == date(2015, 4, 9)  # last periodic report + 120 days
 
+    def test_an_index_symbol_is_priced_as_itself(self):
+        # ^GSPC has no CIK; it must not be looked up in the SEC index.
+        adapter = self.adapter({})
+        adapter.ticker_to_cik = Mock(side_effect=DataUnavailable("cik", "no"))
+        assert adapter.price_ticker("^GSPC") == ("^GSPC", None)
+        adapter.ticker_to_cik.assert_not_called()
+
     def test_no_route_means_unpriceable(self):
         subs = {"tickers": [], "filings": {"recent": {
             "form": ["10-K"], "filingDate": ["2014-06-10"],
