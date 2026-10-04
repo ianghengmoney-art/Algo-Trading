@@ -507,3 +507,17 @@ class TestDeadline:
         assert len(result.rebalances) == 1
         assert any("STOPPED EARLY" in n for n in result.notes)
         assert not result.book.positions, "positions must still be closed out"
+
+
+class TestAccuracyDeadline:
+    def test_routings_past_the_deadline_are_counted_not_dropped_silently(self):
+        import time
+
+        from gcfp.backtest.accuracy import measure_accuracy
+        from gcfp.classification import Classification
+        from gcfp.config import Config
+
+        routings = [("A", Classification.CORE_STABLE, date(2015, 1, 31))] * 5
+        report = measure_accuracy(None, Config(), routings, deadline=time.monotonic() - 1)
+        assert report.not_judged_for_time == 5
+        assert any("NOT judged" in line for line in report.as_report_lines())

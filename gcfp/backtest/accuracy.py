@@ -27,6 +27,8 @@ been appropriate but is not sufficient.
 
 from __future__ import annotations
 
+import time
+
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 from typing import Sequence
@@ -79,6 +81,8 @@ class AccuracyReport:
     outcomes: list[ClassificationOutcome] = field(default_factory=list)
     floor: float = 0.70
     method: str = "criteria persistence at 12 months"
+    #: Routings left unjudged because the run reached its time budget.
+    not_judged_for_time: int = 0
 
     @property
     def evaluable(self) -> list[ClassificationOutcome]:
@@ -113,6 +117,12 @@ class AccuracyReport:
             f"  routings judged: {len(self.evaluable)} of {len(self.outcomes)} "
             f"({len(self.outcomes) - len(self.evaluable)} not evaluable)",
         ]
+        if self.not_judged_for_time:
+            lines.append(
+                f"  {self.not_judged_for_time} further routings NOT judged: the "
+                "run reached its time budget. The rate covers the earliest "
+                "routings only."
+            )
         accuracy = self.accuracy
         if accuracy is None:
             lines.append("  accuracy: not measurable — no routing could be judged")
@@ -197,6 +207,7 @@ def measure_accuracy(
     *,
     lookforward_months: int = LOOKFORWARD_MONTHS,
     horizon_end: date | None = None,
+    deadline: float | None = None,
 ) -> AccuracyReport:
     """Judge every routing that has had time to be judged.
 
@@ -206,7 +217,10 @@ def measure_accuracy(
     """
     report = AccuracyReport(floor=config.expectations.classification_accuracy_floor)
 
-    for symbol, assigned, assigned_on in routings:
+    for index, (symbol, assigned, assigned_on) in enumerate(routings):
+        if deadline is not None and time.monotonic() > deadline:
+            report.not_judged_for_time = len(routings) - index
+            break
         reviewed_on = _shift_months(assigned_on, lookforward_months)
         if horizon_end is not None and reviewed_on > horizon_end:
             continue

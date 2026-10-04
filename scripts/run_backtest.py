@@ -226,13 +226,19 @@ def main() -> int:
           f"{args.start.isoformat()}..{args.end.isoformat()}", file=sys.stderr)
 
     primary_started = minutes()
-    # The main run may use the budget less a margin for the accuracy check
-    # and the report; past it, it stops early and says how far it got.
-    deadline = (
-        time.monotonic() + (args.time_budget_min - minutes() - 25) * 60
+    # One end time for the whole job. Each phase gets it less a margin for
+    # the phases after it, and every phase stops at its own limit and says
+    # so — the job is never killed with nothing reported.
+    hard_end = (
+        time.monotonic() + (args.time_budget_min - minutes()) * 60
         if args.time_budget_min is not None
         else None
     )
+
+    def until_end_less(margin_min: float) -> float | None:
+        return None if hard_end is None else hard_end - margin_min * 60
+
+    deadline = until_end_less(25)
     primary = Backtester(
         adapter, config, settings, symbols, label="GCFP v4", split=split,
         eligibility=eligibility, peer_pool=peer_pool,
@@ -276,7 +282,13 @@ def main() -> int:
                 conviction_scorer=variant.conviction_scorer,
                 eligibility=eligibility, peer_pool=peer_pool,
                 member_cache=member_cache,
-            ).run(progress=args.progress)
+            ).run(progress=args.progress, deadline=until_end_less(15))
+            if run.stopped_early_at is not None:
+                # Some benchmarks trade far more than the main run, so the
+                # main run's duration does not bound theirs. A benchmark cut
+                # short covers a different period and is not comparable.
+                skipped.append(variant.name)
+                continue
             benchmarks.append(
                 (variant.name, variant.proves,
                  summarise(variant.name, run.equity_curve, run.book.closed,
@@ -289,8 +301,11 @@ def main() -> int:
         for record in primary.rebalances
         for symbol, tag in record.classifications.items()
     ]
+    print(f"  classification accuracy: {len(routings)} routings "
+          f"({minutes():.0f} min elapsed)", file=sys.stderr)
     accuracy = measure_accuracy(
-        adapter, config, routings, horizon_end=args.end
+        adapter, config, routings, horizon_end=args.end,
+        deadline=until_end_less(8),
     )
 
     # §13.7 sweep, on the training period only.
@@ -326,7 +341,7 @@ def main() -> int:
     ]
     if skipped:
         notes.append(
-            "Benchmarks NOT run, to finish inside the time budget: "
+            "Benchmarks NOT run or cut short, to finish inside the time budget: "
             + ", ".join(skipped)
             + ". Their comparisons are missing from this report, not passed."
         )
@@ -339,6 +354,7 @@ def main() -> int:
             except Exception:
                 return False
 
+        print(f"  survivorship coverage ({minutes():.0f} min elapsed)", file=sys.stderr)
         coverage = survivorship_coverage(filer_index, symbols, args.end, has_prices)
         notes.extend(coverage.lines())
     if peer_pool is not None:
