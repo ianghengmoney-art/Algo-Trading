@@ -226,11 +226,18 @@ def main() -> int:
           f"{args.start.isoformat()}..{args.end.isoformat()}", file=sys.stderr)
 
     primary_started = minutes()
+    # The main run may use the budget less a margin for the accuracy check
+    # and the report; past it, it stops early and says how far it got.
+    deadline = (
+        time.monotonic() + (args.time_budget_min - minutes() - 25) * 60
+        if args.time_budget_min is not None
+        else None
+    )
     primary = Backtester(
         adapter, config, settings, symbols, label="GCFP v4", split=split,
         eligibility=eligibility, peer_pool=peer_pool,
         peer_member_cache=peer_member_cache,
-    ).run(progress=args.progress)
+    ).run(progress=args.progress, deadline=deadline)
     # Each benchmark replays the same months over the same companies, so the
     # primary run is a fair estimate of how long one takes.
     run_minutes = max(minutes() - primary_started, 0.1)
@@ -241,10 +248,14 @@ def main() -> int:
     skipped: list[str] = []
     if not args.no_benchmarks:
         for variant in build_variants(config, settings.benchmark_symbol):
-            if (
-                not variant.is_passive
-                and args.time_budget_min is not None
-                and minutes() + run_minutes > args.time_budget_min
+            if not variant.is_passive and (
+                # A benchmark over the full period would not be comparable
+                # with a main run that stopped early.
+                primary.stopped_early_at is not None
+                or (
+                    args.time_budget_min is not None
+                    and minutes() + run_minutes > args.time_budget_min
+                )
             ):
                 skipped.append(variant.name)
                 continue
@@ -306,7 +317,7 @@ def main() -> int:
     if skipped:
         print(f"  skipped for time: {', '.join(skipped)}", file=sys.stderr)
 
-    notes = [
+    notes = list(primary.notes) + [
         "Simulated fills assume the operator transacts at the rebalance "
         "close. That is optimistic about liquidity and is stated rather "
         "than modelled away.",

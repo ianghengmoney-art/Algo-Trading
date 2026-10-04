@@ -137,6 +137,9 @@ class BacktestResult:
     notes: list[str] = field(default_factory=list)
     #: Holdings closed because their price stopped, at the assumed return.
     assumed_delistings: int = 0
+    #: Last month completed when the walk stopped at its deadline; None
+    #: when the whole requested period was covered.
+    stopped_early_at: date | None = None
 
     @property
     def equity_curve(self) -> list[tuple[date, float]]:
@@ -321,7 +324,13 @@ class Backtester:
         return out
 
     # -- the loop ---------------------------------------------------------
-    def run(self, progress: bool = False) -> BacktestResult:
+    def run(self, progress: bool = False, deadline: float | None = None) -> BacktestResult:
+        """Walk the period month by month.
+
+        ``deadline`` is a ``time.monotonic()`` value. Past it, the walk stops
+        at the last completed month and says so, rather than being killed by
+        the job's time limit with nothing reported.
+        """
         settings = self.settings
         book = BacktestBook(cash=settings.initial_capital)
         result = BacktestResult(
@@ -339,6 +348,17 @@ class Backtester:
 
         started = time.monotonic()
         for index, as_of in enumerate(dates):
+            if deadline is not None and index > 0 and time.monotonic() > deadline:
+                done = dates[index - 1]
+                result.notes.append(
+                    f"STOPPED EARLY at {done.isoformat()} ({index} of "
+                    f"{len(dates)} months) to finish inside the time budget. "
+                    f"Every figure covers {dates[0].isoformat()}.."
+                    f"{done.isoformat()} only, not the period requested."
+                )
+                result.stopped_early_at = done
+                dates = dates[:index]
+                break
             # The first month downloads every company's filings and prices, so
             # it reports per company; later months run from memory and report
             # one line each. A line a year looked exactly like a hang.

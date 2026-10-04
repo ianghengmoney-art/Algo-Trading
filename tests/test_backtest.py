@@ -484,3 +484,22 @@ class TestIndustryPeers:
                            peer_pool=lambda s: ["P1", "P2"], peer_member_cache=cache)
         again._with_industry_peers(None, base, ["A"], date(2020, 3, 31))
         assert calls == [["P1", "P2"]]
+
+
+class TestDeadline:
+    def test_a_run_past_its_deadline_stops_and_says_how_far_it_got(self):
+        import time
+
+        from gcfp.backtest.fixtures import build_synthetic_market
+        from gcfp.backtest.engine import Backtester, BacktestSettings
+        from gcfp.config import Config
+
+        market = build_synthetic_market(date(2010, 1, 1), date(2015, 12, 31))
+        symbols = [s for s in sorted(market.companies) if not s.startswith("^")]
+        settings = BacktestSettings(start=date(2015, 1, 1), end=date(2015, 12, 31))
+        result = Backtester(market, Config(), settings, symbols).run(
+            deadline=time.monotonic() - 1
+        )
+        assert len(result.rebalances) == 1
+        assert any("STOPPED EARLY" in n for n in result.notes)
+        assert not result.book.positions, "positions must still be closed out"
