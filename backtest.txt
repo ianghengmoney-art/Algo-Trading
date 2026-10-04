@@ -1,0 +1,173 @@
+==============================================================================
+GCFP v4 — §13 VALIDATION REPORT
+==============================================================================
+
+Point-in-time data: IN USE. Every evaluation saw only what had been
+filed by its own date, so restatements and late filings enter the
+record when they actually became knowable.
+
+period: 2015-01-01..2025-09-30  (10.7 years)
+parameters: f46eda79884a9a4c
+walk-forward (§13.3): train 2015-01-01..2021-06-13 · holdout 2021-06-14..2025-09-30
+
+------------------------------------------------------------------------------
+§13.1 — RESULTS, AND PER CLASSIFICATION
+------------------------------------------------------------------------------
+GCFP v4
+  100,000 -> 104,663 · +0.43%/yr
+  volatility 0.7%/yr
+  portfolio max drawdown: -1.3% from 2023-12-31 to 2025-05-31 (517 days), NOT YET RECOVERED
+  positions closed: 3
+  median outcome: +36.1%   (mean +109.2% — reported second, deliberately)
+  quartiles: p25 +33.1% · p75 +148.8%
+  best +261.4% · worst +30.1%
+  loss rate: 0.0% · total losses (<= -90%): 0.0%
+  largest single-position drawdown: -46.7%
+  median holding period: 244 days
+
+  Per classification (a blended backtest hides whether Growth is
+  carrying or dragging the system):
+    CORE-GROWTH
+      positions closed: 1
+      median outcome: +36.1%   (mean +36.1% — reported second, deliberately)
+      quartiles: p25 +36.1% · p75 +36.1%
+      best +36.1% · worst +36.1%
+      loss rate: 0.0% · total losses (<= -90%): 0.0%
+      largest single-position drawdown: -46.7%
+      median holding period: 1004 days
+    CORE-STABLE
+      positions closed: 2
+      median outcome: +145.8%   (mean +145.8% — reported second, deliberately)
+      quartiles: p25 +87.9% · p75 +203.6%
+      best +261.4% · worst +30.1%
+      loss rate: 0.0% · total losses (<= -90%): 0.0%
+      largest single-position drawdown: -0.1%
+      median holding period: 152 days
+
+------------------------------------------------------------------------------
+§13.2 — MANDATORY WINDOWS
+------------------------------------------------------------------------------
+  dot-com unwind (2000-2002): NOT COVERED by this backtest period
+  global financial crisis (2008-2009): NOT COVERED by this backtest period
+  2022 multiple compression (2022-2022): -0.00%/yr
+
+  ** 2 of 3 mandatory windows were not covered. §13.2 requires all three; extend the backtest period or state this as an incomplete validation. **
+
+------------------------------------------------------------------------------
+§13.4 — BENCHMARKS
+------------------------------------------------------------------------------
+  vs index (buy and hold): not measurable
+      proves: whether any of this beats buying the market
+  vs equal-weight all passers: +0.59%/yr
+      proves: that Module F's regime sizing earns its rules
+      difference: -0.16%/yr  <- BENCHMARK AHEAD
+      A benchmark that matches or beats the full system is the protocol working: it says this component does not earn its complexity.
+  vs no momentum overlay: +0.43%/yr
+      proves: that D5's tiebreaker adds something
+      difference: +0.00%/yr  <- BENCHMARK AHEAD
+      A benchmark that matches or beats the full system is the protocol working: it says this component does not earn its complexity.
+  vs single-anchor valuation: +0.43%/yr
+      proves: that C's dual triangulation earns its complexity
+      difference: +0.00%/yr  <- BENCHMARK AHEAD
+      A benchmark that matches or beats the full system is the protocol working: it says this component does not earn its complexity.
+  vs v3 circular conviction scoring: +0.83%/yr
+      proves: that the D2/D3 corrections improve outcomes, not just tidiness
+      difference: -0.40%/yr  <- BENCHMARK AHEAD
+      A benchmark that matches or beats the full system is the protocol working: it says this component does not earn its complexity.
+  vs no-C5 (reject single-anchor names): +0.00%/yr
+      proves: that SINGLE-ANCHOR MODE adds value rather than admitting bad trades
+      difference: +0.43%/yr  <- GCFP v4 ahead
+  vs old GCFP v2 rules: NOT RUN
+      the v2 specification was not supplied. v4 states that it supersedes v2 without restating it, and a reconstructed v2 would be a strawman rather than a benchmark. Supply the v2 rules to enable this comparison.
+
+------------------------------------------------------------------------------
+§13.5 — CLASSIFICATION ACCURACY
+------------------------------------------------------------------------------
+    method: criteria persistence at 12 months
+    routings judged: 1075 of 1075 (0 not evaluable)
+    accuracy: 81.4% against a 70% floor [ok]
+      CORE-GROWTH: 60.3% of 73
+      CORE-STABLE: 77.5% of 530
+      FINANCIAL-BANK: 100.0% of 304
+      INSURER: 100.0% of 114
+      SPEC-GROWTH: 3.7% of 54
+
+------------------------------------------------------------------------------
+§13.6 — RETURN DISTRIBUTION
+------------------------------------------------------------------------------
+  reported above under §13.1, per classification.
+  rolling 1y: min -0.9% · median +0.0% · max +3.7%
+  rolling 3y: min -0.0% · median +0.3% · max +1.2%
+  rolling 5y: min +0.1% · median +0.7% · max +1.0%
+
+------------------------------------------------------------------------------
+§13.7 — PARAMETER SWEEP
+------------------------------------------------------------------------------
+  not run
+
+------------------------------------------------------------------------------
+§13.9 — C5 FREQUENCY
+------------------------------------------------------------------------------
+  SINGLE-ANCHOR MODE: 100.0% of evaluated candidates ** ABOVE the 40% break criterion **
+  too few closed positions in one mode to compare outcomes
+
+------------------------------------------------------------------------------
+§13.10 — RECLASSIFICATION FREQUENCY
+------------------------------------------------------------------------------
+  H3 fired 21 time(s)
+    CIK0000810136: CORE-GROWTH -> CORE-STABLE
+    CIK0000810136: CORE-GROWTH -> CORE-STABLE
+    CIK0000810136: CORE-GROWTH -> CORE-STABLE
+    CIK0000810136: CORE-GROWTH -> CORE-STABLE
+    CIK0000810136: CORE-GROWTH -> CORE-STABLE
+    CIK0000810136: CORE-GROWTH -> CORE-STABLE
+    CIK0000810136: CORE-GROWTH -> CORE-STABLE
+    CIK0000810136: CORE-GROWTH -> CORE-STABLE
+    CIK0000810136: CORE-GROWTH -> CORE-STABLE
+    CIK0000810136: CORE-GROWTH -> CORE-STABLE
+    CIK0000810136: CORE-GROWTH -> CORE-STABLE
+    CIK0000810136: CORE-GROWTH -> CORE-STABLE
+    CIK0000810136: CORE-GROWTH -> CORE-STABLE
+    CIK0000810136: CORE-GROWTH -> CORE-STABLE
+    CIK0000810136: CORE-GROWTH -> CORE-STABLE
+    CIK0000810136: CORE-GROWTH -> CORE-STABLE
+    CIK0000810136: CORE-GROWTH -> CORE-STABLE
+    CIK0000810136: CORE-GROWTH -> CORE-STABLE
+    CIK0000810136: CORE-GROWTH -> CORE-STABLE
+    CIK0000810136: CORE-GROWTH -> CORE-STABLE
+
+------------------------------------------------------------------------------
+§13.11 — PAPER TRADING
+------------------------------------------------------------------------------
+  NOT DONE. §13.11 requires 2-3 months minimum before real money.
+  Backtests catch strategy flaws; paper trading catches pipeline flaws. Different failure classes — a clean backtest does not substitute.
+
+------------------------------------------------------------------------------
+MODULE I — STRATEGY-BREAK CRITERIA
+------------------------------------------------------------------------------
+    [ok] outcome: realised loss rate materially exceeding expectations · 3 closed positions; needs 20
+    [ok] process: demonstrated data corruption or systematic gate miscomputation · asserted by the operator or by a failing integrity check
+    [ok] process: classification accuracy below 70% on the backtest's own metric — 81.4% vs 70.0%
+    [ok] process: peer-selection methodology proven gameable · two reasonable analysts producing >30% different fair values means C2 is not a method, it is an opinion
+    [TRIPPED] process: SINGLE-ANCHOR MODE exceeding 40% of evaluated candidates — 100.0% vs 40.0% · the anchors are not available at the assumed rate and the system is not doing what it claims
+    [ok] process: anchor divergence (C4) firing on more than 50% of candidates · the two methods disagree so often that 'triangulation' is not producing signal
+    ** A break criterion has tripped. This is one of the only valid reasons to abandon the strategy. **
+    Not valid reasons to abandon: drawdown depth · underperformance duration · any individual position's outcome
+
+------------------------------------------------------------------------------
+MODULE I — EXPECTATION STATEMENT (verbatim)
+------------------------------------------------------------------------------
+  "Value and quality factors have historically delivered roughly 2-5%/year of excess return, arriving unevenly, with underperformance stretches lasting 5-10 years. Growth-classified positions are expected to produce total losses on roughly a third of holdings and sleeve drawdowns of 40-60% in adverse markets. Neither anchor in this system is a discovered truth: own-history assumes the past multiple range still applies, peer comparison assumes peers are fairly priced. Agreement between them raises confidence. It does not eliminate the possibility that both are wrong in the same direction at once."
+
+------------------------------------------------------------------------------
+NOTES
+------------------------------------------------------------------------------
+  Simulated fills assume the operator transacts at the rebalance close. That is optimistic about liquidity and is stated rather than modelled away.
+  Holdings whose price stopped and were closed as delisted at -30%: 0.
+  SURVIVORSHIP COVERAGE
+    sampled from the SEC filing index (incl. dead companies): 300
+    stopped filing during the period (died/acquired/delisted): 164
+      of which a price history was found: 9
+    still filing at the end: 136 (priced: 104)
+    WARNING: only 5% of the companies that died could be priced. The unpriced ones could never be bought in this backtest, so the result still leans toward survivors. Treat the CAGR as an upper bound.
+==============================================================================
