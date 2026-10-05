@@ -151,6 +151,7 @@ class EdgarAdapter(DataAdapter):
     cik_overrides: dict[str, int] = field(default_factory=dict)
     _ticker_map: dict[str, int] | None = field(default=None, repr=False)
     _facts_cache: dict[int, dict[str, Any]] = field(default_factory=dict, repr=False)
+    _periods_memo: dict[tuple[int, bool], tuple] = field(default_factory=dict, repr=False)
     _submissions_cache: dict[int, dict[str, Any]] = field(default_factory=dict, repr=False)
 
     def __post_init__(self) -> None:
@@ -515,12 +516,36 @@ class EdgarAdapter(DataAdapter):
     def get_annual_financials(
         self, symbol: str, years: int
     ) -> Sequence[PeriodFinancials]:
-        return self._periods(symbol, annual=True, limit=years)
+        return self._periods_memoised(symbol, annual=True, limit=years)
 
     def get_quarterly_financials(
         self, symbol: str, quarters: int
     ) -> Sequence[PeriodFinancials]:
-        return self._periods(symbol, annual=False, limit=quarters)
+        return self._periods_memoised(symbol, annual=False, limit=quarters)
+
+    #: Periods built per request at minimum, so the profile's 4-quarter share
+    #: count and the full load's 12 quarters come from one computation.
+    _MIN_PERIODS = {True: 10, False: 12}
+
+    def _periods_memoised(
+        self, symbol: str, *, annual: bool, limit: int
+    ) -> Sequence[PeriodFinancials]:
+        """:meth:`_periods` for the current as-of date, built once per company.
+
+        A backtest month asked for the same company's quarters twice — four
+        for the share count behind market cap, twelve for the full load — and
+        each request rebuilt every period from the facts. That was the largest
+        single cost of screening. Only the current as-of date is kept, which
+        bounds the memory: the walk never returns to an earlier month.
+        """
+        key = (self.ticker_to_cik(symbol), annual)
+        memo = self._periods_memo.get(key)
+        if memo is not None and memo[0] == self.as_of and memo[1] >= limit:
+            return memo[2][:limit]
+        wanted = max(limit, self._MIN_PERIODS[annual])
+        periods = tuple(self._periods(symbol, annual=annual, limit=wanted))
+        self._periods_memo[key] = (self.as_of, wanted, periods)
+        return periods[:limit]
 
     def _periods(
         self, symbol: str, *, annual: bool, limit: int
