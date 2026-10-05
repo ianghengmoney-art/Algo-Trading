@@ -26,7 +26,7 @@ import statistics
 from dataclasses import asdict, dataclass, field
 from datetime import date, datetime, timedelta
 from pathlib import Path
-from typing import Iterable, Sequence
+from typing import Iterable, Sequence, Callable
 
 from .analytics import group_median
 from .classification import Classification
@@ -62,6 +62,9 @@ class UniverseMember:
     #: Files 20-F or 40-F rather than 10-Q.  Defaulted so universe snapshots
     #: saved before the field existed still load.
     is_foreign_filer: bool = False
+    #: The source's industry code (SIC on EDGAR), for the wider grouping C2
+    #: can fall back to when ``anchors.peer_group_fallback`` is on.
+    industry_code: str | None = None
     #: Why this name was dropped, when it was.
     excluded_reason: str | None = None
 
@@ -265,6 +268,7 @@ def build_universe(
             is_foreign_filer=(
                 profile.reporting_frequency is ReportingFrequency.SEMIANNUAL
             ),
+            industry_code=profile.industry_code,
         )
 
         # Structural exclusions first, so the logged reason names the real
@@ -299,6 +303,14 @@ def build_universe(
     return universe
 
 
+def industry_group_key(member: UniverseMember) -> str | None:
+    """The wider grouping C2 may fall back to: the two-digit SIC major
+    group (e.g. "SIC 35xx", industrial machinery) around a four-digit
+    industry (e.g. 3531, construction machinery)."""
+    code = (member.industry_code or "").strip()
+    return f"SIC {code[:2]}xx" if len(code) >= 2 and code[:2].isdigit() else None
+
+
 def find_peers(
     universe: Universe,
     subject: UniverseMember,
@@ -309,6 +321,7 @@ def find_peers(
     level: TaxonomyLevel = TaxonomyLevel.INDUSTRY,
     max_candidates: int = 40,
     as_of: date | None = None,
+    grouping: Callable[[UniverseMember], str | None] | None = None,
 ) -> list[c_anchors.PeerCandidate]:
     """Assemble C2 candidates from the universe.
 
@@ -317,7 +330,12 @@ def find_peers(
     price fetches sane — it narrows by grouping and size, which C2 would reject
     on anyway, and never by anything C2 does not itself test.
     """
-    key = subject.grouping_at(level)
+    if grouping is not None:
+        key = grouping(subject)
+        members = [m for m in universe.included if key and grouping(m) == key]
+    else:
+        key = subject.grouping_at(level)
+        members = universe.group(key, level) if key else []
     if not key:
         return []
 
@@ -325,7 +343,7 @@ def find_peers(
     high = config.anchors.peer_market_cap_high
 
     nearby = [
-        m for m in universe.group(key, level)
+        m for m in members
         if m.symbol != subject.symbol
         and m.market_cap
         and subject.market_cap

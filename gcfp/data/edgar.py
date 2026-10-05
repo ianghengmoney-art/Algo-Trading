@@ -60,6 +60,9 @@ SIC_BROWSE_URL = (
 COMPANYFACTS_URL = "https://data.sec.gov/api/xbrl/companyfacts/CIK{cik:010d}.json"
 TICKERS_URL = "https://www.sec.gov/files/company_tickers.json"
 
+#: Most industry listing pages read per SIC code (100 filers a page).
+SIC_MAX_PAGES = 20
+
 #: SEC asks for no more than 10 requests/second.  This adapter stays well
 #: under, because a weekly screen has no reason to hurry and a blocked IP
 #: costs far more than the minutes saved.
@@ -371,7 +374,10 @@ class EdgarAdapter(DataAdapter):
         found: list[str] = []
         seen: set[int] = set()
         page = 100
-        for start in range(0, max(limit, 1), page):
+        # Page until enough tickers are found or the listing ends. Bounding the
+        # loop by ``limit`` read one page for a limit under 100, and a page of
+        # CIKs holds far fewer current tickers than CIKs.
+        for start in range(0, page * SIC_MAX_PAGES, page):
             try:
                 body = self._get_text(
                     SIC_BROWSE_URL.format(sic=code, count=page, start=start),

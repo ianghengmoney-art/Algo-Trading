@@ -127,6 +127,11 @@ class AnchorConfig:
     peer_market_cap_low: float = 0.3
     peer_market_cap_high: float = 3.0
     peer_growth_band: float = 0.10
+    #: Not in the spec, and off by default. When an industry yields fewer than
+    #: ``peer_min`` peers, look for them in the wider industry group (the
+    #: two-digit SIC major group) instead of routing to SINGLE-ANCHOR MODE.
+    #: Exists so its effect can be measured against the spec as written.
+    peer_group_fallback: bool = False
     # C3
     pegy_flag_above: float = 2.0
     # C4

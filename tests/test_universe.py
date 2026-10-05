@@ -478,3 +478,44 @@ class TestPriceSourceBreaker:
             with pytest.raises(DataUnavailable):
                 source.get_prices("X", date(2020, 1, 1), date(2020, 2, 1))
         assert Picky.calls == 5
+
+
+class TestWiderPeerGroup:
+    """Option 3: when an industry is thin, look in its SIC major group."""
+
+    @staticmethod
+    def member(symbol, code, industry):
+        from gcfp.universe import UniverseMember
+
+        return UniverseMember(
+            symbol=symbol, name=symbol, market_cap=1e9, adv_3m_usd=1e7,
+            sector="Manufacturing", industry=industry, sub_industry=None,
+            net_debt_to_ebitda=None, gross_margin_stdev=None,
+            revenue_growth=0.05, beta=None, industry_code=code,
+        )
+
+    def test_the_major_group_key(self):
+        from gcfp.universe import industry_group_key
+
+        assert industry_group_key(self.member("A", "3531", "x")) == "SIC 35xx"
+        assert industry_group_key(self.member("A", None, "x")) is None
+
+    def test_peers_come_from_sibling_industries(self):
+        from unittest.mock import Mock
+
+        from gcfp.config import Config
+        from gcfp.universe import Universe, find_peers, industry_group_key
+
+        subject = self.member("CAT", "3531", "CONSTRUCTION MACHINERY")
+        siblings = [self.member(f"S{i}", "3533", "OIL FIELD MACHINERY") for i in range(5)]
+        stranger = self.member("BANK", "6021", "NATIONAL BANKS")
+        universe = Universe(as_of=date(2020, 1, 1), members=[subject, *siblings, stranger])
+        adapter = Mock()
+        adapter.load_company = Mock(return_value=Mock(current_price=None))
+
+        narrow = find_peers(universe, subject, Config(), adapter, "trailing_pe")
+        wide = find_peers(universe, subject, Config(), adapter, "trailing_pe",
+                          grouping=industry_group_key)
+        assert narrow == []
+        assert {c.symbol for c in wide} == {s.symbol for s in siblings}
+        assert all(c.group == "SIC 35xx" for c in wide)

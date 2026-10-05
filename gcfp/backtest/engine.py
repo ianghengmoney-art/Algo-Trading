@@ -31,7 +31,7 @@ from ..modules.h_monitor import MonitorFlag
 from ..modules.k_currency import FxTable
 from ..pipeline import CandidateInputs, Evaluation, evaluate_candidate
 from ..types import CompanyData, MarketData
-from ..universe import Universe, build_universe, find_peers
+from ..universe import Universe, build_universe, find_peers, industry_group_key
 from .portfolio import BacktestBook, Snapshot
 from .timebudget import TimeBudgetExceeded, time_limit
 
@@ -696,13 +696,27 @@ class Backtester:
         else:
             multiple = c_anchors.anchor_multiple_for(tag, self.config)
 
+        peers = find_peers(universe, member, self.config, adapter, multiple, as_of=as_of)
+        subject_group = member.industry
+        if self.config.anchors.peer_group_fallback:
+            kept, _ = c_anchors.select_peers(
+                subject_group, member.market_cap, member.revenue_growth,
+                peers, self.config,
+            )
+            if len(kept) < self.config.anchors.peer_min:
+                wider = industry_group_key(member)
+                if wider:
+                    peers = find_peers(
+                        universe, member, self.config, adapter, multiple,
+                        as_of=as_of, grouping=industry_group_key,
+                    )
+                    subject_group = wider
+
         inputs = CandidateInputs(
             current_multiple=c_anchors.compute_current_multiple(data, multiple),
             trailing_pe=c_anchors.compute_current_multiple(data, "trailing_pe"),
-            peer_candidates=find_peers(
-                universe, member, self.config, adapter, multiple, as_of=as_of
-            ),
-            subject_group=member.industry,
+            peer_candidates=peers,
+            subject_group=subject_group,
             subject_growth=member.revenue_growth,
         )
 

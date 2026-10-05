@@ -80,10 +80,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--no-benchmarks", action="store_true")
     parser.add_argument("--progress", action="store_true")
     parser.add_argument(
-        "--peers-per-name", type=int, default=25, metavar="N",
+        "--peers-per-name", type=int, default=150, metavar="N",
         help=(
             "same-industry companies (by SIC code, from EDGAR) offered to C2 "
             "as peers for each candidate. 0 restricts peers to the sample."
+        ),
+    )
+    parser.add_argument(
+        "--c2-options", action=argparse.BooleanOptionalAction, default=True,
+        help=(
+            "also run the C2 peer-rule options (wider bands; wider industry "
+            "group) on the same data and compare them in the report"
         ),
     )
     parser.add_argument(
@@ -292,6 +299,60 @@ def main() -> int:
     benchmarks_started = minutes()
     print(f"  main backtest done in {run_minutes:.0f} min", file=sys.stderr)
 
+    # C2 options, run on the same companies and months: what changes if the
+    # peer rule is loosened (option 2) or allowed to widen to the industry
+    # group (option 3). Neither is the spec; they are measured, not adopted.
+    option_lines: list[str] = []
+    if args.c2_options and primary.stopped_early_at is None:
+        import dataclasses
+
+        def with_anchors(**changes):
+            return dataclasses.replace(
+                config, anchors=dataclasses.replace(config.anchors, **changes)
+            )
+
+        wider_bands = dict(
+            peer_market_cap_low=0.2, peer_market_cap_high=5.0, peer_growth_band=0.25
+        )
+        options = [
+            ("Option 2: wider peer bands (0.2-5x size, +/-25pt growth)",
+             with_anchors(**wider_bands)),
+            ("Option 3: wider industry group when fewer than 4 peers",
+             with_anchors(peer_group_fallback=True)),
+            ("Options 2 + 3 together",
+             with_anchors(peer_group_fallback=True, **wider_bands)),
+        ]
+
+        def describe(name: str, run) -> str:
+            summary = summarise(name, run.equity_curve, run.book.closed,
+                                run.benchmark_curve)
+            single = run.single_anchor_rate
+            diverge = run.divergence_rate
+            return (
+                f"  {name}: "
+                + (f"{summary.annualised:+.2%}/yr" if summary.annualised is not None
+                   else "return not measurable")
+                + f" · {len(run.book.closed)} trades"
+                + (f" · single-anchor {single:.0%}" if single is not None else "")
+                + (f" · anchors disagree {diverge:.0%}" if diverge is not None else "")
+            )
+
+        option_lines = [
+            "C2 OPTIONS COMPARED (same companies and months; only the peer rule differs)",
+            describe("As specified, all same-industry peers offered", primary),
+        ]
+        for name, option_config in options:
+            print(f"  {name} ({minutes():.0f} min elapsed)", file=sys.stderr)
+            run = Backtester(
+                adapter, option_config, settings, symbols, label=name,
+                split=split, eligibility=eligibility, peer_pool=peer_pool,
+                member_cache=member_cache,
+            ).run(progress=args.progress, deadline=until_end_less(15))
+            if run.stopped_early_at is not None:
+                option_lines.append(f"  {name}: not finished inside the time budget")
+                break
+            option_lines.append(describe(name, run))
+
     # §13.4 benchmarks.
     benchmarks = []
     skipped: list[str] = []
@@ -419,7 +480,7 @@ def main() -> int:
         f"    main backtest, {stage}: {seconds / 60:.1f}"
         for stage, seconds in primary.timing.items()
     ]
-    notes = list(primary.notes) + ([accuracy_note] if accuracy_note else []) + [
+    notes = list(primary.notes) + option_lines + ([accuracy_note] if accuracy_note else []) + [
         "Simulated fills assume the operator transacts at the rebalance "
         "close. That is optimistic about liquidity and is stated rather "
         "than modelled away.",
