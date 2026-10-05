@@ -141,6 +141,8 @@ class BacktestResult:
     #: Last month completed when the walk stopped at its deadline; None
     #: when the whole requested period was covered.
     stopped_early_at: date | None = None
+    #: Seconds spent per stage of the walk, for the report's timing section.
+    timing: dict[str, float] = field(default_factory=dict)
 
     @property
     def equity_curve(self) -> list[tuple[date, float]]:
@@ -424,6 +426,10 @@ class Backtester:
         return result
 
     @staticmethod
+    def _tick(result: BacktestResult, stage: str, since: float) -> None:
+        result.timing[stage] = result.timing.get(stage, 0.0) + time.monotonic() - since
+
+    @staticmethod
     def _note_early_stop(
         result: BacktestResult,
         dates: Sequence[date],
@@ -474,12 +480,17 @@ class Backtester:
         adapter = self._pin(as_of)
         record = RebalanceRecord(as_of=as_of, evaluated=0, passers=0)
 
+        clock = time.monotonic()
         universe = self.universe_builder(adapter, self.config, as_of)
         candidates = [m.symbol for m in universe.included]
+        self._tick(result, "screen sample", clock)
         if self.peer_pool is not None:
             # Peers are added after the candidate list is fixed: they are
             # reference points for C2, never things to buy.
+            clock = time.monotonic()
             universe = self._with_industry_peers(adapter, universe, candidates, as_of)
+            self._tick(result, "screen peers", clock)
+        clock = time.monotonic()
 
         held = list(book.positions)
         prices = self._prices_on(set(candidates) | set(held), as_of)
@@ -596,6 +607,7 @@ class Backtester:
                     book, prices, book.total_value(prices)
                 )
 
+        self._tick(result, "evaluate and trade", clock)
         # 4. Mark and snapshot.
         prices = self._prices_on(list(book.positions), as_of)
         book.mark(prices)

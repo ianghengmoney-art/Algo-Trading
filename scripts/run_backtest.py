@@ -285,6 +285,11 @@ def main() -> int:
     # Each benchmark replays the same months over the same companies, so the
     # primary run is a fair estimate of how long one takes.
     run_minutes = max(minutes() - primary_started, 0.1)
+    phase_minutes: dict[str, float] = {
+        "setup (filing index, sample)": primary_started,
+        "main backtest": run_minutes,
+    }
+    benchmarks_started = minutes()
     print(f"  main backtest done in {run_minutes:.0f} min", file=sys.stderr)
 
     # §13.4 benchmarks.
@@ -333,6 +338,8 @@ def main() -> int:
                            run.benchmark_curve))
             )
 
+    phase_minutes["benchmarks"] = minutes() - benchmarks_started
+    accuracy_started = minutes()
     # §13.5 classification accuracy, over every routing the run recorded.
     routings = [
         (symbol, Classification(tag), record.as_of)
@@ -379,6 +386,13 @@ def main() -> int:
     if skipped:
         print(f"  skipped for time: {', '.join(skipped)}", file=sys.stderr)
 
+    phase_minutes["accuracy check"] = minutes() - accuracy_started
+    timing_lines = ["RUN TIMING (minutes)"] + [
+        f"  {name}: {value:.1f}" for name, value in phase_minutes.items()
+    ] + [
+        f"    main backtest, {stage}: {seconds / 60:.1f}"
+        for stage, seconds in primary.timing.items()
+    ]
     notes = list(primary.notes) + ([accuracy_note] if accuracy_note else []) + [
         "Simulated fills assume the operator transacts at the rebalance "
         "close. That is optimistic about liquidity and is stated rather "
@@ -461,7 +475,8 @@ def main() -> int:
             # models the same filing-date discipline.
             point_in_time=True,
             paper_traded_months=0.0,
-            notes=notes + extra,
+            notes=notes + extra + timing_lines
+            + [f"  report written at: {minutes():.1f}"],
         )
         text = report.render(config)
         if args.out:
