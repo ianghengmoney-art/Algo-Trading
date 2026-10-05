@@ -437,3 +437,44 @@ class TestStructuralExclusions:
             "revenue_growth": 0.05, "beta": 1.0,
         }]}))
         assert Universe.load(path).members[0].is_foreign_filer is False
+
+
+class TestPriceSourceBreaker:
+    def test_an_unreachable_source_is_skipped_after_three_failures(self):
+        from gcfp.data.adapter import DataUnavailable
+        from gcfp.data.prices import FallbackPriceSource, PriceSource
+        from gcfp.types import PricePoint
+
+        class Dead(PriceSource):
+            name = "dead"
+            calls = 0
+            def get_prices(self, symbol, start, end):
+                Dead.calls += 1
+                raise DataUnavailable("prices", "dead exhausted retries: timeout")
+
+        class Alive(PriceSource):
+            name = "alive"
+            def get_prices(self, symbol, start, end):
+                return (PricePoint(end, 1.0),)
+
+        source = FallbackPriceSource(sources=(Dead(), Alive()))
+        for _ in range(10):
+            assert source.get_prices("X", date(2020, 1, 1), date(2020, 2, 1))
+        assert Dead.calls == 3
+
+    def test_an_unknown_symbol_does_not_count_against_the_source(self):
+        from gcfp.data.adapter import DataUnavailable
+        from gcfp.data.prices import FallbackPriceSource, PriceSource
+
+        class Picky(PriceSource):
+            name = "picky"
+            calls = 0
+            def get_prices(self, symbol, start, end):
+                Picky.calls += 1
+                raise DataUnavailable("prices", f"no data for {symbol}")
+
+        source = FallbackPriceSource(sources=(Picky(),))
+        for _ in range(5):
+            with pytest.raises(DataUnavailable):
+                source.get_prices("X", date(2020, 1, 1), date(2020, 2, 1))
+        assert Picky.calls == 5

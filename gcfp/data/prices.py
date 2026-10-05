@@ -297,18 +297,53 @@ class FallbackPriceSource(PriceSource):
         if not self.sources:
             self.sources = (StooqPriceSource(), YahooPriceSource())
 
+    #: Consecutive transport failures after which a source is skipped for the
+    #: rest of the run.
+    breaker_threshold: int = 3
+    _strikes: dict[str, int] = field(default_factory=dict, repr=False)
+    _tripped: set = field(default_factory=set, repr=False)
+
     def _try(self, method: str, *args, **kwargs):
         errors: list[str] = []
         for source in self.sources:
+            if source.name in self._tripped:
+                errors.append(f"{source.name}: skipped (unreachable earlier this run)")
+                continue
             try:
                 result = getattr(source, method)(*args, **kwargs)
             except Exception as exc:
                 errors.append(f"{source.name}: {type(exc).__name__}: {exc}")
                 self.failures[source.name] = str(exc)
+                self._strike(source, exc)
                 continue
+            self._strikes[source.name] = 0
             self.last_source_used = source.name
             return result
         raise DataUnavailable(method, "; ".join(errors) or "no sources configured")
+
+    def _strike(self, source: PriceSource, exc: Exception) -> None:
+        """Count a failure that says the source is unreachable, not that the
+        symbol is unknown.
+
+        A source that times out costs a minute per symbol — three attempts of
+        up to 20 seconds plus back-off — before the next source is even
+        asked. From a runner where a feed is blocked, that was most of a
+        screen's time: 45 seconds a company. After a few such failures in a
+        row the source is skipped for the rest of the run.
+        """
+        if "exhausted retries" not in str(exc):
+            return
+        self._strikes[source.name] = self._strikes.get(source.name, 0) + 1
+        if self._strikes[source.name] >= self.breaker_threshold:
+            self._tripped.add(source.name)
+            import sys
+
+            print(
+                f"  price source {source.name} unreachable "
+                f"{self.breaker_threshold} times in a row; skipping it for "
+                "the rest of this run",
+                file=sys.stderr, flush=True,
+            )
 
     def get_prices(self, symbol: str, start: date, end: date) -> Sequence[PricePoint]:
         return self._try("get_prices", symbol, start, end)
