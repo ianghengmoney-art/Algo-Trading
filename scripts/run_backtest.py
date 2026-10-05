@@ -34,6 +34,7 @@ from gcfp.backtest.engine import Backtester, BacktestSettings, WalkForwardSplit
 from gcfp.backtest.metrics import summarise
 from gcfp.backtest.report import ValidationReport
 from gcfp.backtest.sweep import run_sweep
+from gcfp.backtest.timebudget import TimeBudgetExceeded, time_limit
 from gcfp.backtest.variants import build_variants, passive_curve
 from gcfp.classification import Classification
 from gcfp.config import DEFAULT_CONFIG
@@ -303,10 +304,19 @@ def main() -> int:
     ]
     print(f"  classification accuracy: {len(routings)} routings "
           f"({minutes():.0f} min elapsed)", file=sys.stderr)
-    accuracy = measure_accuracy(
-        adapter, config, routings, horizon_end=args.end,
-        deadline=until_end_less(8),
-    )
+    accuracy_note = None
+    try:
+        with time_limit(until_end_less(7)):
+            accuracy = measure_accuracy(
+                adapter, config, routings, horizon_end=args.end,
+                deadline=until_end_less(8),
+            )
+    except TimeBudgetExceeded:
+        accuracy = None
+        accuracy_note = (
+            "§13.5 classification accuracy NOT measured: the run reached its "
+            "time budget during the check."
+        )
 
     # §13.7 sweep, on the training period only.
     sweep = None
@@ -332,7 +342,7 @@ def main() -> int:
     if skipped:
         print(f"  skipped for time: {', '.join(skipped)}", file=sys.stderr)
 
-    notes = list(primary.notes) + [
+    notes = list(primary.notes) + ([accuracy_note] if accuracy_note else []) + [
         "Simulated fills assume the operator transacts at the rebalance "
         "close. That is optimistic about liquidity and is stated rather "
         "than modelled away.",
@@ -361,8 +371,17 @@ def main() -> int:
                 return False
 
         print(f"  survivorship coverage ({minutes():.0f} min elapsed)", file=sys.stderr)
-        coverage = survivorship_coverage(filer_index, symbols, args.end, has_prices)
-        notes.extend(coverage.lines())
+        try:
+            with time_limit(until_end_less(3)):
+                coverage = survivorship_coverage(
+                    filer_index, symbols, args.end, has_prices
+                )
+            notes.extend(coverage.lines())
+        except TimeBudgetExceeded:
+            notes.append(
+                "SURVIVORSHIP COVERAGE not computed: the run reached its time "
+                "budget. Treat the CAGR as an upper bound."
+            )
         if unchecked:
             notes.append(
                 f"  {len(unchecked)} companies were not checked for prices before "
@@ -409,7 +428,7 @@ def main() -> int:
     integrity = evaluate_break_criteria(
         config,
         closed_positions=len(primary.book.closed),
-        classification_accuracy=accuracy.accuracy,
+        classification_accuracy=accuracy.accuracy if accuracy else None,
         single_anchor_rate=primary.single_anchor_rate,
         divergence_rate=primary.divergence_rate,
     )

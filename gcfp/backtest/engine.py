@@ -32,6 +32,7 @@ from ..pipeline import CandidateInputs, Evaluation, evaluate_candidate
 from ..types import CompanyData, MarketData
 from ..universe import Universe, build_universe, find_peers
 from .portfolio import BacktestBook, Snapshot
+from .timebudget import TimeBudgetExceeded, time_limit
 
 #: The mandatory windows §13.2 names, where growth names, financials, and
 #: multiple-expansion respectively got hit hardest.
@@ -369,35 +370,42 @@ class Backtester:
             return result
 
         started = time.monotonic()
-        for index, as_of in enumerate(dates):
-            if deadline is not None and index > 0 and time.monotonic() > deadline:
-                done = dates[index - 1]
-                result.notes.append(
-                    f"STOPPED EARLY at {done.isoformat()} ({index} of "
-                    f"{len(dates)} months) to finish inside the time budget. "
-                    f"Every figure covers {dates[0].isoformat()}.."
-                    f"{done.isoformat()} only, not the period requested."
-                )
-                result.stopped_early_at = done
-                dates = dates[:index]
-                break
-            # The first month downloads every company's filings and prices, so
-            # it reports per company; later months run from memory and report
-            # one line each. A line a year looked exactly like a hang.
-            self._universe_progress = progress and index == 0
-            if self._universe_progress:
-                print(f"  {as_of.isoformat()}: first month — downloading "
-                      f"{len(self.symbols)} companies", flush=True)
-            record = self._rebalance(book, as_of, result)
-            result.rebalances.append(record)
+        final = dates[-1]
+        try:
+            # The check between months is the orderly stop; the timer is the
+            # guarantee, for a month that stalls inside a download.
+            with time_limit(deadline):
+                for index, as_of in enumerate(dates):
+                    if deadline is not None and index > 0 and time.monotonic() > deadline:
+                        final = dates[index - 1]
+                        self._note_early_stop(result, dates, index, final, during=False)
+                        break
+                    # The first month downloads every company's filings and
+                    # prices, so it reports per company; later months run from
+                    # memory and report one line each. A line a year looked
+                    # exactly like a hang.
+                    self._universe_progress = progress and index == 0
+                    if self._universe_progress:
+                        print(f"  {as_of.isoformat()}: first month — downloading "
+                              f"{len(self.symbols)} companies", flush=True)
+                    record = self._rebalance(book, as_of, result)
+                    result.rebalances.append(record)
+                    if progress:
+                        minutes = (time.monotonic() - started) / 60
+                        print(
+                            f"  {as_of.isoformat()} ({index + 1}/{len(dates)}, "
+                            f"{minutes:.0f} min): screened {record.evaluated}, "
+                            f"passed {record.passers}, holding {len(book.positions)}",
+                            flush=True,
+                        )
+        except TimeBudgetExceeded:
+            # Interrupted inside a month. Trades already made in it stand, so
+            # everything is closed at that month's date.
+            completed = len(result.rebalances)
+            final = dates[min(completed, len(dates) - 1)]
+            self._note_early_stop(result, dates, completed, final, during=True)
             if progress:
-                minutes = (time.monotonic() - started) / 60
-                print(
-                    f"  {as_of.isoformat()} ({index + 1}/{len(dates)}, "
-                    f"{minutes:.0f} min): screened {record.evaluated}, "
-                    f"passed {record.passers}, holding {len(book.positions)}",
-                    flush=True,
-                )
+                print(f"  time budget reached during {final.isoformat()}", flush=True)
 
         # Close everything at the end so every position becomes a closed one
         # and the return distribution covers the whole run.
@@ -414,6 +422,24 @@ class Backtester:
                 self._close_as_delisted(book, symbol, final, result)
 
         return result
+
+    @staticmethod
+    def _note_early_stop(
+        result: BacktestResult,
+        dates: Sequence[date],
+        completed: int,
+        last: date,
+        *,
+        during: bool,
+    ) -> None:
+        where = f"during {last.isoformat()}" if during else f"at {last.isoformat()}"
+        result.notes.append(
+            f"STOPPED EARLY {where} ({completed} of {len(dates)} months "
+            f"complete) to finish inside the time budget. Every figure covers "
+            f"{dates[0].isoformat()}..{last.isoformat()} only, not the period "
+            "requested."
+        )
+        result.stopped_early_at = last
 
     def _close_as_delisted(
         self, book: BacktestBook, symbol: str, as_of: date, result: BacktestResult

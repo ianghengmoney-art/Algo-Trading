@@ -504,9 +504,38 @@ class TestDeadline:
         result = Backtester(market, Config(), settings, symbols).run(
             deadline=time.monotonic() - 1
         )
-        assert len(result.rebalances) == 1
+        assert len(result.rebalances) == 0
         assert any("STOPPED EARLY" in n for n in result.notes)
         assert not result.book.positions, "positions must still be closed out"
+
+    def test_a_month_that_stalls_is_interrupted_not_waited_for(self, monkeypatch):
+        """A month stuck inside a download outlasted three jobs; the timer
+        must cut it off and the run must still close out and report."""
+        import time
+
+        from gcfp.backtest.fixtures import build_synthetic_market
+        from gcfp.backtest.engine import Backtester, BacktestSettings
+        from gcfp.config import Config
+
+        market = build_synthetic_market(date(2010, 1, 1), date(2015, 12, 31))
+        symbols = [s for s in sorted(market.companies) if not s.startswith("^")]
+        settings = BacktestSettings(start=date(2015, 1, 1), end=date(2015, 12, 31))
+        engine = Backtester(market, Config(), settings, symbols)
+        real = engine._rebalance
+
+        def stalls_in_month_three(book, as_of, result):
+            if len(result.rebalances) == 2:
+                time.sleep(30)  # far past the deadline below
+            return real(book, as_of, result)
+
+        monkeypatch.setattr(engine, "_rebalance", stalls_in_month_three)
+        started = time.monotonic()
+        result = engine.run(deadline=time.monotonic() + 3)
+        assert time.monotonic() - started < 15, "the stalled month was waited for"
+        assert len(result.rebalances) == 2
+        assert result.stopped_early_at == date(2015, 3, 31)
+        assert any("STOPPED EARLY during 2015-03-31" in n for n in result.notes)
+        assert not result.book.positions
 
 
 class TestAccuracyDeadline:
