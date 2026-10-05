@@ -348,7 +348,13 @@ def main() -> int:
     if filer_index is not None:
         from gcfp.data.pit_universe import survivorship_coverage
 
+        coverage_deadline = until_end_less(4)
+        unchecked: list[str] = []
+
         def has_prices(symbol: str) -> bool:
+            if coverage_deadline is not None and time.monotonic() > coverage_deadline:
+                unchecked.append(symbol)
+                return False
             try:
                 return bool(adapter.get_prices(symbol, args.start, args.end))
             except Exception:
@@ -357,6 +363,11 @@ def main() -> int:
         print(f"  survivorship coverage ({minutes():.0f} min elapsed)", file=sys.stderr)
         coverage = survivorship_coverage(filer_index, symbols, args.end, has_prices)
         notes.extend(coverage.lines())
+        if unchecked:
+            notes.append(
+                f"  {len(unchecked)} companies were not checked for prices before "
+                "the time budget ran out and are counted as unpriced above."
+            )
     if peer_pool is not None:
         notes.append(
             f"C2 peers: up to {args.peers_per_name} same-industry companies per "

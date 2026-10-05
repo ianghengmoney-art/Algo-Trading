@@ -42,6 +42,10 @@ SPLIT_HISTORY_START = date(1990, 1, 1)
 #: Minimum history fetched on a cache miss, so the later, wider windows a
 #: backtest asks for (C1 reaches back nine years) are already on disk.
 FETCH_HISTORY_DAYS = int(365.25 * 12)
+
+#: Days a cached "this symbol has no data" answer is trusted before the feed
+#: is asked again.
+UNAVAILABLE_TTL_DAYS = 3
 #: The benchmark D5 momentum and the beta regression are measured against.
 BENCHMARK_SYMBOL = "^GSPC"
 
@@ -372,7 +376,7 @@ class CachedPriceSource(PriceSource):
         if cached is not None:
             fetched_on = cached.get("fetched_on", "")
             current = fetched_on == today or end.isoformat() < fetched_on
-            if cached.get("unavailable") and fetched_on == today:
+            if cached.get("unavailable") and self._unavailable_still_trusted(fetched_on):
                 raise DataUnavailable("prices", cached["unavailable"])
             if (
                 current
@@ -444,11 +448,15 @@ class CachedPriceSource(PriceSource):
         key = f"{symbol}.splits"
         today = date.today().isoformat()
         cached = self._load(key)
-        stale = cached is None or (
-            cached.get("fetched_on") != today
-            # A past "unavailable" is a rate limit or an outage, not a fact.
-            and (cached.get("unavailable") or end.isoformat() >= cached.get("fetched_on", ""))
-        )
+        fetched_on = (cached or {}).get("fetched_on", "")
+        if cached is None:
+            stale = True
+        elif cached.get("unavailable"):
+            # It may have been a rate limit or an outage, so it is retried —
+            # but not within the TTL, and never twice in one run.
+            stale = not self._unavailable_still_trusted(fetched_on)
+        else:
+            stale = fetched_on != today and end.isoformat() >= fetched_on
         if stale:
             try:
                 actions = self.inner.get_splits(symbol, SPLIT_HISTORY_START, date.today())
@@ -476,6 +484,21 @@ class CachedPriceSource(PriceSource):
             for r in cached["rows"]
             if start.isoformat() <= r[1] <= end.isoformat()
         )
+
+    def _unavailable_still_trusted(self, fetched_on: str) -> bool:
+        """Whether a cached "no data" answer stands, rather than being retried.
+
+        It used to stand for the calendar day only. A backtest that crossed
+        midnight UTC then re-asked the feed about every dead ticker at once,
+        each with retries and back-off, and one month of the walk outlasted
+        the job. A dead ticker does not come back, and a throttled one is
+        retried after the TTL — well inside a weekly screen's cycle.
+        """
+        try:
+            age = (date.today() - date.fromisoformat(fetched_on)).days
+        except ValueError:
+            return False
+        return age < UNAVAILABLE_TTL_DAYS
 
     def get_index_level(self, symbol: str) -> float | None:
         # A live yield, read once per run; caching it would only risk staleness.

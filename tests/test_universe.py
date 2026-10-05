@@ -310,6 +310,28 @@ class TestPriceCache:
                 src.get_prices("DEAD", today - timedelta(days=30), today)
         assert inner.calls == 1
 
+    def test_a_run_crossing_midnight_does_not_re_ask_about_dead_tickers(self, tmp_path):
+        """A "no data" answer stood for the calendar day only, so a backtest
+        that crossed midnight UTC re-fetched every dead ticker at once."""
+        import json
+        from datetime import timedelta
+
+        from gcfp.data.adapter import DataUnavailable
+
+        today = date.today()
+        src, inner = self.cached(tmp_path, fail=True)
+        with pytest.raises(DataUnavailable):
+            src.get_prices("DEAD", today - timedelta(days=30), today)
+        for age, expected_calls in ((1, 0), (4, 1)):
+            path = tmp_path / "DEAD.json"
+            entry = json.loads(path.read_text())
+            entry["fetched_on"] = (today - timedelta(days=age)).isoformat()
+            path.write_text(json.dumps(entry))
+            src, inner = self.cached(tmp_path, fail=True)
+            with pytest.raises(DataUnavailable):
+                src.get_prices("DEAD", date(2015, 1, 1), date(2015, 2, 1))
+            assert inner.calls == expected_calls, f"age {age} days"
+
     def test_a_series_reaching_today_is_refreshed_on_a_later_day(self, tmp_path):
         """Yesterday's file must not stand in for today's close."""
         import json
