@@ -127,6 +127,8 @@ class RebalanceRecord:
     #: "C2 missing — <cause>" counts, so a 98% single-anchor rate can be read
     #: as a data gap, a sampling artefact, or a design finding.
     anchor_gaps: dict[str, int] = field(default_factory=dict)
+    #: Where each screened candidate dropped out, by stage and cause.
+    funnel: dict[str, int] = field(default_factory=dict)
 
 
 @dataclass
@@ -219,6 +221,41 @@ def anchor_gap_causes(triangulation) -> list[str]:
             )
         out.append(f"C2 missing — {cause}")
     return out
+
+
+_STAGE_NAMES = {
+    "A": "1 health checks (Module A)",
+    "B": "2 fair value (Module B)",
+    "C5": "3 valuation anchors (Module C)",
+    "C": "3 valuation anchors (Module C)",
+    "D": "4 conviction (Module D)",
+}
+
+
+def funnel_steps(evaluation) -> list[str]:
+    """Where one candidate dropped out, as aggregatable labels.
+
+    Stage first, then the first blocking cause; for names that reach a
+    signal, which of E's BUY conditions failed. Numbers are stripped so the
+    same rule failing at different values counts together.
+    """
+    stopped = evaluation.stopped_at
+    if stopped:
+        stage = _STAGE_NAMES.get(stopped, stopped)
+        first = (evaluation.stop_reason or "").split("; ")[0]
+        return [f"stopped at {stage} — {_plain(first)}"]
+    signal = evaluation.signal
+    if signal is None:
+        return ["no signal produced"]
+    kind = signal.signal.value
+    if kind == "BUY":
+        return ["5 signal: BUY"]
+    failed = [name for name, met in signal.conditions.items() if not met]
+    steps = [f"5 signal: {kind}"]
+    steps += [f"5 BUY condition failed — {_plain(name)}" for name in failed]
+    if not failed and signal.reasons:
+        steps.append(f"5 not a BUY — {_plain(signal.reasons[0])}")
+    return steps
 
 
 def month_ends(start: date, end: date, step_months: int = 1) -> list[date]:
@@ -602,6 +639,8 @@ class Backtester:
                 )
 
             triangulation = evaluation.triangulation
+            for step in funnel_steps(evaluation):
+                record.funnel[step] = record.funnel.get(step, 0) + 1
             if triangulation is not None:
                 for gap in anchor_gap_causes(triangulation):
                     record.anchor_gaps[gap] = record.anchor_gaps.get(gap, 0) + 1

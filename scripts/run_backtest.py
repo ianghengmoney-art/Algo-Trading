@@ -87,7 +87,7 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
-        "--c2-options", action=argparse.BooleanOptionalAction, default=True,
+        "--c2-options", action=argparse.BooleanOptionalAction, default=False,
         help=(
             "also run the C2 peer-rule options (wider bands; wider industry "
             "group) on the same data and compare them in the report"
@@ -474,7 +474,25 @@ def main() -> int:
             for year, (missing, total) in sorted(c1_missing_by_year.items())
             if total
         ]
-    timing_lines = anchor_lines + ["RUN TIMING (minutes)"] + [
+    funnel_totals: dict[str, int] = {}
+    for record in primary.rebalances:
+        for step, count in record.funnel.items():
+            funnel_totals[step] = funnel_totals.get(step, 0) + count
+    screened_total = sum(r.evaluated for r in primary.rebalances)
+    funnel_lines = []
+    if funnel_totals:
+        funnel_lines = [
+            f"WHERE CANDIDATES DROPPED OUT ({screened_total} screenings over "
+            f"{len(primary.rebalances)} months; first blocking cause)"
+        ] + [
+            f"  {count:6d}  {step}"
+            for step, count in sorted(funnel_totals.items(), key=lambda kv: (kv[0][:1], -kv[1]))
+            if count >= 3
+        ] + [
+            f"  BUY signals: {sum(r.passers for r in primary.rebalances)} · "
+            f"positions actually bought: {sum(len(r.buys) for r in primary.rebalances)}"
+        ]
+    timing_lines = funnel_lines + anchor_lines + ["RUN TIMING (minutes)"] + [
         f"  {name}: {value:.1f}" for name, value in phase_minutes.items()
     ] + [
         f"    main backtest, {stage}: {seconds / 60:.1f}"
