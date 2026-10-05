@@ -107,14 +107,30 @@ class TestModuleF:
         assert "BALLAST GAP" in lines[0]
 
     def test_c5_portfolio_cap_blocks_a_further_single_anchor_name(self, config):
-        at_cap = portfolio(single_anchor_positions={"A"})
+        # A and B are single-anchor: 35% of portfolio value against a 20% cap.
+        at_cap = portfolio(single_anchor_positions={"A", "B"})
         decision = f_sizing.size_position(
             "X", Classification.CORE_STABLE, 85.0, "Energy", at_cap, config,
             single_anchor=True,
         )
-        # One of three positions is already single-anchor: 33% against a 20% cap.
         assert not decision.qualified
         assert any("SINGLE-ANCHOR" in c for c in decision.constraints)
+
+    def test_c5_cap_is_measured_by_value_not_by_count(self, config):
+        """One small single-anchor holding in a small book is not 100% of the
+        cap: the rule caps money, so a second small position still fits."""
+        small_book = portfolio(
+            position_values={"A": 30_000.0},
+            position_sectors={"A": "Technology"},
+            position_regimes={"A": Regime.CORE},
+            single_anchor_positions={"A"},
+        )
+        decision = f_sizing.size_position(
+            "X", Classification.CORE_STABLE, 65.0, "Energy", small_book, config,
+            single_anchor=True,
+        )
+        assert decision.qualified
+        assert decision.portfolio_share <= config.anchors.single_anchor_portfolio_cap - 0.03 + 1e-9
 
 
 class TestModuleG:

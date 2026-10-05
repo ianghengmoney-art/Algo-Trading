@@ -502,6 +502,10 @@ def main() -> int:
         "Simulated fills assume the operator transacts at the rebalance "
         "close. That is optimistic about liquidity and is stated rather "
         "than modelled away.",
+        "Money not in stock picks (the BALLAST bucket, plus any sleeve F3 "
+        "leaves unfilled) is held in the S&P 500 index between rebalances. "
+        "The index is price-only, without dividends, which understates both "
+        "the ballast and the index benchmark by roughly 1.5-2%/yr.",
         f"Holdings whose price stopped and were closed as delisted at "
         f"{settings.delisting_return:+.0%}: {primary.assumed_delistings}.",
     ]

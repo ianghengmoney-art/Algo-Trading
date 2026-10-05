@@ -423,6 +423,42 @@ class TestDelistedHoldings:
         assert book.closed[-1].total_return == pytest.approx(-1.0)
 
 
+class TestBallastInTheIndex:
+    """Money not in stock picks is BALLAST, which Module F defines as broad
+    index funds, cash, bills and gold. Held as 0% cash it made a ten-year
+    backtest measure how little was invested rather than the strategy."""
+
+    @staticmethod
+    def engine(levels: dict[date, float]):
+        from gcfp.backtest.engine import Backtester, BacktestSettings
+        from gcfp.config import Config
+
+        settings = BacktestSettings(start=date(2020, 1, 1), end=date(2021, 1, 1))
+        engine = Backtester(adapter=None, config=Config(), settings=settings, symbols=[])
+        engine._price_on = lambda symbol, as_of: levels.get(as_of)
+        engine._ballast_level = None
+        return engine
+
+    def test_uninvested_money_moves_with_the_index(self):
+        from gcfp.backtest.portfolio import BacktestBook
+
+        engine = self.engine({date(2020, 1, 31): 100.0, date(2020, 2, 29): 110.0})
+        book = BacktestBook(cash=10_000.0)
+        engine._grow_ballast(book, date(2020, 1, 31))
+        assert book.cash == pytest.approx(10_000.0), "the first month sets the level only"
+        engine._grow_ballast(book, date(2020, 2, 29))
+        assert book.cash == pytest.approx(11_000.0)
+
+    def test_a_month_without_an_index_price_is_not_lost(self):
+        from gcfp.backtest.portfolio import BacktestBook
+
+        engine = self.engine({date(2020, 1, 31): 100.0, date(2020, 3, 31): 90.0})
+        book = BacktestBook(cash=10_000.0)
+        for month_end in (date(2020, 1, 31), date(2020, 2, 29), date(2020, 3, 31)):
+            engine._grow_ballast(book, month_end)
+        assert book.cash == pytest.approx(9_000.0)
+
+
 class TestEligibility:
     def test_a_symbol_is_screened_only_while_it_was_filing(self, monkeypatch):
         from gcfp.backtest import engine as engine_module

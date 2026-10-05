@@ -243,21 +243,34 @@ def size_position(
         portfolio_share = bstate.headroom
         size = portfolio_share / sleeve_share_of_portfolio if sleeve_share_of_portfolio else 0.0
 
-    # C5's portfolio-level cap on SINGLE-ANCHOR names.
+    # C5's portfolio-level cap on SINGLE-ANCHOR names, measured as a share of
+    # the portfolio's value. It was a share of the *number* of names held, so
+    # with one single-anchor stock in a one-stock book the rate read 100% and
+    # every later single-anchor buy was refused: 31 of 39 BUY signals in a
+    # ten-year backtest.
     if single_anchor:
         cap = config.anchors.single_anchor_portfolio_cap
-        held = len(state.single_anchor_positions)
-        total_names = max(len(state.position_values), 1)
-        current_rate = held / total_names
-        if current_rate >= cap:
+        held_value = sum(
+            state.position_values.get(name, 0.0)
+            for name in state.single_anchor_positions
+        )
+        current_rate = held_value / state.total_value if state.total_value > 0 else 0.0
+        room = cap - current_rate
+        if room <= 0:
             constraints.append(
-                f"SINGLE-ANCHOR positions at {current_rate:.0%} of the book, "
+                f"SINGLE-ANCHOR positions at {current_rate:.0%} of portfolio value, "
                 f"cap {cap:.0%} — no headroom for another"
             )
             return SizingDecision(
                 symbol, classification, regime, bucket, 0.0, 0.0, 0.0, False,
                 constraints, flags,
             )
+        if portfolio_share > room:
+            constraints.append(
+                f"trimmed to the SINGLE-ANCHOR cap's remaining {room:.1%}"
+            )
+            portfolio_share = room
+            size = portfolio_share / sleeve_share_of_portfolio if sleeve_share_of_portfolio else 0.0
         flags.append(f"counts against the {cap:.0%} SINGLE-ANCHOR portfolio cap")
 
     # Sleeve name-count guidance.

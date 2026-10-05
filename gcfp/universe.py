@@ -65,6 +65,9 @@ class UniverseMember:
     #: The source's industry code (SIC on EDGAR), for the wider grouping C2
     #: can fall back to when ``anchors.peer_group_fallback`` is on.
     industry_code: str | None = None
+    #: Market cap over latest shareholders' equity, for the bank and insurer
+    #: reference multiple a backtest has no operator to supply.
+    price_to_book: float | None = None
     #: Why this name was dropped, when it was.
     excluded_reason: str | None = None
 
@@ -201,6 +204,34 @@ def _gross_margin_stdev(data: CompanyData) -> float | None:
     return statistics.stdev(margins) if len(margins) >= 8 else None
 
 
+def _price_to_book(data: CompanyData, market_cap: float | None) -> float | None:
+    latest = data.latest_quarter or data.latest_annual
+    equity = latest.total_equity if latest is not None else None
+    if not market_cap or not equity or equity <= 0:
+        return None
+    return market_cap / equity
+
+
+def group_price_to_book(
+    universe: Universe, *, banks: bool, minimum: int = 5
+) -> float | None:
+    """Median P/B of the universe's banks (or insurers) on its date.
+
+    The live screen asks the operator for this reference multiple, as a
+    judgement. A backtest has no operator, so it uses what the market was
+    actually paying for the group that month — point-in-time, never later.
+    """
+    values = sorted(
+        m.price_to_book for m in universe.included
+        if m.price_to_book and m.price_to_book > 0
+        and (m.is_bank if banks else m.is_insurer)
+    )
+    if len(values) < minimum:
+        return None
+    mid = len(values) // 2
+    return values[mid] if len(values) % 2 else (values[mid - 1] + values[mid]) / 2
+
+
 def _revenue_growth(data: CompanyData) -> float | None:
     return c_anchors.revenue_growth_yoy(data)
 
@@ -269,6 +300,7 @@ def build_universe(
                 profile.reporting_frequency is ReportingFrequency.SEMIANNUAL
             ),
             industry_code=profile.industry_code,
+            price_to_book=_price_to_book(data, profile.market_cap),
         )
 
         # Structural exclusions first, so the logged reason names the real

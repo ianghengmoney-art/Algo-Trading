@@ -31,7 +31,9 @@ from ..modules.h_monitor import MonitorFlag
 from ..modules.k_currency import FxTable
 from ..pipeline import CandidateInputs, Evaluation, evaluate_candidate
 from ..types import CompanyData, MarketData
-from ..universe import Universe, build_universe, find_peers, industry_group_key
+from ..universe import (
+    Universe, build_universe, find_peers, group_price_to_book, industry_group_key,
+)
 from .portfolio import BacktestBook, Snapshot
 from .timebudget import TimeBudgetExceeded, time_limit
 
@@ -94,6 +96,12 @@ class BacktestSettings:
     #: Ballast is modelled as cash, so this is the floor the screen may not
     #: spend below (F2's 45-55% band, taken at its lower bound).
     min_cash_weight: float = 0.45
+    #: Hold money not in stock picks — the BALLAST bucket and any unfilled
+    #: sleeve, which F3 sends to ballast — in the benchmark index rather than
+    #: as cash at 0%. Module F defines ballast as "broad index funds, cash,
+    #: short government bills, and gold"; modelling it as idle cash made the
+    #: whole backtest a measure of how little was invested.
+    ballast_in_index: bool = True
     #: Applied to every simulated fill, as a stand-in for spread and slippage.
     transaction_cost: float = 0.001
     #: What a holding is assumed to return when its price stops for good.
@@ -442,6 +450,7 @@ class Backtester:
         """
         settings = self.settings
         book = BacktestBook(cash=settings.initial_capital)
+        self._ballast_level: float | None = None
         result = BacktestResult(
             label=self.label,
             settings=settings,
@@ -509,6 +518,20 @@ class Backtester:
 
         return result
 
+    def _grow_ballast(self, book: BacktestBook, as_of: date) -> None:
+        """Move the uninvested money with the index since the last rebalance.
+
+        A month with no index price carries the last level forward, so the
+        next priced month books the whole move rather than losing it.
+        """
+        level = self._price_on(self.settings.benchmark_symbol, as_of)
+        if level is None or level <= 0:
+            return
+        previous = self._ballast_level
+        if previous:
+            book.cash *= level / previous
+        self._ballast_level = level
+
     @staticmethod
     def _tick(result: BacktestResult, stage: str, since: float) -> None:
         result.timing[stage] = result.timing.get(stage, 0.0) + time.monotonic() - since
@@ -563,6 +586,8 @@ class Backtester:
         settings = self.settings
         adapter = self._pin(as_of)
         record = RebalanceRecord(as_of=as_of, evaluated=0, passers=0)
+        if settings.ballast_in_index:
+            self._grow_ballast(book, as_of)
 
         clock = time.monotonic()
         universe = self.universe_builder(adapter, self.config, as_of)
@@ -757,6 +782,11 @@ class Backtester:
             peer_candidates=peers,
             subject_group=subject_group,
             subject_growth=member.revenue_growth,
+            sector_price_to_book=(
+                group_price_to_book(universe, banks=member.is_bank)
+                if member.is_bank or member.is_insurer
+                else None
+            ),
         )
 
         try:

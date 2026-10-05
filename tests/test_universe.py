@@ -519,3 +519,38 @@ class TestWiderPeerGroup:
         assert narrow == []
         assert {c.symbol for c in wide} == {s.symbol for s in siblings}
         assert all(c.group == "SIC 35xx" for c in wide)
+
+
+class TestGroupPriceToBook:
+    """B-stage needs a reference P/B for banks and insurers. The live screen
+    asks the operator; a backtest takes the month's universe median."""
+
+    @staticmethod
+    def member(symbol, pb, *, bank=False, insurer=False, excluded=None):
+        return UniverseMember(
+            symbol=symbol, name=symbol, market_cap=1e9, adv_3m_usd=1e7,
+            sector="Finance", industry="Banks", sub_industry=None,
+            net_debt_to_ebitda=None, gross_margin_stdev=None,
+            revenue_growth=0.05, beta=None, is_bank=bank, is_insurer=insurer,
+            price_to_book=pb, excluded_reason=excluded,
+        )
+
+    def universe(self, members):
+        return Universe(as_of=date(2020, 6, 30), members=members)
+
+    def test_the_median_of_included_banks(self):
+        from gcfp.universe import group_price_to_book
+
+        banks = [self.member(f"B{i}", pb, bank=True) for i, pb in enumerate([0.8, 1.0, 1.2, 1.4, 9.0])]
+        others = [
+            self.member("I1", 3.0, insurer=True),
+            self.member("X", 0.1, bank=True, excluded="too small"),
+            self.member("N", None, bank=True),
+        ]
+        assert group_price_to_book(self.universe(banks + others), banks=True) == pytest.approx(1.2)
+
+    def test_too_few_names_is_a_gap_not_a_guess(self):
+        from gcfp.universe import group_price_to_book
+
+        few = [self.member(f"I{i}", 1.5, insurer=True) for i in range(4)]
+        assert group_price_to_book(self.universe(few), banks=False) is None
