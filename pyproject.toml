@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gcfp"
+version = "3.0.0"
+description = "GCFP v3 - unified adaptive value framework. Alert-only screening and valuation; never executes."
+requires-python = ">=3.11"
+dependencies = [
+    "pandas>=2.0",
+    "requests>=2.31",
+]
+
+# Prime Directive 1, as re-scoped for the QuantConnect deployment:
+# `gcfp` stays a pure decision engine with no execution capability, and
+# `qc_algorithm/execution.py` is the sole permitted order-placing boundary.
+# tests/test_prime_directives.py fails the build if either half slips.
+
+[project.optional-dependencies]
+yfinance = ["yfinance>=0.2.40"]
+# Type stubs only. The QC runtime itself is supplied by LEAN, never installed
+# here -- the data adapter is duck-typed so it stays testable off-platform.
+quantconnect = ["quantconnect-stubs"]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+gcfp = "gcfp.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["gcfp*", "qc_algorithm*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = [".", "tests"]

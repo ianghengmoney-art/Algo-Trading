@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+*.sqlite3
+
+# Anchored to the repository root. Unanchored, these match at any depth --
+# "reports/" also excluded the gcfp/reports package, which then never reached
+# the repository and only failed once CI checked out a fresh clone.
+/build/
+/dist/
+/reports/
+/.venv/
