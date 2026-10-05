@@ -15,8 +15,18 @@ from contextlib import contextmanager
 from typing import Iterator
 
 
-class TimeBudgetExceeded(Exception):
-    """Raised inside the running phase when its time is up."""
+#: Interval at which the stop is re-raised once the deadline has passed.
+REPEAT_SECONDS = 5.0
+
+
+class TimeBudgetExceeded(BaseException):
+    """Raised inside the running phase when its time is up.
+
+    A ``BaseException``, like ``KeyboardInterrupt``: the data layer retries
+    on ``except Exception``, and when this was an ``Exception`` a retry loop
+    caught it, the one-shot timer was spent, and the phase ran on until the
+    runner killed the job — exactly what the timer exists to prevent.
+    """
 
 
 @contextmanager
@@ -38,7 +48,9 @@ def time_limit(deadline: float | None) -> Iterator[None]:
         raise TimeBudgetExceeded()
 
     previous = signal.signal(signal.SIGALRM, _expire)
-    signal.setitimer(signal.ITIMER_REAL, remaining)
+    # Keeps firing every few seconds past the deadline, so even a bare
+    # ``except:`` somewhere below cannot absorb the stop for good.
+    signal.setitimer(signal.ITIMER_REAL, remaining, REPEAT_SECONDS)
     try:
         yield
     finally:

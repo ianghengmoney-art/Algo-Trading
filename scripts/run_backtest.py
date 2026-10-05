@@ -23,6 +23,7 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+import threading
 import time
 from datetime import date, datetime
 from pathlib import Path
@@ -152,9 +153,45 @@ def industry_peer_pool(adapter, sample: list[str], per_name: int):
     return pool
 
 
+#: Set once a report file is on disk; the watchdog's exit code depends on it.
+_REPORT_WRITTEN = threading.Event()
+
+#: Minutes past the time budget at which the watchdog ends the process. The
+#: runner kills the step at 330 minutes and a killed step commits nothing.
+WATCHDOG_GRACE_MIN = 5
+
+
+def start_watchdog(budget_min: float | None) -> None:
+    """End the process cleanly if everything else failed to stop in time.
+
+    Every phase has its own limit, but a limit can only interrupt Python
+    code. This is the last line: past the budget, exit with success if a
+    report is already written — so the workflow commits it — and with an
+    error if not.
+    """
+    if budget_min is None:
+        return
+
+    def fire() -> None:
+        written = _REPORT_WRITTEN.is_set()
+        print(
+            f"\nWATCHDOG: {budget_min + WATCHDOG_GRACE_MIN:.0f} minutes reached; "
+            + ("ending with the report already written." if written
+               else "no report was written."),
+            file=sys.stderr, flush=True,
+        )
+        sys.stdout.flush()
+        os._exit(0 if written else 3)
+
+    timer = threading.Timer((budget_min + WATCHDOG_GRACE_MIN) * 60, fire)
+    timer.daemon = True
+    timer.start()
+
+
 def main() -> int:
     args = parse_args()
     started = time.monotonic()
+    start_watchdog(args.time_budget_min)
 
     def minutes() -> float:
         return (time.monotonic() - started) / 60
@@ -355,38 +392,6 @@ def main() -> int:
             + ", ".join(skipped)
             + ". Their comparisons are missing from this report, not passed."
         )
-    if filer_index is not None:
-        from gcfp.data.pit_universe import survivorship_coverage
-
-        coverage_deadline = until_end_less(4)
-        unchecked: list[str] = []
-
-        def has_prices(symbol: str) -> bool:
-            if coverage_deadline is not None and time.monotonic() > coverage_deadline:
-                unchecked.append(symbol)
-                return False
-            try:
-                return bool(adapter.get_prices(symbol, args.start, args.end))
-            except Exception:
-                return False
-
-        print(f"  survivorship coverage ({minutes():.0f} min elapsed)", file=sys.stderr)
-        try:
-            with time_limit(until_end_less(3)):
-                coverage = survivorship_coverage(
-                    filer_index, symbols, args.end, has_prices
-                )
-            notes.extend(coverage.lines())
-        except TimeBudgetExceeded:
-            notes.append(
-                "SURVIVORSHIP COVERAGE not computed: the run reached its time "
-                "budget. Treat the CAGR as an upper bound."
-            )
-        if unchecked:
-            notes.append(
-                f"  {len(unchecked)} companies were not checked for prices before "
-                "the time budget ran out and are counted as unpriced above."
-            )
     if peer_pool is not None:
         notes.append(
             f"C2 peers: up to {args.peers_per_name} same-industry companies per "
@@ -406,24 +411,77 @@ def main() -> int:
             "--pit-sample for a survivorship-aware result."
         )
 
-    report = ValidationReport(
-        primary=primary,
-        benchmarks=benchmarks,
-        accuracy=accuracy,
-        sweep=sweep,
-        # EDGAR is point-in-time by construction; the synthetic fixture models
-        # the same filing-date discipline.
-        point_in_time=True,
-        paper_traded_months=0.0,
-        notes=notes,
-    )
-    text = report.render(config)
-    print(text)
+    def survivorship_lines() -> list[str]:
+        from gcfp.data.pit_universe import survivorship_coverage
 
-    if args.out:
-        args.out.parent.mkdir(parents=True, exist_ok=True)
-        args.out.write_text(text)
-        print(f"\nwritten to {args.out}", file=sys.stderr)
+        coverage_deadline = until_end_less(4)
+        unchecked: list[str] = []
+
+        checked: list[str] = []
+
+        def has_prices(symbol: str) -> bool:
+            if coverage_deadline is not None and time.monotonic() > coverage_deadline:
+                unchecked.append(symbol)
+                return False
+            checked.append(symbol)
+            if len(checked) % 25 == 0:
+                print(f"    checked {len(checked)} ({minutes():.0f} min elapsed)",
+                      file=sys.stderr, flush=True)
+            try:
+                return bool(adapter.get_prices(symbol, args.start, args.end))
+            except Exception:
+                return False
+
+        print(f"  survivorship coverage ({minutes():.0f} min elapsed)", file=sys.stderr)
+        try:
+            with time_limit(until_end_less(3)):
+                coverage = survivorship_coverage(
+                    filer_index, symbols, args.end, has_prices
+                )
+            lines = coverage.lines()
+        except TimeBudgetExceeded:
+            return [
+                "SURVIVORSHIP COVERAGE not computed: the run reached its time "
+                "budget. Treat the CAGR as an upper bound."
+            ]
+        if unchecked:
+            lines.append(
+                f"  {len(unchecked)} companies were not checked for prices before "
+                "the time budget ran out and are counted as unpriced above."
+            )
+        return lines
+
+    def write_report(extra: list[str]) -> str:
+        report = ValidationReport(
+            primary=primary,
+            benchmarks=benchmarks,
+            accuracy=accuracy,
+            sweep=sweep,
+            # EDGAR is point-in-time by construction; the synthetic fixture
+            # models the same filing-date discipline.
+            point_in_time=True,
+            paper_traded_months=0.0,
+            notes=notes + extra,
+        )
+        text = report.render(config)
+        if args.out:
+            args.out.parent.mkdir(parents=True, exist_ok=True)
+            args.out.write_text(text)
+            _REPORT_WRITTEN.set()
+            print(f"  report written to {args.out} ({minutes():.0f} min elapsed)",
+                  file=sys.stderr, flush=True)
+        return text
+
+    # Written before the survivorship check and rewritten after it, so the
+    # results are on disk even if that check is what runs out of time.
+    text = write_report(
+        ["SURVIVORSHIP COVERAGE: not yet computed when this report was written."]
+        if filer_index is not None else []
+    )
+    if filer_index is not None:
+        coverage_lines = survivorship_lines()
+        text = write_report(coverage_lines)
+    print(text, flush=True)
 
     integrity = evaluate_break_criteria(
         config,

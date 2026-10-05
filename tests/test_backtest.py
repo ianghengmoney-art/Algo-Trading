@@ -550,3 +550,25 @@ class TestAccuracyDeadline:
         report = measure_accuracy(None, Config(), routings, deadline=time.monotonic() - 1)
         assert report.not_judged_for_time == 5
         assert any("NOT judged" in line for line in report.as_report_lines())
+
+
+class TestTimeLimitSurvivesBroadExcepts:
+    def test_a_retry_loop_catching_exception_cannot_swallow_the_stop(self):
+        """The data layer retries on `except Exception`. The stop used to be
+        an Exception, was caught there, and the job ran on until killed."""
+        import time
+
+        from gcfp.backtest.timebudget import TimeBudgetExceeded, time_limit
+
+        def retrying_download():
+            while True:
+                try:
+                    time.sleep(0.5)
+                except Exception:
+                    continue
+
+        started = time.monotonic()
+        with pytest.raises(TimeBudgetExceeded):
+            with time_limit(time.monotonic() + 1):
+                retrying_download()
+        assert time.monotonic() - started < 5
