@@ -167,11 +167,6 @@ MODULE I — EXPECTATION STATEMENT (verbatim)
 ------------------------------------------------------------------------------
 NOTES
 ------------------------------------------------------------------------------
-  C2 OPTIONS COMPARED (same companies and months; only the peer rule differs)
-    As specified, all same-industry peers offered: +0.22%/yr · 8 trades · single-anchor 87% · anchors disagree 61%
-    Option 2: wider peer bands (0.2-5x size, +/-25pt growth): +0.20%/yr · 9 trades · single-anchor 64% · anchors disagree 57%
-    Option 3: wider industry group when fewer than 4 peers: +0.22%/yr · 9 trades · single-anchor 67% · anchors disagree 64%
-    Options 2 + 3 together: +0.20%/yr · 9 trades · single-anchor 42% · anchors disagree 63%
   Simulated fills assume the operator transacts at the rebalance close. That is optimistic about liquidity and is stated rather than modelled away.
   Holdings whose price stopped and were closed as delisted at -30%: 0.
   C2 peers: up to 150 same-industry companies per candidate from EDGAR's SIC listing. That listing holds today's filers, so peers are survivors; they set the comparison multiple and are never bought.
@@ -181,6 +176,52 @@ NOTES
       of which a price history was found: 9
     still filing at the end: 136 (priced: 110)
     WARNING: only 5% of the companies that died could be priced. The unpriced ones could never be bought in this backtest, so the result still leans toward survivors. Treat the CAGR as an upper bound.
+  WHERE CANDIDATES DROPPED OUT (4414 screenings over 129 months; first blocking cause)
+       660  5 BUY condition failed — conviction N >= N
+       618  5 signal: NO ACTION
+       390  5 BUY condition failed — anchors confirm undervaluation (SINGLE (CN only))
+       309  5 BUY condition failed — discount -N% >= gate N% (SINGLE-ANCHOR +Npp)
+       136  5 BUY condition failed — discount N% >= gate N% (SINGLE-ANCHOR +Npp)
+        73  5 BUY condition failed — anchors confirm undervaluation (DUAL)
+        59  5 signal: REVIEW
+        49  5 BUY condition failed — discount -N% >= gate N%
+        39  5 signal: BUY
+        13  5 BUY condition failed — discount N% >= gate N%
+       628  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=sector · group=Manufacturing · group_median=N · 
+       583  stopped at 1 health checks (Module A) — AN: NOT_COMPUTABLE · reason=leverage not computable
+       467  stopped at 2 fair value (Module B) — DataUnavailable: sector_price_to_book: BN values against the sector multiple
+       397  stopped at 1 health checks (Module A) — AN: FAIL · value=N · reason=satisfied no classification's criteria · considered=[]
+       262  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=pre_profit_runway · ttm_ocf=-N
+       179  stopped at 1 health checks (Module A) — AN: NOT_COMPUTABLE · branch=share_count_growth · reason=share count history unavailable
+       177  stopped at 1 health checks (Module A) — UNIVERSE: FAIL · value=N,N,N · threshold=N,N,N · branch=adv
+       149  stopped at 1 health checks (Module A) — AN: FAIL · value=N · reason=could not be classified
+       120  stopped at 1 health checks (Module A) — AN: NOT_COMPUTABLE · value=N · reason=no grouping reached N computable members
+        95  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=sector · group=Services · group_median=N · debt_
+        75  stopped at 1 health checks (Module A) — AN: FAIL · value=-N,N,N · threshold=N · branch=operating_cash_flow · reason=neither branch
+        52  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=current_ratio · reason=neither branch satisfied 
+        50  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=profitable · reason=GAAP profit not backed by op
+        46  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · reason=share count +N%/yr · share_count_cagr=N · checke
+        45  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=-N · branch=sector · group=Services · group_median=-N · deb
+        42  stopped at 2 fair value (Module B) — DataUnavailable: beta: no name-level beta and no group median beta
+        37  stopped at 2 fair value (Module B) — DataUnavailable: revenue_history: BN needs N years of revenue to cap growth
+        37  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=industry · group=Services-Help Supply Services ·
+        35  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=industry · group=Pharmaceutical Preparations · g
+        31  stopped at 1 health checks (Module A) — AN: FAIL · value=-N · threshold=N · branch=profitable · reason=GAAP profit not backed by o
+        26  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=industry · group=Oil & Gas Field Services, NEC ·
+        23  stopped at 2 fair value (Module B) — MethodRefused: CIKN: no positive base cash flow and no terminal margin
+        20  stopped at 1 health checks (Module A) — AN: NOT_COMPUTABLE · reason=TTM operating cash flow not computable
+        20  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=industry · group=Crude Petroleum & Natural Gas ·
+        17  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=-N · branch=sector · group=Manufacturing · group_median=-N 
+        17  stopped at 1 health checks (Module A) — AN: NOT_COMPUTABLE · reason=only N trailing quarters available, need N
+        14  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=-N · branch=industry · group=Services-Help Supply Services 
+        13  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · reason=negative shareholder equity with negative operat
+        11  stopped at 3 valuation anchors (Module C) — both anchors uncomputable
+         9  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=industry · group=Services-Business Services, NEC
+         8  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=sector · group=Transportation & Utilities · grou
+         4  stopped at 2 fair value (Module B) — DataUnavailable: free_cash_flow: BN needs either a base free cash flow or a terminal margi
+         3  stopped at 1 health checks (Module A) — AN: FAIL · value=-N,N,N,N · threshold=N · branch=operating_cash_flow · reason=neither bran
+         3  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=sector · group=Mining · group_median=N · debt_ba
+    BUY signals: 39 · positions actually bought: 8
   WHY CANDIDATES WERE NOT VALUED BOTH WAYS (counts over all months)
       111  C2 missing — no same-industry candidates offered
        40  C2 missing — 2 of 5+ candidates passed (need 4); most rejected on: growth band
@@ -208,11 +249,11 @@ NOTES
       2025: 0 of 49 candidates
   RUN TIMING (minutes)
     setup (filing index, sample): 0.0
-    main backtest: 59.9
-    benchmarks: 77.8
-    accuracy check: 0.3
-      main backtest, screen sample: 3.6
-      main backtest, screen peers: 51.1
-      main backtest, evaluate and trade: 5.2
-    report written at: 138.1
+    main backtest: 52.1
+    benchmarks: 53.2
+    accuracy check: 0.4
+      main backtest, screen sample: 4.2
+      main backtest, screen peers: 41.1
+      main backtest, evaluate and trade: 6.9
+    report written at: 105.8
 ==============================================================================
