@@ -14,6 +14,7 @@ remember.
 
 from __future__ import annotations
 
+import re
 import time
 
 from dataclasses import dataclass, field, replace
@@ -122,6 +123,10 @@ class RebalanceRecord:
     reclassifications: list[tuple[str, str, str]] = field(default_factory=list)
     classifications: dict[str, str] = field(default_factory=dict)
     stopped_at: dict[str, int] = field(default_factory=dict)
+    #: Why candidates were not valued both ways: "C1 missing — <cause>" and
+    #: "C2 missing — <cause>" counts, so a 98% single-anchor rate can be read
+    #: as a data gap, a sampling artefact, or a design finding.
+    anchor_gaps: dict[str, int] = field(default_factory=dict)
 
 
 @dataclass
@@ -172,6 +177,48 @@ class BacktestResult:
 
 #: Prefix on the exit reason of a holding closed because its price stopped.
 DELISTED_REASON = "price stopped — treated as delisted"
+
+
+def _plain(reason: str | None) -> str:
+    """A reason with its numbers and names removed, so causes aggregate."""
+    text = (reason or "no reason given").split(" — ")[0]
+    text = re.sub(r"\d+(\.\d+)?", "N", text)
+    return text[:90]
+
+
+def anchor_gap_causes(triangulation) -> list[str]:
+    """Each anchor that could not be computed, with an aggregatable cause."""
+    out: list[str] = []
+    if not triangulation.c1.computable:
+        out.append(f"C1 missing — {_plain(triangulation.c1.reason)}")
+    c2 = triangulation.c2
+    if not c2.computable:
+        decisions = list(c2.peer_decisions)
+        if not decisions:
+            reason = c2.reason or ""
+            cause = (
+                "no same-industry candidates offered"
+                if "peers" in reason or not reason
+                else _plain(reason)
+            )
+        else:
+            kept = sum(1 for d in decisions if d.included)
+            rejected = [d.reason for d in decisions if not d.included]
+            buckets = {
+                "size band": sum("market cap" in r for r in rejected),
+                "growth band": sum("growth" in r for r in rejected),
+                "multiple not computable": sum(
+                    "not computable" in r or "non-positive" in r for r in rejected
+                ),
+                "different grouping": sum("different grouping" in r for r in rejected),
+            }
+            top = max(buckets, key=buckets.get) if rejected else "none"
+            cause = (
+                f"{min(kept, 3)} of {len(decisions) if len(decisions) < 5 else '5+'} "
+                f"candidates passed (need 4); most rejected on: {top}"
+            )
+        out.append(f"C2 missing — {cause}")
+    return out
 
 
 def month_ends(start: date, end: date, step_months: int = 1) -> list[date]:
@@ -556,6 +603,8 @@ class Backtester:
 
             triangulation = evaluation.triangulation
             if triangulation is not None:
+                for gap in anchor_gap_causes(triangulation):
+                    record.anchor_gaps[gap] = record.anchor_gaps.get(gap, 0) + 1
                 if triangulation.mode.is_single:
                     record.single_anchor_candidates += 1
                 elif triangulation.mode.value == "DUAL":

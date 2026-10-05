@@ -387,7 +387,33 @@ def main() -> int:
         print(f"  skipped for time: {', '.join(skipped)}", file=sys.stderr)
 
     phase_minutes["accuracy check"] = minutes() - accuracy_started
-    timing_lines = ["RUN TIMING (minutes)"] + [
+    gap_totals: dict[str, int] = {}
+    c1_missing_by_year: dict[int, list[int]] = {}
+    for record in primary.rebalances:
+        evaluated_with_anchors = (
+            record.single_anchor_candidates + record.dual_anchor_candidates
+        )
+        year = record.as_of.year
+        c1_gaps = sum(n for g, n in record.anchor_gaps.items() if g.startswith("C1"))
+        tally = c1_missing_by_year.setdefault(year, [0, 0])
+        tally[0] += c1_gaps
+        tally[1] += evaluated_with_anchors
+        for gap, count in record.anchor_gaps.items():
+            gap_totals[gap] = gap_totals.get(gap, 0) + count
+    anchor_lines = []
+    if gap_totals:
+        anchor_lines.append("WHY CANDIDATES WERE NOT VALUED BOTH WAYS (counts over all months)")
+        anchor_lines += [
+            f"  {count:5d}  {gap}"
+            for gap, count in sorted(gap_totals.items(), key=lambda kv: -kv[1])[:12]
+        ]
+        anchor_lines.append("  C1 (own history) missing, by year:")
+        anchor_lines += [
+            f"    {year}: {missing} of {total} candidates"
+            for year, (missing, total) in sorted(c1_missing_by_year.items())
+            if total
+        ]
+    timing_lines = anchor_lines + ["RUN TIMING (minutes)"] + [
         f"  {name}: {value:.1f}" for name, value in phase_minutes.items()
     ] + [
         f"    main backtest, {stage}: {seconds / 60:.1f}"
