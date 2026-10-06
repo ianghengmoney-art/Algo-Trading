@@ -100,6 +100,9 @@ class PaperState:
     ballast_level: float | None = None
     #: One entry per rebalance: date, evaluated, BUY signals, buys, sells.
     log: list[dict] = field(default_factory=list)
+    #: The index the spare money follows, fixed at the start: levels of two
+    #: different indices cannot be chained.
+    benchmark_symbol: str = "^GSPC"
 
     def due(self, today: date) -> bool:
         """Monthly, like the backtest: once in each calendar month."""
@@ -113,6 +116,7 @@ class PaperState:
             "symbols": self.symbols,
             "last_rebalance": self.last_rebalance.isoformat() if self.last_rebalance else None,
             "ballast_level": self.ballast_level,
+            "benchmark_symbol": self.benchmark_symbol,
             "log": self.log,
             "book": book_to_dict(self.book),
         }, indent=1)
@@ -130,6 +134,7 @@ class PaperState:
             last_rebalance=date.fromisoformat(last) if last else None,
             ballast_level=raw.get("ballast_level"),
             log=list(raw.get("log", [])),
+            benchmark_symbol=raw.get("benchmark_symbol", "^GSPC"),
         )
 
 
@@ -179,6 +184,7 @@ def mark_to_market(backtester: Backtester, state: PaperState, today: date) -> No
     if backtester.settings.ballast_in_index:
         backtester._grow_ballast(state.book, today)
     state.ballast_level = backtester._ballast_level
+    backtester.credit_dividends(state.book, today)
     prices = backtester._prices_on(list(state.book.positions), today)
     state.book.mark(prices)
     benchmark = backtester._price_on(backtester.settings.benchmark_symbol, today)
@@ -207,7 +213,9 @@ def report(state: PaperState, today: date, *, rebalanced: bool, note: str = "") 
         lines.append(f"value: {first.total_value:,.0f} -> {last.total_value:,.0f} "
                      f"({last.total_value / first.total_value - 1:+.2%})")
         if first.benchmark_level and last.benchmark_level:
-            lines.append(f"S&P 500 over the same dates: "
+            kind = ("dividends reinvested" if state.benchmark_symbol == "^SP500TR"
+                    else "price only")
+            lines.append(f"S&P 500 ({kind}) over the same dates: "
                          f"{last.benchmark_level / first.benchmark_level - 1:+.2%}")
         lines.append(f"in stock picks: {last.invested:,.0f} "
                      f"({last.invested / last.total_value:.1%}); "
@@ -249,7 +257,8 @@ def report(state: PaperState, today: date, *, rebalanced: bool, note: str = "") 
     lines.extend([
         "",
         "Simulated only. Fills assume the latest close; money not in picks",
-        "follows the S&P 500 (price only, no dividends), as in the backtest.",
+        "follows the S&P 500 and holdings are credited their dividends, as in",
+        "the backtest.",
         "=" * 78,
     ])
     return "\n".join(lines) + "\n"

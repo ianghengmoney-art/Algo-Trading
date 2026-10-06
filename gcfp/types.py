@@ -161,6 +161,15 @@ class PricePoint:
 
 
 @dataclass(frozen=True)
+class DividendEvent:
+    """A cash dividend per share, on the basis the price feed's history uses
+    (adjusted for every split to date)."""
+
+    ex_date: date
+    amount: float
+
+
+@dataclass(frozen=True)
 class AuditorEvent:
     event_date: date
     changed: bool

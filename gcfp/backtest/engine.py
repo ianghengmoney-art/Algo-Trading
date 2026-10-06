@@ -270,6 +270,40 @@ def funnel_steps(evaluation) -> list[str]:
     return steps
 
 
+#: Index symbols: dividends reinvested, and the price-only fallback.
+TOTAL_RETURN_INDEX = "^SP500TR"
+PRICE_INDEX = "^GSPC"
+
+
+def choose_benchmark(adapter, first: date, last: date) -> tuple[str, str]:
+    """The S&P 500 with dividends reinvested, where the feed serves it at both
+    ends of the period; otherwise the price-only index. Returns the symbol
+    and a sentence for the report.
+
+    Holdings are credited their dividends, so the index the spare money
+    follows, and the one the result is judged against, must include them
+    too — or the comparison tilts toward whichever side was given them.
+    """
+    fetch = (
+        adapter.get_adjusted_prices
+        if hasattr(type(adapter), "get_adjusted_prices")
+        else adapter.get_prices
+    )
+    try:
+        if all(fetch(TOTAL_RETURN_INDEX, d - timedelta(days=14), d) for d in (first, last)):
+            return TOTAL_RETURN_INDEX, (
+                "the S&P 500 total-return index (dividends reinvested)"
+            )
+    except Exception:
+        pass
+    return PRICE_INDEX, (
+        "the S&P 500 price index, WITHOUT dividends: the total-return index "
+        "could not be fetched, so the spare money and the benchmark both "
+        "understate their return by roughly 1.5-2%/yr while holdings are "
+        "credited theirs"
+    )
+
+
 def month_ends(start: date, end: date, step_months: int = 1) -> list[date]:
     """Rebalance dates, on the last calendar day of each step."""
     out: list[date] = []
@@ -544,6 +578,33 @@ class Backtester:
             book.cash *= level / previous
         self._ballast_level = level
 
+    def credit_dividends(self, book: BacktestBook, as_of: date) -> float:
+        """Pay each holding the dividends that went ex since the last mark.
+
+        A position bought at a close is not owed a dividend going ex that
+        same day, so the window opens the day after the later of the last
+        mark and the purchase. A holding whose dividends cannot be had is
+        left price-only rather than guessed at.
+        """
+        if not hasattr(type(self.adapter), "get_dividends"):
+            return 0.0
+        last_mark = book.snapshots[-1].as_of if book.snapshots else None
+        paid = 0.0
+        for symbol, position in list(book.positions.items()):
+            since = max(d for d in (last_mark, position.opened_on) if d is not None)
+            if since >= as_of:
+                continue
+            try:
+                events = self.adapter.get_dividends(
+                    symbol, since + timedelta(days=1), as_of
+                )
+            except Exception:
+                continue
+            for event in events:
+                if since < event.ex_date <= as_of:
+                    paid += book.credit_dividend(symbol, event.amount)
+        return paid
+
     @staticmethod
     def _tick(result: BacktestResult, stage: str, since: float) -> None:
         result.timing[stage] = result.timing.get(stage, 0.0) + time.monotonic() - since
@@ -600,6 +661,7 @@ class Backtester:
         record = RebalanceRecord(as_of=as_of, evaluated=0, passers=0)
         if settings.ballast_in_index:
             self._grow_ballast(book, as_of)
+        self.credit_dividends(book, as_of)
 
         clock = time.monotonic()
         universe = self.universe_builder(adapter, self.config, as_of)
@@ -933,6 +995,7 @@ class Backtester:
 
 __all__ = [
     "Backtester",
+    "choose_benchmark",
     "BacktestSettings",
     "BacktestResult",
     "WalkForwardSplit",

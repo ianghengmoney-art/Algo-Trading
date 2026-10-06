@@ -75,9 +75,13 @@ TAG_CHAINS: dict[str, tuple[str, ...]] = {
     "cost_of_revenue": (
         "CostOfRevenue",
         "CostOfGoodsAndServicesSold",
-        "CostOfGoodsSold",
-        "CostOfServices",
     ),
+    #: The two halves, for filers that never tag the total. General Electric
+    #: reports goods and services costs on separate lines; a first-match chain
+    #: took the goods line alone, overstating gross profit by the services
+    #: cost. ``EdgarAdapter`` sums whichever halves resolve.
+    "cost_of_goods": ("CostOfGoodsSold",),
+    "cost_of_services": ("CostOfServices",),
     "capital_expenditure": (
         "PaymentsToAcquirePropertyPlantAndEquipment",
         "PaymentsToAcquireProductiveAssets",
@@ -279,6 +283,8 @@ DURATION_FIELDS: frozenset[str] = frozenset(
         "operating_cash_flow",
         "capital_expenditure",
         "cost_of_revenue",
+        "cost_of_goods",
+        "cost_of_services",
         "operating_income",
         "gross_profit",
         "interest_expense",

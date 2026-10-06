@@ -58,6 +58,10 @@ class BacktestPosition:
     #: value it honestly meanwhile and close it out rather than lose it.
     last_price: float = 0.0
     missed_marks: int = 0
+    #: Cash dividends received while held. Part of the position's return:
+    #: leaving them out understated every holding, and value stocks — which
+    #: pay more than the index — most of all.
+    dividends: float = 0.0
 
     @property
     def regime(self) -> Regime:
@@ -97,12 +101,14 @@ class ClosedPosition:
     exit_reason: str
     #: Worst mark-to-market drawdown while the position was held.
     max_drawdown: float
+    #: Cash dividends received while held.
+    dividends: float = 0.0
 
     @property
     def total_return(self) -> float:
         if self.cost_basis <= 0:
             return 0.0
-        return self.proceeds / self.cost_basis - 1.0
+        return (self.proceeds + self.dividends) / self.cost_basis - 1.0
 
     @property
     def holding_days(self) -> int:
@@ -262,6 +268,7 @@ class BacktestBook:
                     anchor_mode=position.anchor_mode,
                     exit_reason=reason,
                     max_drawdown=self._drawdowns.get(symbol, 0.0),
+                    dividends=position.dividends,
                 )
             )
             del self.positions[symbol]
@@ -270,6 +277,16 @@ class BacktestBook:
             position.shares -= shares
             position.cost_basis -= cost_share
         return fill
+
+    def credit_dividend(self, symbol: str, per_share: float) -> float:
+        """Pay a holding's cash dividend into the book; returns the amount."""
+        position = self.positions.get(symbol)
+        if position is None or per_share <= 0:
+            return 0.0
+        amount = position.shares * per_share
+        position.dividends += amount
+        self.cash += amount
+        return amount
 
     def mark(self, prices: dict[str, float]) -> None:
         """Update peaks and per-position drawdowns."""

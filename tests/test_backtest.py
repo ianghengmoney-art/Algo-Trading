@@ -646,3 +646,90 @@ class TestPicksVsIndex:
 
         picks = [self.closed(date(2020, 1, 31), date(2020, 6, 30), 0.04)]
         assert picks_vs_index(picks, []) is None
+
+
+class TestDividends:
+    """Every return was price-only: holdings, the spare money and the
+    benchmark. That understated all three, and value stocks — which pay more
+    than the index — most."""
+
+    @staticmethod
+    def engine_with(dividends):
+        from gcfp.backtest.engine import Backtester, BacktestSettings
+        from gcfp.config import Config
+
+        class Adapter:
+            def get_prices(self, symbol, start, end):
+                return ()
+
+            def get_dividends(self, symbol, start, end):
+                return tuple(d for d in dividends if start <= d.ex_date <= end)
+
+        settings = BacktestSettings(start=date(2020, 1, 1), end=date(2021, 1, 1))
+        return Backtester(adapter=Adapter(), config=Config(), settings=settings, symbols=[])
+
+    @staticmethod
+    def book_bought_on(day):
+        from gcfp.backtest.portfolio import BacktestBook
+        from gcfp.classification import Classification
+
+        book = BacktestBook(cash=10_000.0)
+        book.buy("X", Classification.CORE_STABLE, 1_000.0, 10.0, day,
+                 conviction=65.0, intended_weight=0.1, anchor_mode="DUAL",
+                 thesis_invalidation="t")
+        book.snapshot(day, {"X": 10.0})
+        return book
+
+    def test_dividends_are_paid_once_and_count_in_the_position_return(self):
+        from gcfp.types import DividendEvent
+
+        engine = self.engine_with([
+            DividendEvent(date(2020, 1, 31), 0.50),   # ex on the purchase day: not owed
+            DividendEvent(date(2020, 2, 14), 0.25),
+        ])
+        book = self.book_bought_on(date(2020, 1, 31))
+        cash = book.cash
+        assert engine.credit_dividends(book, date(2020, 2, 29)) == pytest.approx(100 * 0.25)
+        book.snapshot(date(2020, 2, 29), {"X": 10.0})
+        assert engine.credit_dividends(book, date(2020, 3, 31)) == 0.0, "paid twice"
+        assert book.cash == pytest.approx(cash + 25.0)
+
+        book.sell("X", 10.0, date(2020, 3, 31), "test")
+        assert book.closed[-1].total_return == pytest.approx(25.0 / 1_000.0)
+
+    def test_an_adapter_without_dividends_leaves_the_book_price_only(self):
+        from gcfp.backtest.engine import Backtester, BacktestSettings
+        from gcfp.config import Config
+
+        class NoDividends:
+            def get_prices(self, symbol, start, end):
+                return ()
+
+        settings = BacktestSettings(start=date(2020, 1, 1), end=date(2021, 1, 1))
+        engine = Backtester(adapter=NoDividends(), config=Config(), settings=settings, symbols=[])
+        book = self.book_bought_on(date(2020, 1, 31))
+        assert engine.credit_dividends(book, date(2020, 2, 29)) == 0.0
+
+
+class TestChoosingTheIndex:
+    def test_the_total_return_index_is_used_where_the_feed_has_it(self):
+        from gcfp.backtest.engine import choose_benchmark
+        from gcfp.types import PricePoint
+
+        class Feed:
+            def get_prices(self, symbol, start, end):
+                return (PricePoint(end, 100.0),)
+
+        symbol, text = choose_benchmark(Feed(), date(2015, 1, 31), date(2025, 9, 30))
+        assert symbol == "^SP500TR" and "dividends reinvested" in text
+
+    def test_without_it_the_price_index_is_used_and_the_report_says_so(self):
+        from gcfp.backtest.engine import choose_benchmark
+        from gcfp.data.adapter import DataUnavailable
+
+        class Feed:
+            def get_prices(self, symbol, start, end):
+                raise DataUnavailable("prices", "no such symbol")
+
+        symbol, text = choose_benchmark(Feed(), date(2015, 1, 31), date(2025, 9, 30))
+        assert symbol == "^GSPC" and "WITHOUT dividends" in text

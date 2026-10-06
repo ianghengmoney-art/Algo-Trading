@@ -576,3 +576,37 @@ class TestGroupPriceToBook:
 
         few = [self.member(f"I{i}", 1.5, insurer=True) for i in range(4)]
         assert group_price_to_book(self.universe(few), banks=False) is None
+
+
+class TestDividendFeed:
+    def test_yahoo_dividend_events_are_read(self):
+        from datetime import datetime, timezone
+
+        from gcfp.data.prices import YahooPriceSource
+
+        stamp = int(datetime(2020, 2, 14, tzinfo=timezone.utc).timestamp())
+        source = YahooPriceSource()
+        source._chart = lambda symbol, start, end: {
+            "events": {"dividends": {str(stamp): {"amount": 0.25, "date": stamp}}}
+        }
+        events = source.get_dividends("X", date(2020, 1, 1), date(2020, 12, 31))
+        assert [(e.ex_date, e.amount) for e in events] == [(date(2020, 2, 14), 0.25)]
+
+    def test_dividends_are_fetched_once_and_filtered_by_window(self, tmp_path):
+        from gcfp.data.prices import CachedPriceSource
+        from gcfp.types import DividendEvent
+
+        calls = []
+
+        class Inner:
+            name = "feed"
+
+            def get_dividends(self, symbol, start, end):
+                calls.append(1)
+                return (DividendEvent(date(2020, 2, 14), 0.25),
+                        DividendEvent(date(2021, 2, 14), 0.30))
+
+        source = CachedPriceSource(inner=Inner(), cache_dir=tmp_path)
+        assert len(source.get_dividends("X", date(2020, 1, 1), date(2020, 12, 31))) == 1
+        assert len(source.get_dividends("X", date(2021, 1, 1), date(2021, 12, 31))) == 1
+        assert len(calls) == 1

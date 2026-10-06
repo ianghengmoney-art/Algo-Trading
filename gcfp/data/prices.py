@@ -26,7 +26,7 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any, Sequence
 
-from ..types import CorporateAction, CorporateActionType, PricePoint
+from ..types import CorporateAction, CorporateActionType, DividendEvent, PricePoint
 from .adapter import DataUnavailable
 
 STOOQ_URL = "https://stooq.com/q/d/l/"
@@ -51,6 +51,10 @@ FETCH_HISTORY_DAYS = int(365.25 * 12)
 UNAVAILABLE_TTL_DAYS = 3
 #: The benchmark D5 momentum and the beta regression are measured against.
 BENCHMARK_SYMBOL = "^GSPC"
+#: The S&P 500 with dividends reinvested. What money held in an index fund
+#: actually earns, and so the fair yardstick once holdings are credited
+#: their dividends too.
+TOTAL_RETURN_SYMBOL = "^SP500TR"
 
 
 class PriceSource(ABC):
@@ -77,6 +81,11 @@ class PriceSource(ABC):
     def get_index_level(self, symbol: str) -> float | None:
         """Latest level for an index or yield symbol, if the source has one."""
         raise DataUnavailable("index", f"{self.name} does not serve index quotes")
+
+    def get_dividends(self, symbol: str, start: date, end: date) -> Sequence[DividendEvent]:
+        """Cash dividends with an ex-date in the window. A source that cannot
+        report them raises: an empty tuple would read as "paid nothing"."""
+        raise DataUnavailable("dividends", f"{self.name} does not report dividends")
 
 
 def _session(existing: Any = None) -> Any:
@@ -275,6 +284,21 @@ class YahooPriceSource(PriceSource):
             )
         return tuple(out)
 
+    def get_dividends(
+        self, symbol: str, start: date, end: date
+    ) -> Sequence[DividendEvent]:
+        result = self._chart(symbol, start, end)
+        events = ((result.get("events") or {}).get("dividends") or {}).values()
+        out: list[DividendEvent] = []
+        for event in events:
+            stamp, amount = event.get("date"), event.get("amount")
+            if stamp is None or amount is None:
+                continue
+            day = datetime.utcfromtimestamp(stamp).date()
+            if start <= day <= end and float(amount) > 0:
+                out.append(DividendEvent(ex_date=day, amount=float(amount)))
+        return tuple(sorted(out, key=lambda d: d.ex_date))
+
     def get_index_level(self, symbol: str) -> float | None:
         end = date.today()
         prices = self.get_prices(symbol, end - timedelta(days=10), end)
@@ -356,6 +380,9 @@ class FallbackPriceSource(PriceSource):
 
     def get_index_level(self, symbol: str) -> float | None:
         return self._try("get_index_level", symbol)
+
+    def get_dividends(self, symbol: str, start: date, end: date) -> Sequence[DividendEvent]:
+        return self._try("get_dividends", symbol, start, end)
 
 
 @dataclass
@@ -546,6 +573,39 @@ class CachedPriceSource(PriceSource):
             return False
         return age < UNAVAILABLE_TTL_DAYS
 
+    def get_dividends(self, symbol: str, start: date, end: date) -> Sequence[DividendEvent]:
+        """Dividends, fetched once per symbol over the whole history and
+        filtered to the window. Refreshed daily only for a window reaching
+        the day of the last fetch — a past window never changes."""
+        key = f"{symbol}.dividends"
+        today = date.today().isoformat()
+        cached = self._load(key)
+        fetched_on = (cached or {}).get("fetched_on", "")
+        if cached is None:
+            stale = True
+        elif cached.get("unavailable"):
+            stale = not self._unavailable_still_trusted(fetched_on)
+        else:
+            stale = fetched_on != today and end.isoformat() >= fetched_on
+        if stale:
+            try:
+                events = self.inner.get_dividends(symbol, SPLIT_HISTORY_START, date.today())
+            except DataUnavailable as exc:
+                cached = {"fetched_on": today, "unavailable": str(exc)}
+            else:
+                cached = {
+                    "fetched_on": today,
+                    "rows": [[e.ex_date.isoformat(), e.amount] for e in events],
+                }
+            self._save(key, cached)
+        if cached.get("unavailable"):
+            raise DataUnavailable("dividends", cached["unavailable"])
+        return tuple(
+            DividendEvent(ex_date=date.fromisoformat(r[0]), amount=r[1])
+            for r in cached["rows"]
+            if start.isoformat() <= r[0] <= end.isoformat()
+        )
+
     def get_index_level(self, symbol: str) -> float | None:
         # A live yield, read once per run; caching it would only risk staleness.
         return self.inner.get_index_level(symbol)
@@ -575,4 +635,5 @@ __all__ = [
     "average_dollar_volume",
     "TEN_YEAR_YIELD_SYMBOL",
     "BENCHMARK_SYMBOL",
+    "TOTAL_RETURN_SYMBOL",
 ]

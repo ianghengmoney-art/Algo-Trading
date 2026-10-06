@@ -565,6 +565,7 @@ class EdgarAdapter(DataAdapter):
             "shares_basic", "dividends_paid", "cost_of_revenue",
             "funds_from_operations",
             "adjusted_funds_from_operations",
+            "cost_of_goods", "cost_of_services",
         ]
         resolved = {
             f: xbrl.select_facts(payload, f, annual=annual, as_of=self.as_of)
@@ -635,6 +636,10 @@ class EdgarAdapter(DataAdapter):
             if gross_profit is None:
                 revenue = duration("revenue")
                 cost = duration("cost_of_revenue")
+                if cost is None:
+                    parts = [duration("cost_of_goods"), duration("cost_of_services")]
+                    if any(v is not None for v in parts):
+                        cost = sum(abs(v) for v in parts if v is not None)
                 if revenue is not None and cost is not None:
                     gross_profit = revenue - abs(cost)
 

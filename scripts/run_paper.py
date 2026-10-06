@@ -17,6 +17,7 @@ to the next. Nothing here places an order.
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import sys
 import time
 from datetime import date, datetime, timedelta
@@ -102,12 +103,19 @@ def run(args) -> int:
     state = paper.load_state(args.book)
     backtester, symbols = build(args, state, today)
     if state is None:
+        from gcfp.backtest.engine import choose_benchmark
+
+        index_symbol, index_text = choose_benchmark(backtester.adapter, today, today)
         state = paper.PaperState(
             started_on=today, symbols=list(symbols),
             book=BacktestBook(cash=args.capital),
+            benchmark_symbol=index_symbol,
         )
         print(f"paper trading starts: {len(symbols)} companies, "
-              f"{args.capital:,.0f} in the index", file=sys.stderr)
+              f"{args.capital:,.0f} following {index_text}", file=sys.stderr)
+    backtester.settings = dataclasses.replace(
+        backtester.settings, benchmark_symbol=state.benchmark_symbol
+    )
 
     rebalanced, note = False, ""
     if state.due(today) or args.force_rebalance:

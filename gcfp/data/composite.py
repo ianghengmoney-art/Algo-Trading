@@ -126,6 +126,23 @@ class CompositeAdapter(DataAdapter):
             for p in history
         )
 
+    def get_dividends(self, symbol: str, start: date, end: date):
+        """Cash dividends per share, on the fully split-adjusted basis the
+        simulated book holds. Nothing after a dead company's cutoff: a later
+        company on the same ticker paid those."""
+        resolved = self._price_symbol(symbol)
+        if resolved is None:
+            raise DataUnavailable("dividends", f"{symbol}: no ticker on record")
+        ticker, cutoff = resolved
+        if cutoff is not None:
+            end = min(end, cutoff)
+        if start > end:
+            return ()
+        return tuple(
+            d for d in self.prices.get_dividends(ticker, start, end)
+            if start <= d.ex_date <= end
+        )
+
     def get_adjusted_prices(self, symbol: str, start: date, end: date) -> Sequence[PricePoint]:
         """Prices adjusted for every split up to today, as the feeds publish
         them. A simulated book needs this basis: a holding that splits while

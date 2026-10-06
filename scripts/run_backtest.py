@@ -262,8 +262,16 @@ def main() -> int:
             )
         config = free_stack_config(DEFAULT_CONFIG)
 
+    from gcfp.backtest.engine import choose_benchmark, month_ends
+
+    rebalance_dates = month_ends(args.start, args.end) or [args.end]
+    benchmark_symbol, benchmark_text = choose_benchmark(
+        adapter, rebalance_dates[0], min(rebalance_dates[-1], date.today())
+    )
+    print(f"index: {benchmark_text}", file=sys.stderr)
     settings = BacktestSettings(
-        start=args.start, end=args.end, initial_capital=args.capital
+        start=args.start, end=args.end, initial_capital=args.capital,
+        benchmark_symbol=benchmark_symbol,
     )
     split = WalkForwardSplit.by_fraction(args.start, args.end)
 
@@ -503,9 +511,11 @@ def main() -> int:
         "close. That is optimistic about liquidity and is stated rather "
         "than modelled away.",
         "Money not in stock picks (the BALLAST bucket, plus any sleeve F3 "
-        "leaves unfilled) is held in the S&P 500 index between rebalances. "
-        "The index is price-only, without dividends, which understates both "
-        "the ballast and the index benchmark by roughly 1.5-2%/yr.",
+        f"leaves unfilled) follows {benchmark_text}; the index benchmark is "
+        "the same index.",
+        "Holdings are credited their cash dividends on each ex-date, from the "
+        "price feed's dividend history. A holding whose dividends could not "
+        "be fetched is counted price-only.",
         f"Holdings whose price stopped and were closed as delisted at "
         f"{settings.delisting_return:+.0%}: {primary.assumed_delistings}.",
     ]

@@ -1001,6 +1001,17 @@ class TestA2NetCashAndSplitDepreciation:
         data_without = replace(data, annual=[latest, *data.annual[1:]])
         assert _roic(data_without) == pytest.approx(_roic(data))
 
+    def test_goods_and_services_costs_are_summed_when_split(self):
+        """GE reports the two on separate lines; taking the goods line alone
+        overstated gross profit by the whole cost of services."""
+        adapter = self.adapter_with([
+            ("Revenues", 1000, "2025-03-31", "2025-01-01", "2025-04-30"),
+            ("CostOfGoodsSold", 500, "2025-03-31", "2025-01-01", "2025-04-30"),
+            ("CostOfServices", 300, "2025-03-31", "2025-01-01", "2025-04-30"),
+        ])
+        period = adapter._periods("X", annual=False, limit=4)[0]
+        assert period.gross_profit == 200
+
     def test_a_net_interest_figure_is_not_added_back(self):
         """Net interest mixes income with expense and its sign varies by
         filer; adding it back could inflate or deflate EBIT either way."""
