@@ -608,3 +608,41 @@ class TestTimeLimitSurvivesBroadExcepts:
             with time_limit(time.monotonic() + 1):
                 retrying_download()
         assert time.monotonic() - started < 5
+
+
+class TestPicksVsIndex:
+    """With spare money in the index, the headline return is mostly the
+    index's. Each pick has to be judged against the index over its own
+    holding period to say whether the picks were any good."""
+
+    @staticmethod
+    def closed(opened, closed_on, ret):
+        from gcfp.backtest.portfolio import ClosedPosition
+        from gcfp.classification import Classification
+
+        return ClosedPosition(
+            symbol="X", classification=Classification.CORE_STABLE,
+            opened_on=opened, closed_on=closed_on, cost_basis=100.0,
+            proceeds=100.0 * (1 + ret), conviction_at_purchase=65.0,
+            anchor_mode="DUAL", exit_reason="t", max_drawdown=0.0,
+        )
+
+    def test_a_rise_smaller_than_the_index_counts_against_the_pick(self):
+        from gcfp.backtest.metrics import picks_vs_index
+
+        curve = [(date(2020, 1, 31), 100.0), (date(2020, 6, 30), 110.0),
+                 (date(2020, 12, 31), 99.0)]
+        picks = [
+            self.closed(date(2020, 1, 31), date(2020, 6, 30), 0.04),   # index +10%
+            self.closed(date(2020, 6, 30), date(2020, 12, 31), 0.00),  # index -10%
+        ]
+        out = picks_vs_index(picks, curve)
+        assert out.count == 2
+        assert out.beat_rate == pytest.approx(0.5)
+        assert out.mean_excess == pytest.approx(((0.04 - 0.10) + (0.0 + 0.10)) / 2)
+
+    def test_no_index_levels_means_no_comparison(self):
+        from gcfp.backtest.metrics import picks_vs_index
+
+        picks = [self.closed(date(2020, 1, 31), date(2020, 6, 30), 0.04)]
+        assert picks_vs_index(picks, []) is None

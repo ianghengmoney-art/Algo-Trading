@@ -649,11 +649,21 @@ class EdgarAdapter(DataAdapter):
                 parts = [duration("depreciation"), duration("amortization")]
                 if any(v is not None for v in parts):
                     da = sum(v for v in parts if v is not None)
-            ebitda = (
-                operating_income + da
-                if operating_income is not None and da is not None
-                else None
-            )
+            ebitda, ebitda_basis = None, None
+            if operating_income is not None and da is not None:
+                ebitda, ebitda_basis = operating_income + da, "operating_income"
+            elif operating_income is None and da is not None:
+                # Archer-Daniels-Midland, Emerson and Dillard's present costs
+                # and expenses without an operating-income subtotal, so A2
+                # read them as "leverage not computable". EBIT is pre-tax
+                # income with interest added back; a net interest figure is
+                # not used, because its sign and contents vary by filer.
+                pretax = duration("pretax_income")
+                interest = resolved["interest_expense"].get(end)
+                if (pretax is not None and interest is not None
+                        and interest.tag not in self._NET_INTEREST_TAGS):
+                    ebitda = pretax + abs(interest.value) + da
+                    ebitda_basis = "pretax_plus_interest"
 
             debt_value, debt_basis = self._total_debt(payload, end)
 
@@ -675,6 +685,7 @@ class EdgarAdapter(DataAdapter):
                     operating_income=operating_income,
                     net_income=duration("net_income"),
                     ebitda=ebitda,
+                    ebitda_basis=ebitda_basis,
                     interest_expense=duration("interest_expense"),
                     tax_expense=duration("tax_expense"),
                     pretax_income=duration("pretax_income"),
@@ -700,6 +711,11 @@ class EdgarAdapter(DataAdapter):
                 )
             )
         return tuple(out)
+
+    #: Interest tags that net income against expense, unusable for EBIT.
+    _NET_INTEREST_TAGS: frozenset[str] = frozenset(
+        {"InterestIncomeExpenseNet", "InterestIncomeExpenseNonoperatingNet"}
+    )
 
     #: Fields whose presence proves the parser can read this filer's balance
     #: sheet.  Without them an absent debt tag is uninformative — the whole

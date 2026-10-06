@@ -945,6 +945,64 @@ class TestA2NetCashAndSplitDepreciation:
         period = adapter._periods("X", annual=False, limit=4)[0]
         assert period.ebitda == 142, "100 operating income + 30 depreciation + 12 amortisation"
 
+    @staticmethod
+    def adapter_with(entries):
+        from unittest.mock import Mock
+
+        from gcfp.data.edgar import EdgarAdapter
+
+        facts = {}
+        for tag, val, end, start, filed in entries:
+            facts.setdefault(tag, {"units": {"USD": []}})["units"]["USD"].append(
+                {"val": val, "end": end, "start": start, "filed": filed, "form": "10-Q"}
+            )
+        adapter = EdgarAdapter(user_agent="t t@example.com", session=Mock())
+        adapter._facts = lambda symbol: {
+            "cik": 1, "entityName": "X", "facts": {"us-gaap": facts}
+        }
+        return adapter
+
+    def test_split_depreciation_is_differenced_out_of_year_to_date(self):
+        """The cash flow statement reports depreciation year to date. Read as
+        a quarter, the six-month figure doubled Q2's EBITDA add-back."""
+        adapter = self.adapter_with([
+            ("Revenues", 1000, "2025-03-31", "2025-01-01", "2025-04-30"),
+            ("Revenues", 1000, "2025-06-30", "2025-04-01", "2025-07-30"),
+            ("OperatingIncomeLoss", 100, "2025-06-30", "2025-04-01", "2025-07-30"),
+            ("Depreciation", 30, "2025-03-31", "2025-01-01", "2025-04-30"),
+            ("Depreciation", 61, "2025-06-30", "2025-01-01", "2025-07-30"),
+        ])
+        q2 = adapter._periods("X", annual=False, limit=4)[0]
+        assert q2.period_end == date(2025, 6, 30)
+        assert q2.ebitda == 131, "100 operating income + (61 - 30) depreciation"
+
+    def test_no_operating_income_line_falls_back_to_pretax_plus_interest(self):
+        """ADM, Emerson and Dillard's present costs and expenses with no
+        operating-income subtotal; A2 read them as not computable."""
+        adapter = self.adapter_with([
+            ("Revenues", 1000, "2025-03-31", "2025-01-01", "2025-04-30"),
+            ("IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest",
+             80, "2025-03-31", "2025-01-01", "2025-04-30"),
+            ("InterestExpense", 15, "2025-03-31", "2025-01-01", "2025-04-30"),
+            ("DepreciationDepletionAndAmortization", 25, "2025-03-31", "2025-01-01", "2025-04-30"),
+        ])
+        period = adapter._periods("X", annual=False, limit=4)[0]
+        assert period.ebitda == 120, "80 pre-tax + 15 interest + 25 D&A"
+        assert period.ebitda_basis == "pretax_plus_interest"
+
+    def test_a_net_interest_figure_is_not_added_back(self):
+        """Net interest mixes income with expense and its sign varies by
+        filer; adding it back could inflate or deflate EBIT either way."""
+        adapter = self.adapter_with([
+            ("Revenues", 1000, "2025-03-31", "2025-01-01", "2025-04-30"),
+            ("IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest",
+             80, "2025-03-31", "2025-01-01", "2025-04-30"),
+            ("InterestIncomeExpenseNet", -15, "2025-03-31", "2025-01-01", "2025-04-30"),
+            ("DepreciationDepletionAndAmortization", 25, "2025-03-31", "2025-01-01", "2025-04-30"),
+        ])
+        period = adapter._periods("X", annual=False, limit=4)[0]
+        assert period.ebitda is None
+
 
 class TestRunawayGrowthAndImplausibleDiscount:
     """Consolidated Water passed the screen at a $422.74 fair value against a
@@ -993,3 +1051,29 @@ class TestRunawayGrowthAndImplausibleDiscount:
         score = d_conviction.score_valuation_excess(0.45, 0.35, Config())
         assert "IMPLAUSIBLE" not in score.basis
         assert score.detail["implausible"] is False
+
+
+class TestShareCountFallsBackToSharesOutstanding:
+    """About one company-date in five never tags a weighted-average share
+    count in its 10-Qs, so A4 and D4 read "share count history unavailable"
+    for a company whose shares outstanding are on every cover page."""
+
+    @staticmethod
+    def company(growth):
+        quarters = [
+            {"shares_diluted": None, "shares_outstanding": 500e6 * (1 + growth) ** (-i / 4)}
+            for i in range(12)
+        ]
+        return build_company(quarterly_overrides=quarters)
+
+    def test_dilution_is_measured_on_shares_outstanding(self):
+        assert a_health.share_count_cagr(self.company(0.25)) == pytest.approx(0.25)
+
+    def test_a_diluting_company_still_fails_a4(self):
+        result = a_health.gate_a4_red_flags(self.company(0.25), Config(), date(2026, 1, 1))
+        assert result.outcome is Outcome.FAIL
+        assert "share count +" in result.reason
+
+    def test_with_neither_series_it_stays_not_computable(self):
+        quarters = [{"shares_diluted": None, "shares_outstanding": None}] * 12
+        assert a_health.share_count_cagr(build_company(quarterly_overrides=quarters)) is None

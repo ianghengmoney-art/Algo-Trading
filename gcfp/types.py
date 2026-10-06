@@ -81,6 +81,10 @@ class PeriodFinancials:
     operating_income: float | None = None
     net_income: float | None = None
     ebitda: float | None = None
+    #: ``"operating_income"`` (operating income + D&A) or
+    #: ``"pretax_plus_interest"`` (pre-tax income + interest expense + D&A,
+    #: for filers whose income statement has no operating-income line).
+    ebitda_basis: str | None = None
     interest_expense: float | None = None
     tax_expense: float | None = None
     pretax_income: float | None = None

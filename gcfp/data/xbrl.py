@@ -118,6 +118,7 @@ TAG_CHAINS: dict[str, tuple[str, ...]] = {
     "depreciation": (
         "Depreciation",
         "DepreciationNonproduction",
+        "CostOfServicesDepreciation",
         "PropertyPlantAndEquipmentDepreciationMethodsAmount",
     ),
     "amortization": (
@@ -129,6 +130,8 @@ TAG_CHAINS: dict[str, tuple[str, ...]] = {
         "DepreciationDepletionAndAmortization",
         "DepreciationAmortizationAndAccretionNet",
         "DepreciationAndAmortization",
+        # Utilities report it as an operating-expense line instead.
+        "UtilitiesOperatingExpenseDepreciationAndAmortization",
         "DepreciationAmortisationAndImpairmentLossReversalOfImpairmentLossRecognisedInProfitOrLoss",
         "DepreciationAndAmortisationExpense",
     ),
@@ -270,6 +273,8 @@ DURATION_FIELDS: frozenset[str] = frozenset(
         "tax_expense",
         "pretax_income",
         "depreciation_amortization",
+        "depreciation",
+        "amortization",
         "shares_diluted",
         "shares_basic",
         "dividends_paid",
@@ -296,6 +301,13 @@ YTD_FIELDS: frozenset[str] = frozenset(
         "operating_cash_flow",
         "capital_expenditure",
         "depreciation_amortization",
+        # The two halves of D&A, for filers that never tag the sum, come from
+        # the same cash flow statement.  They were once neither duration nor
+        # year-to-date fields, so a quarter could read the six-month, nine-
+        # month or full-year figure: two to ten times the real quarter, which
+        # inflated EBITDA and made leverage look lower than it was.
+        "depreciation",
+        "amortization",
         "dividends_paid",
     }
 )

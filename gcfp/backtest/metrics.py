@@ -295,6 +295,72 @@ def summarise(
     )
 
 
+@dataclass
+class PicksVsIndex:
+    """Each stock pick against the index over the months it was held.
+
+    Once uninvested money sits in the index, the headline return is mostly
+    the index's, and it can no longer say whether the picks were any good.
+    This can: a pick that rose 4% while the index rose 6% cost money.
+    """
+
+    count: int
+    median_excess: float
+    mean_excess: float
+    beat_rate: float
+    #: Average share of the portfolio's value held in stock picks.
+    average_invested_share: float | None
+
+    def as_report_lines(self) -> list[str]:
+        lines = [
+            "  Stock picks vs the index over each pick's own holding period:",
+            f"    picks compared: {self.count}",
+            f"    median pick vs index: {self.median_excess:+.1%}   "
+            f"(mean {self.mean_excess:+.1%})",
+            f"    picks that beat the index: {self.beat_rate:.0%}",
+        ]
+        if self.average_invested_share is not None:
+            lines.append(
+                f"    average share of the money in stock picks: "
+                f"{self.average_invested_share:.1%} (the rest followed the index)"
+            )
+        return lines
+
+
+def picks_vs_index(
+    closed: Sequence[ClosedPosition],
+    benchmark_curve: Sequence[tuple[date, float]],
+    snapshots: Sequence = (),
+) -> PicksVsIndex | None:
+    """``None`` when no closed pick has an index level at both ends."""
+    levels = sorted((d, v) for d, v in benchmark_curve if v and v > 0)
+
+    def level_on(day: date) -> float | None:
+        before = [v for d, v in levels if d <= day]
+        return before[-1] if before else None
+
+    excess: list[float] = []
+    for position in closed:
+        start, end = level_on(position.opened_on), level_on(position.closed_on)
+        if start is None or end is None:
+            continue
+        excess.append(position.total_return - (end / start - 1.0))
+    if not excess:
+        return None
+
+    shares = [
+        s.invested / s.total_value for s in snapshots
+        if getattr(s, "total_value", 0) > 0
+    ]
+    return PicksVsIndex(
+        count=len(excess),
+        median_excess=statistics.median(excess),
+        mean_excess=statistics.fmean(excess),
+        beat_rate=sum(1 for e in excess if e > 0) / len(excess),
+        average_invested_share=statistics.fmean(shares) if shares else None,
+    )
+
+
 def window_slice(
     curve: Sequence[tuple[date, float]], start: date, end: date
 ) -> list[tuple[date, float]]:
@@ -306,11 +372,13 @@ __all__ = [
     "DistributionStats",
     "DrawdownEpisode",
     "PerformanceSummary",
+    "PicksVsIndex",
     "annualised_return",
     "distribution",
     "distribution_by_classification",
     "distribution_by_regime",
     "max_drawdown",
+    "picks_vs_index",
     "rolling_returns",
     "summarise",
     "volatility",

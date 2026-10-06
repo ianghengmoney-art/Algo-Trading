@@ -20,6 +20,7 @@ from .metrics import (
     PerformanceSummary,
     annualised_return,
     distribution_by_classification,
+    picks_vs_index,
     rolling_returns,
     summarise,
     window_slice,
@@ -82,6 +83,12 @@ class ValidationReport:
         # §13.1
         lines.extend(["", THIN, "§13.1 — RESULTS, AND PER CLASSIFICATION", THIN])
         lines.extend(summary.as_report_lines())
+        versus = picks_vs_index(
+            result.book.closed, result.benchmark_curve, result.book.snapshots
+        )
+        if versus is not None:
+            lines.append("")
+            lines.extend(versus.as_report_lines())
         by_class = distribution_by_classification(result.book.closed)
         if by_class:
             lines.append("")

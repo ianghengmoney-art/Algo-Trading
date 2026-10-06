@@ -336,6 +336,14 @@ def gate_a2_leverage(
             "treated as debt-free.  The gate passes on an inference, not on a "
             "reported number."
         )
+    if ledger is not None and any(
+        p.ebitda_basis == "pretax_plus_interest" for p in data.trailing_quarters(4)
+    ):
+        ledger.note(
+            "A2 EBITDA built from pre-tax income + interest expense + D&A: the "
+            "income statement has no operating-income line. Non-operating "
+            "items in pre-tax income are included."
+        )
 
     # A company holding more cash than debt cannot be over-levered, and the
     # ratio it would be judged on does not exist: dividing net cash by a
@@ -676,6 +684,7 @@ SPLIT_RATIO_HIGH = 1.20
 
 def normalise_share_counts(
     quarters: Sequence[PeriodFinancials],
+    attr: str = "shares_diluted",
 ) -> tuple[list[float], list[str]]:
     """Put a share-count series on one basis by undoing splits.
 
@@ -694,7 +703,7 @@ def normalise_share_counts(
 
     Returns the normalised series (newest first) and a note per adjustment.
     """
-    counts = [q.shares_diluted for q in quarters if q.shares_diluted]
+    counts = [getattr(q, attr) for q in quarters if getattr(q, attr)]
     if len(counts) < 2:
         return counts, []
 
@@ -726,13 +735,27 @@ def share_count_cagr(
     Uses quarterly data so a recent raise shows up without waiting for the
     annual.  Returns ``None`` — never 0.0 — when the history is absent, since
     "no dilution" and "no data" must not look alike to A4.
-    """
-    quarters = [q for q in data.quarterly if q.shares_diluted]
-    needed = 4 * years + 1
-    if len(quarters) < needed:
-        return None
 
-    counts, notes = normalise_share_counts(quarters)
+    Many filers never tag a weighted-average share count in their 10-Qs (in
+    a 400-company sample, about one company-date in five), while every one
+    states its shares outstanding. Growth in shares on issue is the same
+    dilution signal, so it stands in when the diluted series is too short.
+    """
+    needed = 4 * years + 1
+    attr = "shares_diluted"
+    quarters = [q for q in data.quarterly if q.shares_diluted]
+    if len(quarters) < needed:
+        attr = "shares_outstanding"
+        quarters = [q for q in data.quarterly if q.shares_outstanding]
+        if len(quarters) < needed:
+            return None
+        if ledger is not None:
+            ledger.note(
+                "A4 · no weighted-average diluted share count history; "
+                "growth measured on shares outstanding instead"
+            )
+
+    counts, notes = normalise_share_counts(quarters, attr)
     if ledger is not None:
         for note in notes:
             ledger.note(f"A4 · {note}")
