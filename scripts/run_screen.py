@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+import time
 from datetime import date
 from pathlib import Path
 
@@ -74,10 +75,27 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument("--progress", action="store_true")
+    parser.add_argument(
+        "--paper", action=argparse.BooleanOptionalAction, default=None,
+        help=(
+            "after the screen, run paper trading (scripts/run_paper.py): "
+            "mark the paper book to market, and rebalance it once a month. "
+            "On by default for EDGAR runs of the whole sample."
+        ),
+    )
+    parser.add_argument(
+        "--paper-deadline-min", type=float, default=300.0,
+        help=(
+            "minutes from the start of this run by which paper trading must "
+            "stop; the workflow kills the step at 330 and a killed step "
+            "commits nothing"
+        ),
+    )
     return parser.parse_args()
 
 
 def main() -> int:
+    started = time.monotonic()
     args = parse_args()
 
     if args.source == "edgar":
@@ -231,7 +249,31 @@ def main() -> int:
         if evaluation.signal is not None:
             store.record_alert(evaluation.signal, config.fingerprint)
 
+    paper = args.paper if args.paper is not None else (
+        args.source == "edgar" and not args.symbols
+    )
+    if paper:
+        run_paper_after_screen(args, started)
     return 0
+
+
+def run_paper_after_screen(args, started: float) -> None:
+    """Paper trading rides on the weekly job. A failure here is reported and
+    never fails the screen, whose report is the job's main product."""
+    remaining = args.paper_deadline_min - (time.monotonic() - started) / 60
+    if remaining < 5:
+        print("\npaper trading skipped: no time left in this run", file=sys.stderr)
+        return
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import run_paper
+
+    argv = ["--user-agent", args.user_agent, "--cache-dir", str(args.cache_dir),
+            "--time-budget-min", f"{remaining:.0f}"]
+    print(f"\npaper trading ({remaining:.0f} min available)", file=sys.stderr)
+    try:
+        run_paper.main(argv)
+    except Exception as exc:  # pragma: no cover - reported, not raised
+        print(f"paper trading failed: {type(exc).__name__}: {exc}", file=sys.stderr)
 
 
 if __name__ == "__main__":
