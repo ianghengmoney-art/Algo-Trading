@@ -178,11 +178,51 @@ class EdgarAdapter(DataAdapter):
             time.sleep(MIN_REQUEST_INTERVAL - elapsed)
         self._last_request = time.monotonic()
 
+    #: How long a cached download serves a *live* run, by cache-key prefix.
+    #: Company filings and the ticker map change weekly; the industry
+    #: listings slowly.
+    _LIVE_MAX_AGE_DAYS: tuple[tuple[str, int], ...] = (
+        ("facts_", 6), ("sub_", 6), ("company_tickers", 6), ("sic_", 30),
+    )
+
+    def _cache_is_fresh(self, path: Path, cache_key: str) -> bool:
+        """Whether a cached download can answer this run.
+
+        Every download was once kept for good, and the workflow carries the
+        cache from run to run, so the weekly screen and paper trading would
+        never have seen a new quarterly report. A backtest is unaffected: a
+        file downloaded after the as-of date already holds everything filed
+        by then. A live run refetches anything older than its limit.
+        """
+        fetched = date.fromtimestamp(path.stat().st_mtime)
+        if self.as_of is not None and self.as_of <= fetched:
+            return True
+        limit = next(
+            (days for prefix, days in self._LIVE_MAX_AGE_DAYS if cache_key.startswith(prefix)),
+            None,
+        )
+        if limit is None:
+            return True
+        return (date.today() - fetched).days <= limit
+
     def _get_json(self, url: str, cache_key: str | None = None) -> Any:
+        stale: Path | None = None
         if cache_key and self.cache_dir:
             cached = self.cache_dir / f"{cache_key}.json"
             if cached.exists():
-                return json.loads(cached.read_text())
+                if self._cache_is_fresh(cached, cache_key):
+                    return json.loads(cached.read_text())
+                stale = cached
+        try:
+            return self._download_json(url, cache_key)
+        except DataUnavailable as exc:
+            if stale is not None and "not found" not in str(exc):
+                # A failed refresh is better answered by last week's copy
+                # than by nothing.
+                return json.loads(stale.read_text())
+            raise
+
+    def _download_json(self, url: str, cache_key: str | None) -> Any:
 
         last: Exception | None = None
         for attempt in range(self.max_retries):
@@ -263,20 +303,28 @@ class EdgarAdapter(DataAdapter):
 
     def _get_text(self, url: str, cache_key: str | None = None) -> str:
         """Fetch a non-JSON document, sharing the throttle and the cache."""
+        stale: Path | None = None
         if cache_key and self.cache_dir:
             cached = self.cache_dir / f"{cache_key}.txt"
             if cached.exists():
-                return cached.read_text()
+                if self._cache_is_fresh(cached, cache_key):
+                    return cached.read_text()
+                stale = cached
         self._throttle()
-        resp = self.session.get(
-            url,
-            headers={
-                "User-Agent": self.user_agent,
-                "Accept-Encoding": "gzip, deflate",
-            },
-            timeout=self.timeout,
-        )
-        resp.raise_for_status()
+        try:
+            resp = self.session.get(
+                url,
+                headers={
+                    "User-Agent": self.user_agent,
+                    "Accept-Encoding": "gzip, deflate",
+                },
+                timeout=self.timeout,
+            )
+            resp.raise_for_status()
+        except Exception:
+            if stale is not None:
+                return stale.read_text()
+            raise
         if cache_key and self.cache_dir:
             (self.cache_dir / f"{cache_key}.txt").write_text(resp.text)
         return resp.text

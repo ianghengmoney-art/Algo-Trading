@@ -289,3 +289,41 @@ class TestEightKWindowFollowsTheAsOfDate:
         }}}
         actions = a.get_corporate_actions("X", 7)
         assert [x.effective_date for x in actions] == [date(2013, 5, 1)]
+
+
+class TestCachedFilingsAreRefreshedForLiveRuns:
+    """Every SEC download was once kept for good, and the workflow carries the
+    cache from run to run: the weekly screen and paper trading would never
+    have seen a new quarterly report."""
+
+    def adapter(self, tmp_path, as_of, age_days, fetch):
+        import json
+        import os
+        import time as _time
+
+        from gcfp.data.edgar import EdgarAdapter
+
+        path = tmp_path / "facts_0000000001.json"
+        path.write_text(json.dumps({"old": True}))
+        stamp = _time.time() - age_days * 86400
+        os.utime(path, (stamp, stamp))
+        adapter = EdgarAdapter(user_agent="t t@example.com", session=Mock(),
+                               cache_dir=tmp_path, as_of=as_of)
+        adapter._download_json = fetch
+        return adapter
+
+    def test_a_live_run_refetches_a_week_old_filing(self, tmp_path):
+        fetch = Mock(return_value={"new": True})
+        a = self.adapter(tmp_path, None, 8, fetch)
+        assert a._get_json("u", "facts_0000000001") == {"new": True}
+
+    def test_a_backtest_reuses_a_file_downloaded_after_its_date(self, tmp_path):
+        fetch = Mock(return_value={"new": True})
+        a = self.adapter(tmp_path, date(2020, 6, 30), 30, fetch)
+        assert a._get_json("u", "facts_0000000001") == {"old": True}
+        fetch.assert_not_called()
+
+    def test_a_failed_refresh_falls_back_to_the_old_copy(self, tmp_path):
+        fetch = Mock(side_effect=DataUnavailable("u", "exhausted retries: timeout"))
+        a = self.adapter(tmp_path, None, 8, fetch)
+        assert a._get_json("u", "facts_0000000001") == {"old": True}
