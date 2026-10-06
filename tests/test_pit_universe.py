@@ -274,3 +274,18 @@ class TestBetaIsMeasuredAtEachDate:
         benchmark_ends = [c.args[2] for c in prices.get_prices.call_args_list]
         assert benchmark_ends == [date(2015, 1, 31), date(2025, 1, 31)], \
             "the index history must move with the date, not stay at the first month"
+
+
+class TestEightKWindowFollowsTheAsOfDate:
+    def test_a_2015_backtest_sees_the_8ks_filed_before_2015(self):
+        from gcfp.data.edgar import EdgarAdapter
+
+        a = EdgarAdapter(user_agent="t t@example.com", session=Mock(), as_of=date(2015, 6, 30))
+        a._ticker_map = {"X": 1}
+        a._submissions = lambda symbol: {"filings": {"recent": {
+            "form": ["8-K", "8-K"],
+            "filingDate": ["2013-05-01", "2016-05-01"],
+            "items": ["2.01", "2.01"],
+        }}}
+        actions = a.get_corporate_actions("X", 7)
+        assert [x.effective_date for x in actions] == [date(2013, 5, 1)]

@@ -25,6 +25,7 @@ from ..types import (
     PeriodFinancials,
     PricePoint,
     TaxonomyLevel,
+    years_before,
 )
 
 
@@ -189,7 +190,7 @@ class DataAdapter(ABC):
             "quarterly", lambda: self.get_quarterly_financials(symbol, quarters)
         )
         end = price_end or date.today()
-        start = price_start or date(end.year - 2, end.month, end.day)
+        start = price_start or years_before(end, 2)
         prices = _try("prices", lambda: self.get_prices(symbol, start, end))
         actions = _try(
             "corporate_actions", lambda: self.get_corporate_actions(symbol, history_years)

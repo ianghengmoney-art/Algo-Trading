@@ -516,6 +516,13 @@ def main() -> int:
         "Holdings are credited their cash dividends on each ex-date, from the "
         "price feed's dividend history. A holding whose dividends could not "
         "be fetched is counted price-only.",
+        *(
+            ["EVALUATIONS THAT RAISED (each was skipped; a code fault, not a data gap):"]
+            + [f"  {count:5d}  {cause}" for cause, count in sorted(
+                primary.crashes.items(), key=lambda kv: -kv[1])[:15]]
+            if primary.crashes else
+            ["No evaluation raised an error."]
+        ),
         f"Holdings whose price stopped and were closed as delisted at "
         f"{settings.delisting_return:+.0%}: {primary.assumed_delistings}.",
     ]

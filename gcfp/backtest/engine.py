@@ -158,6 +158,10 @@ class BacktestResult:
     stopped_early_at: date | None = None
     #: Seconds spent per stage of the walk, for the report's timing section.
     timing: dict[str, float] = field(default_factory=dict)
+    #: Evaluations that raised, by stage and error. Each one was skipped and
+    #: used to vanish silently: every evaluation on 29 February raised, and
+    #: three whole months were lost before anyone could see it.
+    crashes: dict[str, int] = field(default_factory=dict)
 
     @property
     def equity_curve(self) -> list[tuple[date, float]]:
@@ -372,6 +376,7 @@ class Backtester:
         #: shared across the benchmark runs, which replay the same dates
         #: over the same companies with the same screen.
         self.member_cache = member_cache if member_cache is not None else {}
+        self.crashes: dict[str, int] = {}
 
     # -- point-in-time ----------------------------------------------------
     def _pin(self, as_of: date) -> DataAdapter:
@@ -562,6 +567,7 @@ class Backtester:
                 # statistic — a company that went bust never counted as a loss.
                 self._close_as_delisted(book, symbol, final, result)
 
+        result.crashes = dict(self.crashes)
         return result
 
     def _grow_ballast(self, book: BacktestBook, as_of: date) -> None:
@@ -827,7 +833,8 @@ class Backtester:
             )
         except DataUnavailable:
             return None
-        except Exception:
+        except Exception as exc:
+            self._crashed("loading", exc)
             return None
 
         tag, _considered, _reasons = a_health.classify(data, self.config)
@@ -877,11 +884,16 @@ class Backtester:
                 conviction_scorer=self.conviction_scorer,
                 as_of=as_of,
             )
-        except Exception:
+        except Exception as exc:
+            self._crashed("evaluating", exc)
             return None
         if not peers:
             evaluation.peer_gap = self._why_no_peer_candidates(universe, member)
         return evaluation
+
+    def _crashed(self, stage: str, exc: Exception) -> None:
+        key = f"{stage}: {type(exc).__name__}: {_plain(str(exc))[:70]}"
+        self.crashes[key] = self.crashes.get(key, 0) + 1
 
     def _why_no_peer_candidates(self, universe: Universe, member) -> str:
         """Why C2 was offered nobody: a data gap, or the spec's size band.

@@ -27,7 +27,7 @@ from ..ledger import (
     gate_not_applicable,
     gate_uncomputable,
 )
-from ..types import CompanyData, MarketData, PeriodFinancials, TaxonomyLevel
+from ..types import CompanyData, MarketData, PeriodFinancials, TaxonomyLevel, years_before
 
 
 @dataclass
@@ -583,7 +583,7 @@ def gate_a4_red_flags(
 
     # Restatement in trailing 3 years.
     checked.append("restatement")
-    cutoff = date(as_of.year - config.health.restatement_lookback_years, as_of.month, as_of.day)
+    cutoff = years_before(as_of, config.health.restatement_lookback_years)
     if any(d >= cutoff for d in data.restatements):
         hits.append("restatement within 3 years")
 

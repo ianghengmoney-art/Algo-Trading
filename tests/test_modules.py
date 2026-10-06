@@ -1099,3 +1099,19 @@ class TestShareCountFallsBackToSharesOutstanding:
     def test_with_neither_series_it_stays_not_computable(self):
         quarters = [{"shares_diluted": None, "shares_outstanding": None}] * 12
         assert a_health.share_count_cagr(build_company(quarterly_overrides=quarters)) is None
+
+
+class TestLeapDay:
+    """Every evaluation on 29 February raised — a three-year look-back built
+    the date 29 February 2013 — and a backtest skipped February 2016, 2020
+    and 2024 entirely."""
+
+    def test_the_red_flag_gate_runs_on_a_leap_day(self, healthy_company):
+        result = a_health.gate_a4_red_flags(healthy_company, Config(), date(2016, 2, 29))
+        assert result.outcome is not None
+
+    def test_years_before_lands_on_the_28th(self):
+        from gcfp.types import years_before
+
+        assert years_before(date(2016, 2, 29), 3) == date(2013, 2, 28)
+        assert years_before(date(2016, 2, 29), 4) == date(2012, 2, 29)

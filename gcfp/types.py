@@ -160,6 +160,17 @@ class PricePoint:
     volume: float | None = None
 
 
+def years_before(day: date, years: int) -> date:
+    """The same calendar day ``years`` earlier; 28 February for a 29th
+    whose year has none. ``date(day.year - n, day.month, day.day)`` raised on
+    every leap day, and a backtest's whole February 2016, 2020 and 2024 were
+    lost to it: every evaluation that month failed and was skipped."""
+    try:
+        return day.replace(year=day.year - years)
+    except ValueError:
+        return day.replace(year=day.year - years, day=28)
+
+
 @dataclass(frozen=True)
 class DividendEvent:
     """A cash dividend per share, on the basis the price feed's history uses

@@ -868,7 +868,9 @@ class EdgarAdapter(DataAdapter):
         dates = recent.get("filingDate") or []
         items = recent.get("items") or []
 
-        cutoff_year = date.today().year - years
+        # Counted back from the as-of date: counted from today, a backtest
+        # dated 2015 saw no 8-K before 2019 — none of the ones it could know.
+        cutoff_year = (self.as_of or date.today()).year - years
         out: list[CorporateAction] = []
         for index, form in enumerate(forms):
             if str(form) not in ("8-K", "8-K/A"):
