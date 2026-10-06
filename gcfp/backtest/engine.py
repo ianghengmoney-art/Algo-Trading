@@ -196,8 +196,11 @@ def _plain(reason: str | None) -> str:
     return text[:90]
 
 
-def anchor_gap_causes(triangulation) -> list[str]:
-    """Each anchor that could not be computed, with an aggregatable cause."""
+def anchor_gap_causes(triangulation, peer_gap: str | None = None) -> list[str]:
+    """Each anchor that could not be computed, with an aggregatable cause.
+
+    ``peer_gap`` says why C2 was offered no candidates at all, when known.
+    """
     out: list[str] = []
     if not triangulation.c1.computable:
         out.append(f"C1 missing — {_plain(triangulation.c1.reason)}")
@@ -207,7 +210,8 @@ def anchor_gap_causes(triangulation) -> list[str]:
         if not decisions:
             reason = c2.reason or ""
             cause = (
-                "no same-industry candidates offered"
+                f"no candidates offered — {peer_gap}" if peer_gap
+                else "no same-industry candidates offered"
                 if "peers" in reason or not reason
                 else _plain(reason)
             )
@@ -420,11 +424,19 @@ class Backtester:
 
     # -- prices -----------------------------------------------------------
     def _price_on(self, symbol: str, as_of: date) -> float | None:
-        """The last close at or before ``as_of``, within a fortnight."""
+        """The last close at or before ``as_of``, within a fortnight.
+
+        On the basis adjusted for every split to date, where the adapter
+        offers one: the book holds share counts across splits, so its prices
+        must not step down when a holding splits.
+        """
+        fetch = (
+            self.adapter.get_adjusted_prices
+            if hasattr(type(self.adapter), "get_adjusted_prices")
+            else self.adapter.get_prices
+        )
         try:
-            prices = self.adapter.get_prices(
-                symbol, as_of - timedelta(days=14), as_of
-            )
+            prices = fetch(symbol, as_of - timedelta(days=14), as_of)
         except Exception:
             return None
         usable = [p for p in prices if p.price_date <= as_of]
@@ -667,7 +679,9 @@ class Backtester:
             for step in funnel_steps(evaluation):
                 record.funnel[step] = record.funnel.get(step, 0) + 1
             if triangulation is not None:
-                for gap in anchor_gap_causes(triangulation):
+                for gap in anchor_gap_causes(
+                    triangulation, getattr(evaluation, "peer_gap", None)
+                ):
                     record.anchor_gaps[gap] = record.anchor_gaps.get(gap, 0) + 1
                 if triangulation.mode.is_single:
                     record.single_anchor_candidates += 1
@@ -790,7 +804,7 @@ class Backtester:
         )
 
         try:
-            return evaluate_candidate(
+            evaluation = evaluate_candidate(
                 data,
                 universe.market_data(self._base_market(adapter)),
                 self.config,
@@ -803,6 +817,30 @@ class Backtester:
             )
         except Exception:
             return None
+        if not peers:
+            evaluation.peer_gap = self._why_no_peer_candidates(universe, member)
+        return evaluation
+
+    def _why_no_peer_candidates(self, universe: Universe, member) -> str:
+        """Why C2 was offered nobody: a data gap, or the spec's size band.
+
+        "No candidates" covered both, and they call for different responses —
+        the first is fixable, the second is the rule working.
+        """
+        if not member.market_cap:
+            return "company's own market cap unknown"
+        same = [
+            m for m in universe.included
+            if m.symbol != member.symbol and m.industry and m.industry == member.industry
+        ]
+        if not same:
+            return "no other company in its industry in the screened universe"
+        low = self.config.anchors.peer_market_cap_low
+        high = self.config.anchors.peer_market_cap_high
+        return (
+            f"{min(len(same), 5) if len(same) < 5 else '5+'} same-industry, none "
+            f"within the {low:g}-{high:g}x size band"
+        )
 
     def _base_market(self, adapter: DataAdapter) -> MarketData:
         try:

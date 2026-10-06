@@ -207,3 +207,70 @@ class TestRiskFreeRateIsPointInTime:
             fundamentals=fundamentals, prices=prices, as_of=date(2015, 7, 3)
         )
         assert adapter.get_market_data().risk_free_rate is None
+
+
+class TestPricesOnTheAsOfDateBasis:
+    """The feeds publish history adjusted for every split to today; filings
+    give share counts as they were. At a past date the two disagree by every
+    split since, which made a company that later split 10-for-1 look ten
+    times smaller and cheaper than it was."""
+
+    def composite(self, as_of):
+        from gcfp.data.composite import CompositeAdapter
+        from gcfp.types import CorporateAction, CorporateActionType
+
+        fundamentals = Mock()
+        fundamentals.name = "edgar"
+        fundamentals.price_ticker = lambda s: (s, None)
+        prices = Mock()
+        prices.name = "feed"
+        # Adjusted to today: a 10-for-1 split in 2024 divides 2020's $500 by 10.
+        prices.get_prices = Mock(return_value=(
+            PricePoint(date(2020, 6, 30), 50.0, adjusted_close=50.0, volume=10_000.0),
+        ))
+        prices.get_splits = Mock(return_value=(
+            CorporateAction(CorporateActionType.SPLIT, date(2019, 1, 2), ratio=2.0),
+            CorporateAction(CorporateActionType.SPLIT, date(2024, 6, 10), ratio=10.0),
+        ))
+        return CompositeAdapter(fundamentals=fundamentals, prices=prices, as_of=as_of)
+
+    def test_a_past_price_is_restored_to_what_it_traded_at(self):
+        adapter = self.composite(date(2020, 6, 30))
+        point = adapter.get_prices("X", date(2020, 6, 1), date(2020, 6, 30))[0]
+        # Only the 2024 split is undone; 2019's had happened by then.
+        assert point.close == pytest.approx(500.0)
+        assert point.close * point.volume == pytest.approx(50.0 * 10_000.0), \
+            "dollar volume is unchanged"
+
+    def test_the_book_keeps_the_fully_adjusted_basis(self):
+        adapter = self.composite(date(2020, 6, 30))
+        point = adapter.get_adjusted_prices("X", date(2020, 6, 1), date(2020, 6, 30))[0]
+        assert point.close == pytest.approx(50.0)
+
+    def test_live_screening_is_untouched(self):
+        adapter = self.composite(None)
+        assert adapter.get_prices("X", date(2020, 6, 1), date(2020, 6, 30))[0].close == 50.0
+
+    def test_splits_after_a_dead_company_stopped_filing_are_ignored(self):
+        adapter = self.composite(date(2020, 6, 30))
+        adapter.fundamentals.price_ticker = lambda s: (s, date(2021, 1, 1))
+        assert adapter.get_prices("X", date(2020, 6, 1), date(2020, 6, 30))[0].close == 50.0
+
+
+class TestBetaIsMeasuredAtEachDate:
+    def test_a_new_month_measures_beta_again(self):
+        from gcfp.data.composite import CompositeAdapter
+
+        fundamentals = Mock()
+        fundamentals.name = "edgar"
+        prices = Mock()
+        prices.name = "feed"
+        prices.get_prices = Mock(return_value=())
+        adapter = CompositeAdapter(fundamentals=fundamentals, prices=prices,
+                                   as_of=date(2015, 1, 31))
+        adapter._beta("X", ())
+        adapter.as_of = date(2025, 1, 31)
+        adapter._beta("X", ())
+        benchmark_ends = [c.args[2] for c in prices.get_prices.call_args_list]
+        assert benchmark_ends == [date(2015, 1, 31), date(2025, 1, 31)], \
+            "the index history must move with the date, not stay at the first month"

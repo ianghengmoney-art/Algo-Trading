@@ -73,8 +73,17 @@ class CompositeAdapter(DataAdapter):
     as_of: date | None = None
     benchmark_symbol: str = BENCHMARK_SYMBOL
     name: str = "composite"
-    _benchmark_cache: tuple[PricePoint, ...] | None = field(default=None, repr=False)
-    _beta_cache: dict[str, BetaEstimate | None] = field(default_factory=dict, repr=False)
+    #: Both keyed to one as-of date. They were once kept for the life of the
+    #: adapter, so a backtest computed each company's beta at the first month
+    #: it appeared and reused it for up to ten years, against an index
+    #: history frozen at that first month.
+    _benchmark_cache: tuple[date | None, tuple[PricePoint, ...]] | None = field(
+        default=None, repr=False
+    )
+    _beta_cache: dict[tuple[str, date | None], BetaEstimate | None] = field(
+        default_factory=dict, repr=False
+    )
+    _split_factors: dict[tuple[str, date], float] = field(default_factory=dict, repr=False)
     _ticker_cache: dict[str, tuple[str, date | None] | None] = field(
         default_factory=dict, repr=False
     )
@@ -96,6 +105,34 @@ class CompositeAdapter(DataAdapter):
         return self._ticker_cache[symbol]
 
     def _symbol_prices(self, symbol: str, start: date, end: date) -> Sequence[PricePoint]:
+        """Prices as they stood on the as-of date: adjusted for the splits
+        that had happened by then, and for none after."""
+        history = self._adjusted_symbol_prices(symbol, start, end)
+        resolved = self._price_symbol(symbol)
+        factor = self._split_factor_after_as_of(*resolved) if resolved else 1.0
+        if factor == 1.0:
+            return history
+        return tuple(
+            replace(
+                p,
+                close=p.close * factor,
+                adjusted_close=(
+                    p.adjusted_close * factor if p.adjusted_close is not None else None
+                ),
+                # The feeds scale volume up by the same splits; undoing both
+                # keeps dollar volume unchanged.
+                volume=p.volume / factor if p.volume is not None else None,
+            )
+            for p in history
+        )
+
+    def get_adjusted_prices(self, symbol: str, start: date, end: date) -> Sequence[PricePoint]:
+        """Prices adjusted for every split up to today, as the feeds publish
+        them. A simulated book needs this basis: a holding that splits while
+        held keeps its share count, so its prices must not step down."""
+        return self._adjusted_symbol_prices(symbol, start, end)
+
+    def _adjusted_symbol_prices(self, symbol: str, start: date, end: date) -> Sequence[PricePoint]:
         resolved = self._price_symbol(symbol)
         if resolved is None:
             raise DataUnavailable(
@@ -158,28 +195,62 @@ class CompositeAdapter(DataAdapter):
         return None
 
     def _benchmark(self) -> Sequence[PricePoint]:
-        if self._benchmark_cache is None:
+        if self._benchmark_cache is None or self._benchmark_cache[0] != self.as_of:
             end = self.as_of or date.today()
             start = end - timedelta(days=DEFAULT_HISTORY_DAYS)
             try:
-                self._benchmark_cache = tuple(
-                    self.prices.get_prices(self.benchmark_symbol, start, end)
-                )
+                history = tuple(self.prices.get_prices(self.benchmark_symbol, start, end))
             except DataUnavailable:
-                self._benchmark_cache = ()
-        return self._benchmark_cache
+                history = ()
+            self._benchmark_cache = (self.as_of, history)
+        return self._benchmark_cache[1]
 
     def _beta(
         self, symbol: str, history: Sequence[PricePoint]
     ) -> BetaEstimate | None:
-        if symbol not in self._beta_cache:
+        key = (symbol, self.as_of)
+        if key not in self._beta_cache:
+            if self._beta_cache and next(iter(self._beta_cache))[1] != self.as_of:
+                # A walk moves forward a month at a time and never returns;
+                # only the current date is worth the memory.
+                self._beta_cache.clear()
             benchmark = self._benchmark()
-            self._beta_cache[symbol] = (
+            self._beta_cache[key] = (
                 compute_beta(history, benchmark, benchmark=self.benchmark_symbol)
                 if benchmark
                 else None
             )
-        return self._beta_cache[symbol]
+        return self._beta_cache[key]
+
+    def _split_factor_after_as_of(self, ticker: str, cutoff: date | None) -> float:
+        """How much later splits shrank this ticker's past prices.
+
+        Both price feeds publish history adjusted for every split up to
+        today, while the filings give share counts as they were. At a past
+        date the two disagree by every split since: a company that later
+        split 10-for-1 looked ten times smaller and cheaper than it was, so
+        the fair value per share, the price it was compared with, and the
+        market cap behind the size bands were all off by that factor (and
+        in the other direction after a reverse split).
+        """
+        as_of = self.as_of
+        if as_of is None:
+            return 1.0
+        key = (ticker, as_of)
+        if key not in self._split_factors:
+            factor = 1.0
+            try:
+                splits = self.prices.get_splits(ticker, as_of + timedelta(days=1), date.today())
+            except Exception:
+                splits = ()
+            for split in splits:
+                if not split.ratio or split.ratio <= 0 or split.effective_date <= as_of:
+                    continue
+                if cutoff is not None and split.effective_date > cutoff:
+                    continue  # a later company on a recycled ticker
+                factor *= split.ratio
+            self._split_factors[key] = factor
+        return self._split_factors[key]
 
     def beta_estimate(self, symbol: str) -> BetaEstimate | None:
         """The beta with its window and fit, for the audit log."""
