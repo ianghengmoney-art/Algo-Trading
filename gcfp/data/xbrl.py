@@ -82,6 +82,12 @@ TAG_CHAINS: dict[str, tuple[str, ...]] = {
         "PaymentsToAcquirePropertyPlantAndEquipment",
         "PaymentsToAcquireProductiveAssets",
         "PaymentsForCapitalImprovements",
+        # Filers that split PP&E by kind and never tag the total: ADP tags
+        # "other" PP&E, Diodes machinery, energy producers their properties.
+        "PaymentsToAcquireOtherPropertyPlantAndEquipment",
+        "PaymentsToAcquireMachineryAndEquipment",
+        "PaymentsToAcquireOilAndGasPropertyAndEquipment",
+        "PaymentsToExploreAndDevelopOilAndGasProperties",
     ),
     "operating_income": (
         "OperatingIncomeLoss",
@@ -257,6 +263,12 @@ TAG_CHAINS: dict[str, tuple[str, ...]] = {
     "funds_from_operations": ("FundsFromOperations",),
     "adjusted_funds_from_operations": ("AdjustedFundsFromOperations",),
 }
+
+#: Fields where a zero is far likelier to be a placeholder than the truth
+#: when another tag in the chain reports a non-zero value for the same period.
+#: A genuine zero (a pre-revenue company) still resolves to zero, because no
+#: other tag contradicts it.
+NONZERO_PREFERRED: frozenset[str] = frozenset({"revenue", "capital_expenditure"})
 
 #: Facts with a ``start`` as well as an ``end`` cover a period rather than an
 #: instant, and must be length-filtered.
@@ -593,6 +605,13 @@ def _resolve(
             existing = chosen.get(fact.period_end)
             if existing is None:
                 chosen[fact.period_end] = fact
+                continue
+            if field in NONZERO_PREFERRED and (existing.value == 0) != (fact.value == 0):
+                # A zero under a preferred tag must not hide the real figure
+                # under another: Flowserve tags Revenues as 0 beside $4.9bn of
+                # SalesRevenueNet, and read as a company with no sales.
+                if existing.value == 0:
+                    chosen[fact.period_end] = fact
                 continue
             # Prefer the tag earlier in the chain; within a tag, the latest
             # filing wins, so an amendment supersedes what it restated.

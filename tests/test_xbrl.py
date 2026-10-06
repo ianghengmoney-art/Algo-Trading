@@ -617,3 +617,27 @@ class TestFourthQuarterShareCounts:
         ])
         q = xbrl.select_facts(data, "net_income", annual=False)
         assert q[date(2025, 12, 31)].value == 120
+
+
+class TestPlaceholderZeros:
+    def test_a_zero_under_a_preferred_tag_does_not_hide_real_revenue(self):
+        """Flowserve tags Revenues as 0 beside $4.9bn of SalesRevenueNet, and
+        read as a company with no sales — unclassifiable for years."""
+        data = payload(
+            Revenues=[fact(0, "2014-12-31", "2014-01-01")],
+            SalesRevenueNet=[fact(4_877_885_000, "2014-12-31", "2014-01-01")],
+        )
+        annual = xbrl.select_facts(data, "revenue", annual=True)
+        assert annual[date(2014, 12, 31)].value == 4_877_885_000
+
+    def test_a_genuine_zero_still_reads_as_zero(self):
+        data = payload(Revenues=[fact(0, "2014-12-31", "2014-01-01")])
+        assert xbrl.select_facts(data, "revenue", annual=True)[date(2014, 12, 31)].value == 0
+
+    def test_capex_split_by_kind_is_found(self):
+        """ADP tags only "other" PP&E purchases; without it free cash flow,
+        and so classification, was never computable."""
+        data = payload(PaymentsToAcquireOtherPropertyPlantAndEquipment=[
+            fact(158_800_000, "2015-06-30", "2014-07-01"),
+        ])
+        assert xbrl.select_facts(data, "capital_expenditure", annual=True)

@@ -989,6 +989,17 @@ class TestA2NetCashAndSplitDepreciation:
         period = adapter._periods("X", annual=False, limit=4)[0]
         assert period.ebitda == 120, "80 pre-tax + 15 interest + 25 D&A"
         assert period.ebitda_basis == "pretax_plus_interest"
+        assert period.ebit == 95, "and EBIT, for D4's ROIC, is 80 + 15"
+
+    def test_roic_uses_ebit_when_there_is_no_operating_income_line(self):
+        from dataclasses import replace
+
+        from gcfp.modules.d_conviction import _roic
+
+        data = build_company()
+        latest = replace(data.annual[0], operating_income=None, ebit=6.5e9)
+        data_without = replace(data, annual=[latest, *data.annual[1:]])
+        assert _roic(data_without) == pytest.approx(_roic(data))
 
     def test_a_net_interest_figure_is_not_added_back(self):
         """Net interest mixes income with expense and its sign varies by

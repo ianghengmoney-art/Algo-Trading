@@ -253,7 +253,12 @@ def score_anchor_conservatism(
 
 def _roic(data: CompanyData) -> float | None:
     latest = data.latest_annual
-    if latest is None or latest.operating_income is None:
+    if latest is None:
+        return None
+    # EBIT from pre-tax income + interest for filers with no operating-income
+    # line; 13% of non-financial company-dates in a 400-company check.
+    operating = latest.operating_income if latest.operating_income is not None else latest.ebit
+    if operating is None:
         return None
     invested = latest.invested_capital
     if invested is None:
@@ -269,7 +274,7 @@ def _roic(data: CompanyData) -> float | None:
         candidate = latest.tax_expense / latest.pretax_income
         if 0.0 <= candidate <= 0.60:
             tax_rate = candidate
-    return latest.operating_income * (1.0 - tax_rate) / invested
+    return operating * (1.0 - tax_rate) / invested
 
 
 def _roe(data: CompanyData) -> float | None:
