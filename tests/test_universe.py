@@ -368,6 +368,28 @@ class TestPriceCache:
         assert src.get_splits("CAT", today - timedelta(days=100), today) == ()
         assert src.get_splits("CAT", today - timedelta(days=800), today) == (split,)
 
+    def test_a_recent_split_history_is_reused_by_a_later_run(self, tmp_path):
+        """Evaluations now ask for splits up to today, to restore past prices
+        to their as-of basis. A daily refetch would cost one request per
+        company per run; a week-old answer is good enough."""
+        import json
+        from datetime import timedelta
+
+        today = date.today()
+        src, inner = self.cached(tmp_path)
+        calls = []
+        inner.get_splits = lambda symbol, start, end: calls.append(1) or []
+        src.get_splits("CAT", today - timedelta(days=365), today)
+        path = next(tmp_path.rglob("*SPLITS*"))
+        cached = json.loads(path.read_text())
+        cached["fetched_on"] = (today - timedelta(days=3)).isoformat()
+        path.write_text(json.dumps(cached))
+
+        later, inner2 = self.cached(tmp_path)
+        inner2.get_splits = lambda symbol, start, end: calls.append(1) or []
+        later.get_splits("CAT", today - timedelta(days=365), today)
+        assert len(calls) == 1
+
     def test_reports_still_name_the_underlying_feed(self, tmp_path):
         src, _ = self.cached(tmp_path)
         assert src.name == "counting"

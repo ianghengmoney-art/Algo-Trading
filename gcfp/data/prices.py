@@ -39,6 +39,9 @@ TEN_YEAR_YIELD_SYMBOL = "^TNX"
 #: locally, instead of one request per window asked for.
 SPLIT_HISTORY_START = date(1990, 1, 1)
 
+#: How long a fetched split history is reused before asking the feed again.
+SPLITS_FRESH_DAYS = 7
+
 #: Minimum history fetched on a cache miss, so the later, wider windows a
 #: backtest asks for (C1 reaches back nine years) are already on disk.
 FETCH_HISTORY_DAYS = int(365.25 * 12)
@@ -491,7 +494,15 @@ class CachedPriceSource(PriceSource):
             # but not within the TTL, and never twice in one run.
             stale = not self._unavailable_still_trusted(fetched_on)
         else:
-            stale = fetched_on != today and end.isoformat() >= fetched_on
+            # Splits are rare and announced in advance, so a week-old answer
+            # is good for any window. Refetching daily cost one request per
+            # company per run once evaluations began asking for splits up to
+            # today (to restore past prices to their as-of basis).
+            age = (date.today() - date.fromisoformat(fetched_on)).days if fetched_on else None
+            stale = (
+                (age is None or age > SPLITS_FRESH_DAYS)
+                and end.isoformat() >= fetched_on
+            )
         if stale:
             try:
                 actions = self.inner.get_splits(symbol, SPLIT_HISTORY_START, date.today())
