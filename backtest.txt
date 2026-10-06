@@ -14,79 +14,67 @@ walk-forward (§13.3): train 2015-01-01..2021-06-13 · holdout 2021-06-14..2025-
 §13.1 — RESULTS, AND PER CLASSIFICATION
 ------------------------------------------------------------------------------
 GCFP v4
-  100,000 -> 328,955 · +11.81%/yr
-  benchmark +12.01%/yr · excess -0.20%/yr
+  99,999 -> 404,560 · +14.00%/yr
+  benchmark +14.03%/yr · excess -0.03%/yr
   outside Module I's pre-registered 2-5%/yr excess band
   volatility 15.1%/yr
-  portfolio max drawdown: -24.6% from 2021-12-31 to 2022-09-30 (273 days), recovered in 730 days
-  positions closed: 18
-  median outcome: +3.9%   (mean +12.6% — reported second, deliberately)
-  quartiles: p25 -9.9% · p75 +22.6%
-  best +117.7% · worst -46.1%
-  loss rate: 44.4% · total losses (<= -90%): 0.0%
-  largest single-position drawdown: -50.1%
-  median holding period: 168 days
+  portfolio max drawdown: -20.6% from 2021-12-31 to 2022-09-30 (273 days), recovered in 577 days
+  positions closed: 56
+  median outcome: +8.3%   (mean +14.1% — reported second, deliberately)
+  quartiles: p25 -8.5% · p75 +31.0%
+  best +135.7% · worst -49.0%
+  loss rate: 39.3% · total losses (<= -90%): 0.0%
+  largest single-position drawdown: -59.0%
+  median holding period: 152 days
+
+  Stock picks vs the index over each pick's own holding period:
+    picks compared: 56
+    median pick vs index: -4.4%   (mean -2.9%)
+    picks that beat the index: 46%
+    average share of the money in stock picks: 3.6% (the rest followed the index)
 
   Per classification (a blended backtest hides whether Growth is
   carrying or dragging the system):
     CORE-GROWTH
-      positions closed: 10
-      median outcome: +17.9%   (mean +19.6% — reported second, deliberately)
-      quartiles: p25 +5.3% · p75 +25.5%
-      best +117.7% · worst -46.1%
-      loss rate: 20.0% · total losses (<= -90%): 0.0%
-      largest single-position drawdown: -50.1%
-      median holding period: 228 days
+      positions closed: 18
+      median outcome: +17.9%   (mean +17.2% — reported second, deliberately)
+      quartiles: p25 -6.6% · p75 +33.7%
+      best +120.7% · worst -47.5%
+      loss rate: 33.3% · total losses (<= -90%): 0.0%
+      largest single-position drawdown: -51.5%
+      median holding period: 227 days
     CORE-STABLE
-      positions closed: 6
-      median outcome: -4.4%   (mean +10.0% — reported second, deliberately)
-      quartiles: p25 -10.2% · p75 +3.0%
-      best +88.6% · worst -13.3%
-      loss rate: 66.7% · total losses (<= -90%): 0.0%
-      largest single-position drawdown: -46.5%
-      median holding period: 196 days
+      positions closed: 32
+      median outcome: +6.0%   (mean +11.0% — reported second, deliberately)
+      quartiles: p25 -9.2% · p75 +24.7%
+      best +110.7% · worst -49.0%
+      loss rate: 43.8% · total losses (<= -90%): 0.0%
+      largest single-position drawdown: -59.0%
+      median holding period: 121 days
     SPEC-GROWTH
-      positions closed: 2
-      median outcome: -14.1%   (mean -14.1% — reported second, deliberately)
-      quartiles: p25 -16.0% · p75 -12.2%
-      best -10.3% · worst -17.9%
-      loss rate: 100.0% · total losses (<= -90%): 0.0%
-      largest single-position drawdown: -30.3%
-      median holding period: 92 days
+      positions closed: 6
+      median outcome: +6.7%   (mean +21.4% — reported second, deliberately)
+      quartiles: p25 -6.2% · p75 +13.9%
+      best +135.7% · worst -26.3%
+      loss rate: 33.3% · total losses (<= -90%): 0.0%
+      largest single-position drawdown: -37.4%
+      median holding period: 151 days
 
 ------------------------------------------------------------------------------
 §13.2 — MANDATORY WINDOWS
 ------------------------------------------------------------------------------
   dot-com unwind (2000-2002): NOT COVERED by this backtest period
   global financial crisis (2008-2009): NOT COVERED by this backtest period
-  2022 multiple compression (2022-2022): -16.16%/yr vs benchmark -16.25%/yr
+  2022 multiple compression (2022-2022): -11.34%/yr vs benchmark -14.82%/yr
 
   ** 2 of 3 mandatory windows were not covered. §13.2 requires all three; extend the backtest period or state this as an incomplete validation. **
 
 ------------------------------------------------------------------------------
 §13.4 — BENCHMARKS
 ------------------------------------------------------------------------------
-  vs index (buy and hold): +12.01%/yr
+  vs index (buy and hold): +14.03%/yr
       proves: whether any of this beats buying the market
-      difference: -0.20%/yr  <- BENCHMARK AHEAD
-      A benchmark that matches or beats the full system is the protocol working: it says this component does not earn its complexity.
-  vs equal-weight all passers: +11.75%/yr
-      proves: that Module F's regime sizing earns its rules
-      difference: +0.06%/yr  <- GCFP v4 ahead
-  vs no momentum overlay: +11.81%/yr
-      proves: that D5's tiebreaker adds something
-      difference: +0.00%/yr  <- BENCHMARK AHEAD
-      A benchmark that matches or beats the full system is the protocol working: it says this component does not earn its complexity.
-  vs single-anchor valuation: +11.82%/yr
-      proves: that C's dual triangulation earns its complexity
-      difference: -0.00%/yr  <- BENCHMARK AHEAD
-      A benchmark that matches or beats the full system is the protocol working: it says this component does not earn its complexity.
-  vs v3 circular conviction scoring: +11.78%/yr
-      proves: that the D2/D3 corrections improve outcomes, not just tidiness
-      difference: +0.03%/yr  <- GCFP v4 ahead
-  vs no-C5 (reject single-anchor names): +11.96%/yr
-      proves: that SINGLE-ANCHOR MODE adds value rather than admitting bad trades
-      difference: -0.14%/yr  <- BENCHMARK AHEAD
+      difference: -0.03%/yr  <- BENCHMARK AHEAD
       A benchmark that matches or beats the full system is the protocol working: it says this component does not earn its complexity.
   vs old GCFP v2 rules: NOT RUN
       the v2 specification was not supplied. v4 states that it supersedes v2 without restating it, and a reconstructed v2 would be a strawman rather than a benchmark. Supply the v2 rules to enable this comparison.
@@ -95,21 +83,21 @@ GCFP v4
 §13.5 — CLASSIFICATION ACCURACY
 ------------------------------------------------------------------------------
     method: criteria persistence at 12 months
-    routings judged: 1125 of 1125 (0 not evaluable)
-    accuracy: 75.6% against a 70% floor [ok]
-      CORE-GROWTH: 61.8% of 76
-      CORE-STABLE: 69.7% of 528
-      FINANCIAL-BANK: 100.0% of 304
-      INSURER: 100.0% of 114
-      SPEC-GROWTH: 17.5% of 103
+    routings judged: 4320 of 4320 (0 not evaluable)
+    accuracy: 80.2% against a 70% floor [ok]
+      CORE-GROWTH: 57.5% of 285
+      CORE-STABLE: 81.1% of 1985
+      FINANCIAL-BANK: 100.0% of 1129
+      INSURER: 100.0% of 241
+      SPEC-GROWTH: 47.4% of 680
 
 ------------------------------------------------------------------------------
 §13.6 — RETURN DISTRIBUTION
 ------------------------------------------------------------------------------
   reported above under §13.1, per classification.
-  rolling 1y: min -20.7% · median +15.0% · max +62.4%
-  rolling 3y: min +3.0% · median +11.3% · max +21.8%
-  rolling 5y: min +4.2% · median +12.6% · max +16.8%
+  rolling 1y: min -16.4% · median +17.0% · max +65.9%
+  rolling 3y: min +5.2% · median +13.8% · max +23.9%
+  rolling 5y: min +6.4% · median +15.0% · max +18.9%
 
 ------------------------------------------------------------------------------
 §13.7 — PARAMETER SWEEP
@@ -119,35 +107,35 @@ GCFP v4
 ------------------------------------------------------------------------------
 §13.9 — C5 FREQUENCY
 ------------------------------------------------------------------------------
-  SINGLE-ANCHOR MODE: 61.3% of evaluated candidates ** ABOVE the 40% break criterion **
-  realised outcomes — single-anchor median +3.7% (n=15) vs dual +4.2% (n=3)
+  SINGLE-ANCHOR MODE: 69.1% of evaluated candidates ** ABOVE the 40% break criterion **
+  realised outcomes — single-anchor median +8.9% (n=49) vs dual +7.7% (n=7)
   This is what validates whether C5's penalties are calibrated.
-  C4 divergence fired on 46.6% of dual-anchor candidates
+  C4 divergence fired on 50.4% of dual-anchor candidates ** ABOVE the 50% break criterion **
 
 ------------------------------------------------------------------------------
 §13.10 — RECLASSIFICATION FREQUENCY
 ------------------------------------------------------------------------------
-  H3 fired 35 time(s)
+  H3 fired 73 time(s)
+    CIK0001088856: CORE-GROWTH -> CORE-STABLE
     CIK0000043196: CORE-GROWTH -> CORE-STABLE
+    CIK0001088856: CORE-GROWTH -> CORE-STABLE
     CIK0000043196: CORE-GROWTH -> CORE-STABLE
+    CIK0001088856: CORE-GROWTH -> CORE-STABLE
     CIK0000043196: CORE-GROWTH -> CORE-STABLE
+    CIK0001088856: CORE-GROWTH -> CORE-STABLE
     CIK0000043196: CORE-GROWTH -> CORE-STABLE
+    CIK0001088856: CORE-GROWTH -> CORE-STABLE
     CIK0000043196: CORE-GROWTH -> CORE-STABLE
+    CIK0001088856: CORE-GROWTH -> CORE-STABLE
     CIK0000043196: CORE-GROWTH -> CORE-STABLE
+    CIK0001088856: CORE-GROWTH -> CORE-STABLE
     CIK0000043196: CORE-GROWTH -> CORE-STABLE
+    CIK0001088856: CORE-GROWTH -> CORE-STABLE
     CIK0000043196: CORE-GROWTH -> CORE-STABLE
+    CIK0001088856: CORE-GROWTH -> CORE-STABLE
     CIK0000043196: CORE-GROWTH -> CORE-STABLE
+    CIK0001088856: CORE-GROWTH -> CORE-STABLE
     CIK0000043196: CORE-GROWTH -> CORE-STABLE
-    CIK0000043196: CORE-GROWTH -> CORE-STABLE
-    CIK0000043196: CORE-GROWTH -> CORE-STABLE
-    CIK0000043196: CORE-GROWTH -> CORE-STABLE
-    CIK0000810136: CORE-GROWTH -> CORE-STABLE
-    CIK0000810136: CORE-GROWTH -> CORE-STABLE
-    CIK0000810136: CORE-GROWTH -> CORE-STABLE
-    CIK0000354707: CORE-GROWTH -> CORE-STABLE
-    CIK0000810136: CORE-GROWTH -> CORE-STABLE
-    CIK0000810136: CORE-GROWTH -> CORE-STABLE
-    CIK0000810136: CORE-GROWTH -> CORE-STABLE
 
 ------------------------------------------------------------------------------
 §13.11 — PAPER TRADING
@@ -158,12 +146,12 @@ GCFP v4
 ------------------------------------------------------------------------------
 MODULE I — STRATEGY-BREAK CRITERIA
 ------------------------------------------------------------------------------
-    [ok] outcome: realised loss rate materially exceeding expectations · 18 closed positions; needs 20
+    [ok] outcome: realised loss rate materially exceeding expectations
     [ok] process: demonstrated data corruption or systematic gate miscomputation · asserted by the operator or by a failing integrity check
-    [ok] process: classification accuracy below 70% on the backtest's own metric — 75.6% vs 70.0%
+    [ok] process: classification accuracy below 70% on the backtest's own metric — 80.2% vs 70.0%
     [ok] process: peer-selection methodology proven gameable · two reasonable analysts producing >30% different fair values means C2 is not a method, it is an opinion
-    [TRIPPED] process: SINGLE-ANCHOR MODE exceeding 40% of evaluated candidates — 61.3% vs 40.0% · the anchors are not available at the assumed rate and the system is not doing what it claims
-    [ok] process: anchor divergence (C4) firing on more than 50% of candidates — 46.6% vs 50.0% · the two methods disagree so often that 'triangulation' is not producing signal
+    [TRIPPED] process: SINGLE-ANCHOR MODE exceeding 40% of evaluated candidates — 69.1% vs 40.0% · the anchors are not available at the assumed rate and the system is not doing what it claims
+    [TRIPPED] process: anchor divergence (C4) firing on more than 50% of candidates — 50.4% vs 50.0% · the two methods disagree so often that 'triangulation' is not producing signal
     ** A break criterion has tripped. This is one of the only valid reasons to abandon the strategy. **
     Not valid reasons to abandon: drawdown depth · underperformance duration · any individual position's outcome
 
@@ -176,92 +164,127 @@ MODULE I — EXPECTATION STATEMENT (verbatim)
 NOTES
 ------------------------------------------------------------------------------
   Simulated fills assume the operator transacts at the rebalance close. That is optimistic about liquidity and is stated rather than modelled away.
-  Money not in stock picks (the BALLAST bucket, plus any sleeve F3 leaves unfilled) is held in the S&P 500 index between rebalances. The index is price-only, without dividends, which understates both the ballast and the index benchmark by roughly 1.5-2%/yr.
+  Money not in stock picks (the BALLAST bucket, plus any sleeve F3 leaves unfilled) follows the S&P 500 total-return index (dividends reinvested); the index benchmark is the same index.
+  Holdings are credited their cash dividends on each ex-date, from the price feed's dividend history. A holding whose dividends could not be fetched is counted price-only.
+  No evaluation raised an error.
   Holdings whose price stopped and were closed as delisted at -30%: 0.
+  Benchmarks NOT run or cut short, to finish inside the time budget: vs equal-weight all passers, vs no momentum overlay, vs single-anchor valuation, vs v3 circular conviction scoring, vs no-C5 (reject single-anchor names). Their comparisons are missing from this report, not passed.
   C2 peers: up to 150 same-industry companies per candidate from EDGAR's SIC listing. That listing holds today's filers, so peers are survivors; they set the comparison multiple and are never bought.
   SURVIVORSHIP COVERAGE
-    sampled from the SEC filing index (incl. dead companies): 300
-    stopped filing during the period (died/acquired/delisted): 164
-      of which a price history was found: 9
-    still filing at the end: 136 (priced: 110)
-    WARNING: only 5% of the companies that died could be priced. The unpriced ones could never be bought in this backtest, so the result still leans toward survivors. Treat the CAGR as an upper bound.
-  WHERE CANDIDATES DROPPED OUT (4361 screenings over 129 months; first blocking cause)
-      1099  5 BUY condition failed — conviction N >= N
-       910  5 signal: NO ACTION
-       489  5 BUY condition failed — anchors confirm undervaluation (SINGLE (CN only))
-       330  5 BUY condition failed — discount -N% >= gate N% (SINGLE-ANCHOR +Npp)
-       301  5 BUY condition failed — anchors confirm undervaluation (DUAL)
-       204  5 signal: REVIEW
-       201  5 BUY condition failed — discount N% >= gate N% (SINGLE-ANCHOR +Npp)
-       199  5 BUY condition failed — discount -N% >= gate N%
-       155  5 BUY condition failed — discount N% >= gate N%
-        18  5 signal: BUY
-       628  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=sector · group=Manufacturing · group_median=N · 
-       583  stopped at 1 health checks (Module A) — AN: NOT_COMPUTABLE · reason=leverage not computable
-       397  stopped at 1 health checks (Module A) — AN: FAIL · value=N · reason=satisfied no classification's criteria · considered=[]
-       262  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=pre_profit_runway · ttm_ocf=-N
-       179  stopped at 1 health checks (Module A) — AN: NOT_COMPUTABLE · branch=share_count_growth · reason=share count history unavailable
-       177  stopped at 1 health checks (Module A) — UNIVERSE: FAIL · value=N,N,N · threshold=N,N,N · branch=adv
-       149  stopped at 1 health checks (Module A) — AN: FAIL · value=N · reason=could not be classified
-       120  stopped at 1 health checks (Module A) — AN: NOT_COMPUTABLE · value=N · reason=no grouping reached N computable members
-        95  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=sector · group=Services · group_median=N · debt_
-        75  stopped at 1 health checks (Module A) — AN: FAIL · value=-N,N,N · threshold=N · branch=operating_cash_flow · reason=neither branch
-        52  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=current_ratio · reason=neither branch satisfied 
-        50  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=profitable · reason=GAAP profit not backed by op
-        46  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · reason=share count +N%/yr · share_count_cagr=N · checke
-        45  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=-N · branch=sector · group=Services · group_median=-N · deb
-        40  stopped at 2 fair value (Module B) — DataUnavailable: beta: no name-level beta and no group median beta
-        37  stopped at 2 fair value (Module B) — DataUnavailable: revenue_history: BN needs N years of revenue to cap growth
-        37  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=industry · group=Services-Help Supply Services ·
-        35  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=industry · group=Pharmaceutical Preparations · g
-        31  stopped at 1 health checks (Module A) — AN: FAIL · value=-N · threshold=N · branch=profitable · reason=GAAP profit not backed by o
-        26  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=industry · group=Oil & Gas Field Services, NEC ·
-        23  stopped at 2 fair value (Module B) — MethodRefused: CIKN: no positive base cash flow and no terminal margin
-        20  stopped at 1 health checks (Module A) — AN: NOT_COMPUTABLE · reason=TTM operating cash flow not computable
-        20  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=industry · group=Crude Petroleum & Natural Gas ·
-        17  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=-N · branch=sector · group=Manufacturing · group_median=-N 
-        17  stopped at 1 health checks (Module A) — AN: NOT_COMPUTABLE · reason=only N trailing quarters available, need N
-        14  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=-N · branch=industry · group=Services-Help Supply Services 
-        13  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · reason=negative shareholder equity with negative operat
-        11  stopped at 3 valuation anchors (Module C) — both anchors uncomputable
-         9  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=industry · group=Services-Business Services, NEC
-         8  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=sector · group=Transportation & Utilities · grou
-         4  stopped at 2 fair value (Module B) — DataUnavailable: free_cash_flow: BN needs either a base free cash flow or a terminal margi
+    sampled from the SEC filing index (incl. dead companies): 1000
+    stopped filing during the period (died/acquired/delisted): 538
+      of which a price history was found: 24
+    still filing at the end: 462 (priced: 372)
+    WARNING: only 4% of the companies that died could be priced. The unpriced ones could never be bought in this backtest, so the result still leans toward survivors. Treat the CAGR as an upper bound.
+  WHERE CANDIDATES DROPPED OUT (16229 screenings over 129 months; first blocking cause)
+      4132  5 BUY condition failed — conviction N >= N
+      3512  5 signal: NO ACTION
+      1576  5 BUY condition failed — anchors confirm undervaluation (SINGLE (CN only))
+      1409  5 BUY condition failed — discount -N% >= gate N% (SINGLE-ANCHOR +Npp)
+       983  5 BUY condition failed — anchors confirm undervaluation (DUAL)
+       841  5 BUY condition failed — discount N% >= gate N% (SINGLE-ANCHOR +Npp)
+       769  5 BUY condition failed — discount -N% >= gate N%
+       662  5 signal: REVIEW
+       380  5 BUY condition failed — discount N% >= gate N%
+        56  5 signal: BUY
+      1857  stopped at 1 health checks (Module A) — AN: NOT_COMPUTABLE · reason=leverage not computable
+      1526  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=sector · group=Manufacturing · group_median=N · 
+      1516  stopped at 1 health checks (Module A) — AN: FAIL · value=N · reason=satisfied no classification's criteria · considered=[]
+       619  stopped at 1 health checks (Module A) — AN: FAIL · value=N · reason=could not be classified
+       570  stopped at 1 health checks (Module A) — UNIVERSE: FAIL · value=N,N,N · threshold=N,N,N · branch=adv
+       532  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=pre_profit_runway · ttm_ocf=-N
+       466  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=sector · group=Services · group_median=N · debt_
+       448  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=profitable · reason=GAAP profit not backed by op
+       323  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=industry · group=Pharmaceutical Preparations · g
+       304  stopped at 2 fair value (Module B) — MethodRefused: CIKN: no positive base cash flow and no terminal margin
+       295  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=-N · branch=sector · group=Finance, Insurance & Real Estate
+       275  stopped at 1 health checks (Module A) — AN: NOT_COMPUTABLE · branch=share_count_growth · reason=share count history unavailable
+       246  stopped at 3 valuation anchors (Module C) — both anchors uncomputable
+       201  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · reason=share count +N%/yr · share_count_cagr=N · checke
+       198  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=sector · group=Retail Trade · group_median=N · d
+       169  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=current_ratio · reason=neither branch satisfied 
+       140  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=-N · branch=industry · group=Trucking (No Local) · group_me
+       139  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=industry · group=Trucking (No Local) · group_med
+       134  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=sector · group=Mining · group_median=N · debt_ba
+       121  stopped at 1 health checks (Module A) — AN: NOT_COMPUTABLE · value=N · reason=no grouping reached N computable members
+       119  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=industry · group=Hotels & Motels · group_median=
+       113  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=-N · branch=industry · group=Semiconductors & Related Devic
+       113  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=industry · group=Semiconductors & Related Device
+       107  stopped at 1 health checks (Module A) — AN: FAIL · value=-N,N,N · threshold=N · branch=operating_cash_flow · reason=neither branch
+       105  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=industry · group=Retail-Auto Dealers & Gasoline 
+       105  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=industry · group=Oil & Gas Field Services, NEC ·
+        98  stopped at 1 health checks (Module A) — AN: FAIL · value=-N · threshold=N · branch=profitable · reason=GAAP profit not backed by o
+        94  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=industry · group=Services-Business Services, NEC
+        91  stopped at 1 health checks (Module A) — AN: NOT_COMPUTABLE · reason=neither current ratio nor four quarters of operating cash flow
+        85  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=sector · group=Transportation & Utilities · grou
+        83  stopped at 1 health checks (Module A) — AN: NOT_COMPUTABLE · reason=TTM operating cash flow not computable
+        75  stopped at 2 fair value (Module B) — DataUnavailable: revenue_history: BN needs N years of revenue to cap growth
+        56  stopped at 4 conviction (Module D) — CIKN: fair value is non-positive
+        56  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=industry · group=Crude Petroleum & Natural Gas ·
+        49  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=sector · group=Wholesale Trade · group_median=N 
+        46  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=industry · group=Motor Vehicle Parts & Accessori
+        45  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=industry · group=Services-Computer Programming, 
+        44  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=industry · group=Electric Services · group_media
+        39  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=industry · group=Services-Help Supply Services ·
+        39  stopped at 1 health checks (Module A) — AN: NOT_COMPUTABLE · reason=only N trailing quarters available, need N
+        32  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=industry · group=Services-Management Consulting 
+        31  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=-N · branch=industry · group=Services-Computer Programming,
+        29  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=industry · group=Natural Gas Distribution · grou
+        28  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=industry · group=Services-Prepackaged Software ·
+        22  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=-N · branch=industry · group=Services-Help Supply Services 
+        22  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=-N · branch=industry · group=Services-Prepackaged Software 
+        22  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=industry · group=Chemicals & Allied Products · g
+        17  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=industry · group=Real Estate · group_median=N · 
+        17  stopped at 2 fair value (Module B) — DataUnavailable: free_cash_flow: BN needs either a base free cash flow or a terminal margi
+        16  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · reason=negative shareholder equity with negative operat
+        16  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=-N · branch=industry · group=Pharmaceutical Preparations · 
+        15  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=-N · branch=industry · group=Services-Business Services, NE
+        12  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=-N · branch=sector · group=Services · group_median=-N · deb
+        11  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=industry · group=Natural Gas Transmission · grou
+        10  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=-N · branch=industry · group=Finance Services · group_media
+        10  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=industry · group=Mining & Quarrying of  Nonmetal
+         9  stopped at 2 fair value (Module B) — DataUnavailable: revenue_history: BN needs a trailing N-year revenue CAGR
+         8  stopped at 2 fair value (Module B) — MethodRefused: CIKN: base free cash flow is -N,N,N
+         7  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=industry · group=Security & Commodity Brokers, D
+         4  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=industry · group=Industrial Organic Chemicals · 
          3  stopped at 1 health checks (Module A) — AN: FAIL · value=-N,N,N,N · threshold=N · branch=operating_cash_flow · reason=neither bran
-         3  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=sector · group=Mining · group_median=N · debt_ba
-    BUY signals: 18 · positions actually bought: 18
+         3  stopped at 2 fair value (Module B) — MethodRefused: CIKN: negative book value
+         3  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=N · branch=industry · group=Plastic Materials, Synth Resins
+         3  stopped at 1 health checks (Module A) — AN: FAIL · value=N · threshold=-N · branch=industry · group=Retail-Family Clothing Stores 
+         3  stopped at 1 health checks (Module A) — AN: FAIL · value=-Ne+N · threshold=N · branch=operating_cash_flow · reason=neither branch 
+    BUY signals: 56 · positions actually bought: 56
   WHY CANDIDATES WERE NOT VALUED BOTH WAYS (counts over all months)
-      148  C2 missing — no same-industry candidates offered
-       58  C2 missing — 1 of 3 candidates passed (need 4); most rejected on: growth band
-       37  C2 missing — 0 of 1 candidates passed (need 4); most rejected on: growth band
-       33  C2 missing — 3 of 5+ candidates passed (need 4); most rejected on: growth band
-       33  C2 missing — 2 of 5+ candidates passed (need 4); most rejected on: growth band
-       32  C2 missing — 0 of 3 candidates passed (need 4); most rejected on: growth band
-       26  C2 missing — 0 of 2 candidates passed (need 4); most rejected on: growth band
-       25  C2 missing — 1 of 4 candidates passed (need 4); most rejected on: growth band
-       24  C2 missing — 2 of 3 candidates passed (need 4); most rejected on: growth band
-       24  C2 missing — 3 of 3 candidates passed (need 4); most rejected on: none
-       21  C2 missing — 2 of 2 candidates passed (need 4); most rejected on: none
-       20  C2 missing — 1 of 5+ candidates passed (need 4); most rejected on: growth band
+      377  C2 missing — 1 of 1 candidates passed (need 4); most rejected on: none
+      308  C2 missing — 0 of 1 candidates passed (need 4); most rejected on: growth band
+      253  C1 missing — only N years of usable history after CN adjustment (minimum N)
+      179  C2 missing — 0 of 2 candidates passed (need 4); most rejected on: growth band
+      172  C2 missing — 2 of 5+ candidates passed (need 4); most rejected on: growth band
+      155  C2 missing — 3 of 5+ candidates passed (need 4); most rejected on: growth band
+      153  C2 missing — 1 of 5+ candidates passed (need 4); most rejected on: growth band
+      137  C2 missing — 1 of 2 candidates passed (need 4); most rejected on: growth band
+      126  C2 missing — no candidates offered — 3 same-industry, none within the 0.3-3x size band
+      121  C2 missing — no candidates offered — 1 same-industry, none within the 0.3-3x size band
+      120  C2 missing — no candidates offered — no other company in its industry in the screened universe
+      114  C2 missing — 2 of 2 candidates passed (need 4); most rejected on: none
     C1 (own history) missing, by year:
-      2015: 4 of 99 candidates
-      2016: 0 of 97 candidates
-      2017: 0 of 106 candidates
-      2018: 10 of 118 candidates
-      2019: 3 of 118 candidates
-      2020: 5 of 97 candidates
-      2021: 3 of 130 candidates
-      2022: 1 of 126 candidates
-      2023: 0 of 81 candidates
-      2024: 0 of 76 candidates
-      2025: 0 of 85 candidates
+      2015: 16 of 349 candidates
+      2016: 8 of 375 candidates
+      2017: 19 of 365 candidates
+      2018: 11 of 399 candidates
+      2019: 25 of 387 candidates
+      2020: 54 of 359 candidates
+      2021: 37 of 384 candidates
+      2022: 37 of 407 candidates
+      2023: 21 of 392 candidates
+      2024: 35 of 438 candidates
+      2025: 30 of 431 candidates
   RUN TIMING (minutes)
     setup (filing index, sample): 0.0
-    main backtest: 52.0
-    benchmarks: 54.4
-    accuracy check: 0.4
-      main backtest, screen sample: 4.1
-      main backtest, screen peers: 41.1
-      main backtest, evaluate and trade: 6.7
-    report written at: 106.8
+    main backtest: 175.6
+    benchmarks: 0.0
+    accuracy check: 1.8
+      main backtest, screen sample: 17.0
+      main backtest, screen peers: 121.9
+      main backtest, evaluate and trade: 36.5
+    report written at: 177.4
 ==============================================================================
