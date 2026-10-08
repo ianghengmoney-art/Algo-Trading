@@ -209,3 +209,55 @@ the strategy's control. With a market return of 7-10%/yr and an edge of
 1-2%/yr, expect roughly 9-12%/yr. Reaching 15-20% would need an unusually
 strong market, or leverage or concentration, which raise the risk of large
 losses as much as the return; neither is part of any registered variant.
+
+---
+
+# Long-history premise check — registered 2026-10-08, before any data was downloaded
+
+The stock-level backtest cannot reach before 2012: the SEC's machine-readable
+financial data begins in 2009-2011. The idea behind the strategy (cheap,
+profitable, rising stocks beat the market) can be tested much further back
+with Kenneth French's free data library (Dartmouth), built from CRSP and
+Compustat: monthly returns of portfolios sorted on exactly these
+characteristics, from 1963, survivorship-free, through the 2000-02 and
+2008-09 crashes.
+
+It tests the **premise**, not the exact strategy: French's portfolios use
+his definitions and annual (momentum: monthly) re-sorting, not our ranks.
+
+## Proxies (monthly, each theme equal-weighted, rebalanced monthly)
+
+From the 2x3 size-by-characteristic portfolios, value-weighted returns of
+the **high** third ("Hi") in **big** stocks (above the NYSE median) and,
+separately, small stocks:
+
+| Proxy | Themes |
+|---|---|
+| A (variant 1's idea) | value = mean(high E/P, high CF/P); profitability = high operating profitability; momentum = high prior 2-12 month return |
+| B (variants 2-3's idea) | A's three themes, plus low accruals (lowest quintile) and low net share issuance (no net issuance, i.e. buybacks), from the univariate portfolio files, where each is available |
+
+A cost of **0.5%/yr** is subtracted from every proxy (French's returns carry
+no trading costs). The market is French's market return including
+dividends (Mkt-RF + RF).
+
+## Reported
+
+Compound return, excess over the market, monthly t-statistic and worst fall,
+for 1995-2025 (30 years) and from 1963 to the latest month; each decade of
+1995-2025; and the §13.2 windows 2000-02 and 2008-09.
+
+## Supports the premise if the big-company Proxy A
+
+1. beats the market over 1995-2025, **and**
+2. beats it over the full history from 1963, **and**
+3. beats it in at least 2 of the 3 decades 1995-2004, 2005-2014, 2015-2025.
+
+If it does not, the stock-level result is more likely luck or this decade
+than a lasting edge, and that is said plainly. The check never changes a
+registered variant or the choice between them.
+
+## Stock-level extension
+
+The winning variant is also run from **2012-01-01**, the earliest start the
+SEC data supports, as a robustness check reported alongside the registered
+2015-2025 result. It does not change the selection.
