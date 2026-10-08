@@ -247,7 +247,7 @@ def report(market: Series, proxies: list[Proxy]) -> tuple[list[str], bool | None
     first = min(market) if market else None
     periods = [("30 years 1995-2025", *THIRTY_YEARS)]
     if first:
-        periods.append((f"full history from {str(first)[:4]}", first, 999912))
+        periods.append(("full history", first, 999912))
     verdict: bool | None = None
     for proxy in proxies:
         lines.append(proxy.name + (f"  ({proxy.note})" if proxy.note else ""))
