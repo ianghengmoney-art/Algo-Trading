@@ -37,6 +37,20 @@ DEFAULT_BOOK = Path("reports/paper/book.json")
 DEFAULT_REPORT = Path("reports/paper/report.txt")
 
 
+def _paper_defaults() -> tuple[str, int]:
+    """Which strategy paper-trades, from scripts/backtest_defaults.json
+    ("paper_strategy", "paper_variant"). GCFP until a factor variant passes
+    its pre-registered test; then that variant, by changing the file."""
+    import json
+
+    path = Path(__file__).resolve().parent / "backtest_defaults.json"
+    try:
+        raw = json.loads(path.read_text())
+    except (OSError, ValueError):
+        raw = {}
+    return raw.get("paper_strategy", "gcfp"), int(raw.get("paper_variant", 1))
+
+
 def parse_args(argv=None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -55,7 +69,29 @@ def parse_args(argv=None) -> argparse.Namespace:
                         help="give up on this month's rebalance after this long; "
                              "the book is then left exactly as it was")
     parser.add_argument("--progress", action="store_true")
-    return parser.parse_args(argv)
+    strategy, variant = _paper_defaults()
+    parser.add_argument("--strategy", choices=("gcfp", "factor"), default=strategy)
+    parser.add_argument("--variant", type=int, choices=(1, 2, 3), default=variant)
+    args = parser.parse_args(argv)
+    if args.strategy == "factor":
+        # Each strategy keeps its own book: the GCFP one is not overwritten.
+        if args.book == DEFAULT_BOOK:
+            args.book = Path(f"reports/paper/factor-v{args.variant}-book.json")
+        if args.out == DEFAULT_REPORT:
+            args.out = Path(f"reports/paper/factor-v{args.variant}-report.txt")
+    return args
+
+
+def make_backtester(args, adapter, config, settings, symbols, **kwargs):
+    if args.strategy == "factor":
+        from gcfp.backtest.factor import FactorBacktester, rules_for
+
+        kwargs.pop("peer_pool", None)  # the factor strategy uses no peers
+        return FactorBacktester(
+            adapter, config, settings, symbols, label=f"paper factor v{args.variant}",
+            rules=rules_for(args.variant), **kwargs,
+        )
+    return Backtester(adapter, config, settings, symbols, label="paper", **kwargs)
 
 
 def build(args, state: paper.PaperState | None, today: date):
@@ -70,7 +106,7 @@ def build(args, state: paper.PaperState | None, today: date):
         symbols = state.symbols if state else [
             s for s in sorted(adapter.companies) if not s.startswith("^")
         ]
-        return Backtester(adapter, config, settings, symbols, label="paper"), symbols
+        return make_backtester(args, adapter, config, settings, symbols), symbols
 
     from gcfp.data.pit_universe import load_filer_index, sample_symbols, symbol_cik
     from gcfp.runner import build_free_adapter
@@ -88,10 +124,13 @@ def build(args, state: paper.PaperState | None, today: date):
         cik = symbol_cik(symbol)
         return cik is None or index.is_live(cik, as_of)
 
-    backtester = Backtester(
-        adapter, config, settings, symbols, label="paper",
+    backtester = make_backtester(
+        args, adapter, config, settings, symbols,
         eligibility=eligibility,
-        peer_pool=industry_peer_pool(adapter, symbols, args.peers_per_name),
+        peer_pool=(
+            industry_peer_pool(adapter, symbols, args.peers_per_name)
+            if args.strategy == "gcfp" else None
+        ),
         member_cache={},
     )
     return backtester, symbols
