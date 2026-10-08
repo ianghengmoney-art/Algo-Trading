@@ -178,6 +178,7 @@ def rebalance(
         for f in state.book.fills[fills_before:]
     ]
     state.log.append({
+        "crashes": dict(getattr(backtester, "crashes", {})),
         "trades": trades,
         "date": today.isoformat(),
         "evaluated": record.evaluated,
@@ -202,6 +203,44 @@ def mark_to_market(backtester: Backtester, state: PaperState, today: date) -> No
     state.book.mark(prices)
     benchmark = backtester._price_on(backtester.settings.benchmark_symbol, today)
     state.book.snapshot(today, prices, benchmark)
+
+
+#: docs/FACTOR_STRATEGY.md, stage 2.
+STAGE_TWO_REBALANCES = 3
+STAGE_TWO_MAX_BEHIND = 0.15
+
+
+def stage_two_status(state: PaperState) -> list[str]:
+    """The registered paper-trading conditions, checked every week."""
+    done = len(state.log)
+    crashes = sum(sum((e.get("crashes") or {}).values()) for e in state.log)
+    unpriced = [s for s, p in state.book.positions.items() if p.missed_marks > 1]
+    snaps = state.book.snapshots
+    behind = None
+    if snaps and snaps[0].benchmark_level and snaps[-1].benchmark_level:
+        mine = snaps[-1].total_value / snaps[0].total_value - 1
+        index = snaps[-1].benchmark_level / snaps[0].benchmark_level - 1
+        behind = index - mine
+    ok_runs = done >= STAGE_TWO_REBALANCES
+    ok_errors = crashes == 0 and not unpriced
+    ok_gap = behind is None or behind <= STAGE_TWO_MAX_BEHIND
+    verdict = (
+        "PASSED — stage 3 (real money, 10-20% to start) may begin"
+        if ok_runs and ok_errors and ok_gap else
+        "REVIEW — more than 15% behind the index" if not ok_gap else
+        "FIX — errors or unpriced holdings; the three months restart once fixed"
+        if not ok_errors else
+        "in progress"
+    )
+    return [
+        "STAGE 2 STATUS (docs/FACTOR_STRATEGY.md)",
+        f"  monthly rebalances completed: {done} of {STAGE_TWO_REBALANCES}",
+        f"  evaluation errors: {crashes} · holdings unpriced for over a month: "
+        f"{len(unpriced)}",
+        "  behind the S&P 500 since the start: "
+        + (f"{behind:+.1%} (limit {STAGE_TWO_MAX_BEHIND:.0%})" if behind is not None else "n/a"),
+        f"  status: {verdict}",
+    ]
 
 
 def report(
@@ -280,6 +319,8 @@ def report(
                 + f" · about ${t['price']:,.2f} a share · {t['reason']}"
             )
 
+    lines.extend(["", *stage_two_status(state)])
+
     lines.extend(["", "MONTHLY REBALANCES"])
     if not state.log:
         lines.append("  none yet")
@@ -302,6 +343,7 @@ def report(
 
 __all__ = [
     "PaperState",
+    "stage_two_status",
     "book_from_dict",
     "book_to_dict",
     "load_state",

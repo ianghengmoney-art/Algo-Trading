@@ -105,3 +105,27 @@ class TestWeeklyRuns:
         assert after.book.cash >= 0
         assert after.book.positions.keys() == before.book.positions.keys()
         assert "did not finish" in (tmp_path / "report.txt").read_text()
+
+
+class TestStageTwoStatus:
+    def test_three_clean_rebalances_pass(self):
+        from gcfp.backtest.portfolio import Snapshot
+
+        state = paper.PaperState(date(2026, 10, 11), [], BacktestBook(cash=100.0))
+        state.log = [{"date": f"2026-{m}-01", "crashes": {}} for m in (10, 11, 12)]
+        state.book.snapshots = [
+            Snapshot(date(2026, 10, 11), 100.0, 100.0, 0.0, 0, 100.0, 0.0, 0.0, 5000.0),
+            Snapshot(date(2027, 1, 3), 104.0, 104.0, 0.0, 0, 104.0, 0.0, 0.0, 5100.0),
+        ]
+        assert "PASSED" in "\n".join(paper.stage_two_status(state))
+
+    def test_falling_far_behind_triggers_a_review(self):
+        from gcfp.backtest.portfolio import Snapshot
+
+        state = paper.PaperState(date(2026, 10, 11), [], BacktestBook(cash=100.0))
+        state.log = [{"crashes": {}}] * 3
+        state.book.snapshots = [
+            Snapshot(date(2026, 10, 11), 100.0, 100.0, 0.0, 0, 100.0, 0.0, 0.0, 5000.0),
+            Snapshot(date(2027, 1, 3), 80.0, 80.0, 0.0, 0, 80.0, 0.0, 0.0, 5000.0),
+        ]
+        assert "REVIEW" in "\n".join(paper.stage_two_status(state))
