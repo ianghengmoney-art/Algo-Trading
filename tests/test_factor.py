@@ -94,3 +94,45 @@ class TestVerdict:
         flat = [100 * 1.105 ** i for i in range(11)]
         result, _ = self.result_with(flat, index)
         assert not judge(result, universe, split).passed, "0.5%/yr is under the 1% bar"
+
+
+class TestVariantsTwoAndThree:
+    def test_low_accruals_and_buybacks_rank_high(self):
+        from gcfp.backtest.factor import theme_scores
+
+        base = dict(ebit_ev=0.1, fcf_ev=0.1, gross_profitability=0.3,
+                    momentum=0.1, earnings_growth=0.01)
+        inputs = {
+            "clean": FactorInputs(**base, accruals=-0.05, share_growth=-0.03),
+            "dirty": FactorInputs(**base, accruals=0.10, share_growth=0.20),
+        }
+        scores = theme_scores(inputs)
+        assert scores["clean"] > scores["dirty"]
+
+    def test_three_of_four_themes_are_required(self):
+        from gcfp.backtest.factor import theme_scores
+
+        inputs = {
+            "three": FactorInputs(ebit_ev=0.1, gross_profitability=0.2, momentum=0.1),
+            "two": FactorInputs(ebit_ev=0.1, momentum=0.1),
+        }
+        assert set(theme_scores(inputs)) == {"three"}
+
+    def test_a_non_positive_enterprise_value_gives_no_ev_yield(self):
+        from dataclasses import replace
+
+        from tests.conftest import build_company
+
+        company = build_company()
+        latest = replace(company.quarterly[0], total_debt=0.0, cash_and_equivalents=500e9)
+        company = replace(company, quarterly=[latest, *company.quarterly[1:]])
+        out = factor_inputs(company, market_cap=100e9, momentum=None)
+        assert out.ebit_ev is None and out.fcf_ev is None
+
+    def test_registered_rules(self):
+        from gcfp.backtest.factor import rules_for
+
+        assert rules_for(3).min_market_cap == 2e9 and rules_for(3).holdings == 30
+        assert rules_for(1).min_market_cap is None
+        with pytest.raises(ValueError):
+            rules_for(4)

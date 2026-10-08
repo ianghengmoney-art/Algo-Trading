@@ -111,17 +111,26 @@ def parse_args() -> argparse.Namespace:
             "says."
         ),
     )
+    parser.add_argument(
+        "--variant", type=int, choices=(1, 2, 3),
+        default=int(_defaults().get("variant", 1)),
+        help="which registered factor variant (docs/FACTOR_STRATEGY.md)",
+    )
     return parser.parse_args()
 
 
-def default_strategy() -> str:
+def _defaults() -> dict:
     path = Path(__file__).resolve().parent / "backtest_defaults.json"
     try:
         import json
 
-        return json.loads(path.read_text()).get("strategy", "gcfp")
+        return json.loads(path.read_text())
     except (OSError, ValueError):
-        return "gcfp"
+        return {}
+
+
+def default_strategy() -> str:
+    return _defaults().get("strategy", "gcfp")
 
 
 def read_symbol_file(path: Path) -> list[str]:
@@ -219,15 +228,18 @@ def run_factor(
     member_cache, benchmark_text, minutes, until_end_less, survivorship_lines,
 ) -> int:
     """The pre-registered factor strategy (docs/FACTOR_STRATEGY.md)."""
-    from gcfp.backtest.factor import VARIANT, FactorBacktester, judge
+    from gcfp.backtest.factor import FactorBacktester, judge, rules_for
+
+    VARIANT = args.variant
     from gcfp.backtest.metrics import max_drawdown, picks_vs_index, summarise
 
     backtester = FactorBacktester(
         adapter, config, settings, symbols, label="Factor strategy",
         split=split, eligibility=eligibility, member_cache=member_cache,
+        rules=rules_for(VARIANT),
     )
     run = backtester.run(progress=args.progress, deadline=until_end_less(8))
-    verdict = judge(run, backtester.universe_curve, split)
+    verdict = judge(run, backtester.universe_curve, split, VARIANT)
     summary = summarise("Factor strategy", run.equity_curve, run.book.closed,
                         run.benchmark_curve)
     versus = picks_vs_index(run.book.closed, run.benchmark_curve, run.book.snapshots)
@@ -238,7 +250,8 @@ def run_factor(
     def lines(extra: list[str]) -> list[str]:
         out = [
             "=" * 78,
-            f"FACTOR STRATEGY — variant {VARIANT} of docs/FACTOR_STRATEGY.md",
+            f"FACTOR STRATEGY — variant {VARIANT} of 3 in docs/FACTOR_STRATEGY.md "
+            f"(sample of {len(symbols)} companies)",
             "=" * 78,
             f"period: {settings.start.isoformat()}..{settings.end.isoformat()} · "
             f"earlier half to {split.train_end.isoformat()}, later half from "

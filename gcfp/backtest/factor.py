@@ -30,9 +30,13 @@ VARIANT = 1
 
 @dataclass(frozen=True)
 class FactorRules:
+    #: Which registered variant (docs/FACTOR_STRATEGY.md): 1, 2 or 3.
+    variant: int = 1
     holdings: int = 30
     buffer_rank: int = 60
     min_scores: int = 2
+    #: Variant 3 keeps only companies at least this large on the date.
+    min_market_cap: float | None = None
     #: Momentum window: from 12 months to 1 month before the date.
     momentum_from_days: int = 365
     momentum_to_days: int = 30
@@ -65,6 +69,24 @@ class FactorInputs:
     fcf_yield: float | None = None
     profitability: float | None = None
     momentum: float | None = None
+    # Variants 2 and 3.
+    ebit_ev: float | None = None
+    fcf_ev: float | None = None
+    gross_profitability: float | None = None
+    accruals: float | None = None
+    share_growth: float | None = None
+    earnings_growth: float | None = None
+
+
+def rules_for(variant: int) -> "FactorRules":
+    """The registered rules for a variant number."""
+    if variant == 1:
+        return FactorRules(variant=1, min_scores=2)
+    if variant == 2:
+        return FactorRules(variant=2, min_scores=3)
+    if variant == 3:
+        return FactorRules(variant=3, min_scores=3, min_market_cap=2_000_000_000.0)
+    raise ValueError(f"variant {variant} is not registered in docs/FACTOR_STRATEGY.md")
 
 
 def factor_inputs(
@@ -83,20 +105,77 @@ def factor_inputs(
     quarters = data.trailing_quarters(4)
     latest = data.latest_quarter
     assets = latest.total_assets if latest is not None else None
-    if len(quarters) == 4 and assets and assets > 0:
+    ttm_ebit = None
+    if len(quarters) == 4:
         ebit = [
             q.operating_income if q.operating_income is not None else q.ebit
             for q in quarters
         ]
         if all(v is not None for v in ebit):
-            out.profitability = sum(ebit) / assets
+            ttm_ebit = sum(ebit)
+    if ttm_ebit is not None and assets and assets > 0:
+        out.profitability = ttm_ebit / assets
+
+    # Variants 2 and 3.
+    net_debt = latest.net_debt if latest is not None else None
+    if market_cap and market_cap > 0 and net_debt is not None:
+        ev = market_cap + net_debt
+        # An enterprise value at or below zero makes the ratio meaningless
+        # (it would rank the cheapest companies as the dearest).
+        if ev > 0:
+            if ttm_ebit is not None:
+                out.ebit_ev = ttm_ebit / ev
+            if out.fcf_yield is not None:
+                out.fcf_ev = out.fcf_yield * market_cap / ev
+    if assets and assets > 0:
+        gross = a_health._ttm(data, "gross_profit")
+        if gross is not None:
+            out.gross_profitability = gross / assets
+        net_income = a_health._ttm(data, "net_income")
+        ocf = a_health._ttm(data, "operating_cash_flow")
+        if net_income is not None and ocf is not None:
+            out.accruals = (net_income - ocf) / assets
+        eight = data.trailing_quarters(8)
+        if len(eight) == 8 and all(q.net_income is not None for q in eight):
+            recent = sum(q.net_income for q in eight[:4])
+            prior = sum(q.net_income for q in eight[4:])
+            out.earnings_growth = (recent - prior) / assets
+    out.share_growth = a_health.share_count_cagr(data, years=1)
+    return out
+
+
+def _ranks(inputs: dict[str, FactorInputs], attr: str, sign: float = 1.0) -> dict[str, float]:
+    return percentile_ranks({
+        s: sign * getattr(i, attr) for s, i in inputs.items()
+        if getattr(i, attr) is not None
+    })
+
+
+def theme_scores(inputs: dict[str, FactorInputs], min_themes: int = 3) -> dict[str, float]:
+    """Variants 2 and 3: four themes, each the mean of its available
+    component ranks; the composite is the mean of the themes."""
+    themes = [
+        [_ranks(inputs, "ebit_ev"), _ranks(inputs, "fcf_ev")],               # value
+        [_ranks(inputs, "gross_profitability"), _ranks(inputs, "accruals", -1.0)],  # quality
+        [_ranks(inputs, "share_growth", -1.0)],                              # shareholder yield
+        [_ranks(inputs, "momentum"), _ranks(inputs, "earnings_growth")],     # momentum
+    ]
+    out: dict[str, float] = {}
+    for symbol in inputs:
+        scores = []
+        for components in themes:
+            parts = [r[symbol] for r in components if symbol in r]
+            if parts:
+                scores.append(statistics.fmean(parts))
+        if len(scores) >= min_themes:
+            out[symbol] = statistics.fmean(scores)
     return out
 
 
 def composite_scores(
     inputs: dict[str, FactorInputs], min_scores: int = 2
 ) -> dict[str, float]:
-    """Mean of the value, profitability and momentum percentile ranks."""
+    """Variant 1: mean of the value, profitability and momentum ranks."""
     ey = percentile_ranks(
         {s: i.earnings_yield for s, i in inputs.items() if i.earnings_yield is not None}
     )
@@ -181,6 +260,11 @@ class FactorBacktester(Backtester):
 
         universe = self.universe_builder(adapter, self.config, as_of)
         eligible = [m for m in universe.included if not (m.is_bank or m.is_insurer)]
+        if rules.min_market_cap is not None:
+            eligible = [
+                m for m in eligible
+                if m.market_cap is not None and m.market_cap >= rules.min_market_cap
+            ]
         inputs: dict[str, FactorInputs] = {}
         tags: dict[str, Classification] = {}
         for member in eligible:
@@ -203,7 +287,10 @@ class FactorBacktester(Backtester):
                 continue
             tags[member.symbol] = tag or Classification.CORE_STABLE
 
-        scores = composite_scores(inputs, rules.min_scores)
+        scores = (
+            composite_scores(inputs, rules.min_scores) if rules.variant == 1
+            else theme_scores(inputs, rules.min_scores)
+        )
         ranked = sorted(scores, key=lambda s: -scores[s])
         rank_of = {s: i for i, s in enumerate(ranked)}
         record.evaluated = len(ranked)
@@ -281,7 +368,11 @@ class Verdict:
     passed: bool = False
 
 
-def judge(result: BacktestResult, universe_curve, split) -> Verdict:
+#: The operator's goal, reported against but never used to lower the bar.
+GOAL_EXCESS = 0.05
+
+
+def judge(result: BacktestResult, universe_curve, split, variant: int = VARIANT) -> Verdict:
     """The pre-registered pass criteria, applied once."""
     curve, bench = result.equity_curve, result.benchmark_curve
     full = (curve[0][0], curve[-1][0]) if curve else (None, None)
@@ -319,10 +410,18 @@ def judge(result: BacktestResult, universe_curve, split) -> Verdict:
     ]
     lines.append("")
     lines.append("PRE-REGISTERED PASS CRITERIA (docs/FACTOR_STRATEGY.md, variant "
-                 f"{VARIANT}):")
+                 f"{variant} of 3 registered):")
     for text, ok in checks:
         lines.append(f"  [{'PASS' if ok else 'FAIL'}] {text}")
     passed = all(ok for _, ok in checks)
+    goal = (
+        beats("earlier half", GOAL_EXCESS) and beats("later half", GOAL_EXCESS)
+        and beats("full period", GOAL_EXCESS)
+    )
+    lines.append(
+        f"  GOAL ({GOAL_EXCESS:.0%}/yr above the S&P 500 in both halves and overall): "
+        + ("MET" if goal else "not met")
+    )
     lines.append(
         "  VERDICT: " + (
             "PASSED — proceed to paper trading before any real money."
@@ -344,4 +443,6 @@ __all__ = [
     "factor_inputs",
     "judge",
     "percentile_ranks",
+    "rules_for",
+    "theme_scores",
 ]
