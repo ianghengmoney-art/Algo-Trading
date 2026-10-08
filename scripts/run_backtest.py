@@ -29,6 +29,7 @@ from datetime import date, datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from gcfp.backtest.accuracy import measure_accuracy
 from gcfp.backtest.engine import Backtester, BacktestSettings, WalkForwardSplit
@@ -235,6 +236,25 @@ def run_factor(
     VARIANT = args.variant
     from gcfp.backtest.metrics import max_drawdown, picks_vs_index, summarise
 
+    # The registered long-history premise check: a few small downloads, run
+    # first so a slow backtest cannot crowd it out.
+    long_history = "not run"
+    try:
+        from gcfp.backtest import longhistory
+        from run_long_history import DEFAULT_OUT, http_get
+
+        text_lh, verdict_lh = longhistory.run(http_get, args.cache_dir)
+        DEFAULT_OUT.parent.mkdir(parents=True, exist_ok=True)
+        DEFAULT_OUT.write_text(text_lh)
+        long_history = (
+            "SUPPORTS the premise" if verdict_lh else
+            "DOES NOT SUPPORT the premise" if verdict_lh is False else
+            "not determined"
+        ) + f" (full report: {DEFAULT_OUT})"
+        print(text_lh, file=sys.stderr)
+    except Exception as exc:
+        long_history = f"failed: {type(exc).__name__}: {exc}"
+
     backtester = FactorBacktester(
         adapter, config, settings, symbols, label="Factor strategy",
         split=split, eligibility=eligibility, member_cache=member_cache,
@@ -281,6 +301,7 @@ def run_factor(
             f"earlier half to {split.train_end.isoformat()}, later half from "
             f"{split.test_start.isoformat()}",
             f"spare money and benchmark: {benchmark_text}",
+            f"long-history premise check (1963 onward): {long_history}",
             "",
             "RETURNS (per year)",
             *[f"  {l}" for l in verdict.lines],
