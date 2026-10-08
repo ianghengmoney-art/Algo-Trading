@@ -1,7 +1,7 @@
 {
   "strategy": "factor",
   "_comment": "strategy/variant: what the workflow's backtest job runs on this branch ('factor' per docs/FACTOR_STRATEGY.md, or 'gcfp'). paper_strategy/paper_variant: what the weekly job paper-trades; switched to a factor variant only if it passes its pre-registered test.",
-  "variant": 1,
+  "variant": 2,
   "paper_strategy": "gcfp",
   "paper_variant": 1
 }

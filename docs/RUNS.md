@@ -5,7 +5,7 @@ https://github.com/ianghengmoney-art/Algo-Trading/actions/workflows/gcfp.yml
 
 | Run | What | Outcome |
 |---|---|---|
-| [#19](https://github.com/ianghengmoney-art/Algo-Trading/actions/runs/37770217326) | Factor strategy, variant 1, 1,000 companies | running |
+| [#19](https://github.com/ianghengmoney-art/Algo-Trading/actions/runs/37770217326) | Factor strategy, variant 1, 1,000 companies | **PASSED** all 4 criteria: +15.63%/yr vs S&P 500 TR +14.03% (+1.60%/yr); earlier half +2.12%/yr, later half +1.64%/yr; 19 min |
 | [#18](https://github.com/ianghengmoney-art/Algo-Trading/actions/runs/37479304024) | GCFP v4, every data fix, 1,000 companies | +14.00%/yr vs S&P 500 TR +14.03%; picks trailed the index (median -4.4%, 26 of 56 beat it); two Module I break criteria tripped |
 | [#17](https://github.com/ianghengmoney-art/Algo-Trading/actions/runs/37472717161) | GCFP v4 | cancelled: ran code from before the dividend and leap-day fixes |
 | [#16](https://github.com/ianghengmoney-art/Algo-Trading/actions/runs/37466571026) | GCFP v4 | cancelled: ran code from before the split-basis fix |
