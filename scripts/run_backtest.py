@@ -228,7 +228,9 @@ def run_factor(
     member_cache, benchmark_text, minutes, until_end_less, survivorship_lines,
 ) -> int:
     """The pre-registered factor strategy (docs/FACTOR_STRATEGY.md)."""
-    from gcfp.backtest.factor import FactorBacktester, judge, rules_for
+    from gcfp.backtest.factor import (
+        FactorBacktester, edge_statistics, judge, rules_for, write_run_data,
+    )
 
     VARIANT = args.variant
     from gcfp.backtest.metrics import max_drawdown, picks_vs_index, summarise
@@ -246,6 +248,28 @@ def run_factor(
     counts = backtester.eligible_counts
     held = [s.position_count for s in run.book.snapshots]
     sells = sum(len(r.sells) for r in run.rebalances)
+    years = max((settings.end - settings.start).days / 365.25, 0.1)
+    turnover = sells / years / max(backtester.rules.holdings, 1)
+    stats = edge_statistics(run.equity_curve, run.benchmark_curve,
+                            backtester.universe_curve)
+
+    def ticker_of(symbol: str) -> str:
+        resolve = getattr(adapter, "_price_symbol", None)
+        try:
+            resolved = resolve(symbol) if resolve else None
+        except Exception:
+            resolved = None
+        return resolved[0] if resolved else ""
+
+    data_files: list[str] = []
+    if args.out and run.book.snapshots:
+        try:
+            data_files = write_run_data(
+                Path("reports") / f"factor-v{VARIANT}", run,
+                backtester.universe_curve, ticker_of,
+            )
+        except Exception as exc:  # the report matters more than the CSVs
+            data_files = [f"(run data not written: {type(exc).__name__}: {exc})"]
 
     def lines(extra: list[str]) -> list[str]:
         out = [
@@ -261,6 +285,8 @@ def run_factor(
             "RETURNS (per year)",
             *[f"  {l}" for l in verdict.lines],
             "",
+            *stats,
+            "",
             *[l for l in summary.as_report_lines() if "Module I" not in l],
         ]
         if versus is not None:
@@ -273,7 +299,8 @@ def run_factor(
             f"holdings per month: median {sorted(held)[len(held) // 2] if held else 0}"
             f" · eligible companies ranked per month: median "
             f"{sorted(counts)[len(counts) // 2] if counts else 0}",
-            f"positions sold over the period: {sells}",
+            f"positions sold over the period: {sells} · about "
+            f"{turnover:.0%} of the portfolio replaced per year",
         ]
         if run.stopped_early_at is not None:
             out.append(f"STOPPED EARLY at {run.stopped_early_at.isoformat()}: "
@@ -291,6 +318,7 @@ def run_factor(
             f"  Holdings closed as delisted at {settings.delisting_return:+.0%}: "
             f"{run.assumed_delistings}.",
             *[f"  {l}" for l in extra],
+            *[f"  full data: {f}" for f in data_files],
             f"  run time: {minutes():.0f} min",
             "=" * 78,
         ]

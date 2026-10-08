@@ -368,6 +368,92 @@ class Verdict:
     passed: bool = False
 
 
+def _monthly_returns(curve: Sequence[tuple[date, float]]) -> dict[date, float]:
+    out: dict[date, float] = {}
+    for (_, before), (day, after) in zip(curve, curve[1:]):
+        if before and before > 0:
+            out[day] = after / before - 1.0
+    return out
+
+
+def edge_statistics(curve, benchmark, universe_curve=()) -> list[str]:
+    """How much of the excess return could be luck.
+
+    Informational, not a pass criterion: the criteria were registered
+    without it. A t-statistic below about 2 is what luck alone often
+    produces; with three variants tried, about 2.4 is the bar for strong
+    evidence (a Bonferroni allowance for the extra chances).
+    """
+    strat, bench = _monthly_returns(curve), _monthly_returns(benchmark)
+    days = sorted(set(strat) & set(bench))
+    lines: list[str] = []
+    if len(days) >= 12:
+        excess = [strat[d] - bench[d] for d in days]
+        mean = statistics.fmean(excess)
+        sd = statistics.stdev(excess)
+        t = mean / (sd / len(excess) ** 0.5) if sd > 0 else float("nan")
+        te = sd * 12 ** 0.5
+        ahead = sum(1 for e in excess if e > 0) / len(excess)
+        lines += [
+            "HOW LIKELY IS THE EDGE REAL? (monthly returns against the S&P 500)",
+            f"  months: {len(excess)} · ahead in {ahead:.0%} of them",
+            f"  average excess: {mean * 12:+.2%}/yr · tracking error {te:.1%}/yr · "
+            f"information ratio {mean * 12 / te:+.2f}" if te > 0 else
+            f"  average excess: {mean * 12:+.2%}/yr",
+            f"  t-statistic: {t:+.2f}  (below ~2: consistent with luck; "
+            "~2.4+: strong evidence allowing for 3 variants tried)",
+        ]
+    years = sorted({d.year for d, _ in curve})
+    if len(years) >= 2:
+        def by_year(points):
+            ends: dict[int, float] = {}
+            for d, v in points:
+                ends[d.year] = v
+            return ends
+
+        s_end, b_end, u_end = by_year(curve), by_year(benchmark), by_year(universe_curve)
+
+        def pct(ends, year):
+            if year in ends and year - 1 in ends and ends[year - 1]:
+                return f"{ends[year] / ends[year - 1] - 1:+.1%}"
+            return "n/a"
+
+        lines += ["", "YEAR BY YEAR (calendar years, from each December's value)",
+                  f"  {'year':6s} {'strategy':>9s} {'S&P 500':>9s} {'eq-wt univ':>11s}"]
+        for year in years[1:]:
+            lines.append(f"  {year:<6d} {pct(s_end, year):>9s} {pct(b_end, year):>9s} "
+                         f"{pct(u_end, year):>11s}")
+    return lines
+
+
+def write_run_data(path_prefix, result: BacktestResult, universe_curve, ticker_of) -> list[str]:
+    """Curves and every fill as CSV, so a run can be re-analysed without
+    being rerun. Returns the paths written."""
+    import csv
+    from pathlib import Path
+
+    prefix = Path(path_prefix)
+    prefix.parent.mkdir(parents=True, exist_ok=True)
+    bench = dict(result.benchmark_curve)
+    univ = dict(universe_curve)
+    curves = prefix.with_name(prefix.name + "-curves.csv")
+    with curves.open("w", newline="") as fh:
+        w = csv.writer(fh)
+        w.writerow(["date", "strategy_value", "sp500_level", "equal_weight_universe", "holdings"])
+        for snap in result.book.snapshots:
+            w.writerow([snap.as_of.isoformat(), f"{snap.total_value:.2f}",
+                        bench.get(snap.as_of, ""), univ.get(snap.as_of, ""),
+                        snap.position_count])
+    trades = prefix.with_name(prefix.name + "-trades.csv")
+    with trades.open("w", newline="") as fh:
+        w = csv.writer(fh)
+        w.writerow(["date", "symbol", "ticker", "side", "shares", "price", "value", "reason"])
+        for f in result.book.fills:
+            w.writerow([f.trade_date.isoformat(), f.symbol, ticker_of(f.symbol), f.side,
+                        f"{f.shares:.4f}", f"{f.price:.4f}", f"{f.value:.2f}", f.reason])
+    return [str(curves), str(trades)]
+
+
 #: The operator's goal, reported against but never used to lower the bar.
 GOAL_EXCESS = 0.05
 
@@ -440,6 +526,8 @@ __all__ = [
     "FactorRules",
     "VARIANT",
     "composite_scores",
+    "edge_statistics",
+    "write_run_data",
     "factor_inputs",
     "judge",
     "percentile_ranks",

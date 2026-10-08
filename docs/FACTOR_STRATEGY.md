@@ -148,3 +148,47 @@ least 1%/yr over the full period, and beats its own equal-weight universe).
 If more than one passes, the one with the higher full-period excess return
 goes to paper trading, which is the final, out-of-sample test. If none
 passes, none goes forward, and the recommendation is an index fund.
+
+---
+
+# After the backtest — paper trading and real money (registered 2026-10-08, before any result)
+
+## Stage 2 — paper trading (the winning variant only; at least 3 monthly rebalances)
+
+Runs automatically with the weekly job: marked to market every week,
+rebalanced on the first run of each month, reported in
+`reports/paper/factor-vN-report.txt` with that month's trades by ticker and
+share of the portfolio.
+
+It **passes** when, over at least three monthly rebalances:
+
+1. every monthly rebalance completed inside the job's time budget (a missed
+   month that the next week's run completes counts as completed);
+2. no evaluation raised an error, and no holding went unpriced for longer
+   than the delisting rule allows without a known reason;
+3. it is not more than 15% behind the S&P 500 total return since the start
+   (three months is far too short to judge an edge, so this only catches a
+   broken pipeline, not bad luck).
+
+A failure on 1 or 2 is fixed and the three months restart. A failure on 3 is
+reviewed before anything else happens.
+
+## Stage 3 — real money (only after stage 2 passes)
+
+- Most of the money stays in a low-cost S&P 500 index fund.
+- The strategy starts with **10-20%** of the money meant for stocks, and is
+  scaled up over 6-12 months only while it behaves as the backtest said
+  (within its tracking error).
+- The system only alerts. Each month's trades are placed by the operator
+  from the report's trade list, scaled to the real portfolio.
+- Real-world costs the backtest does not model, stated now: 30% US
+  withholding tax on dividends for a Singapore resident, currency
+  conversion, and brokerage on roughly 30 names.
+
+## Stage 4 — keeping it honest once live
+
+- Monthly: trade the list. Quarterly: compare with the S&P 500 total return.
+- **Stop rule:** if the strategy trails the S&P 500 total return by more than
+  5%/yr over any rolling three years, stop adding money and review. Shorter
+  stretches behind are expected of factor strategies and are not a reason to
+  quit.

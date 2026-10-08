@@ -162,10 +162,23 @@ def rebalance(
         book=state.book, config_fingerprint=backtester.config.fingerprint,
     )
     backtester._ballast_level = state.ballast_level
+    fills_before = len(state.book.fills)
+    value_before = state.book.snapshots[-1].total_value if state.book.snapshots else None
     record = backtester._rebalance(state.book, today, result)
     state.ballast_level = backtester._ballast_level
     state.last_rebalance = today
+    total = state.book.snapshots[-1].total_value if state.book.snapshots else value_before
+    trades = [
+        {
+            "side": f.side, "symbol": f.symbol, "shares": round(f.shares, 4),
+            "price": round(f.price, 4),
+            "share_of_portfolio": round(f.value / total, 4) if total else None,
+            "reason": f.reason,
+        }
+        for f in state.book.fills[fills_before:]
+    ]
     state.log.append({
+        "trades": trades,
         "date": today.isoformat(),
         "evaluated": record.evaluated,
         "buy_signals": record.passers,
@@ -191,12 +204,20 @@ def mark_to_market(backtester: Backtester, state: PaperState, today: date) -> No
     state.book.snapshot(today, prices, benchmark)
 
 
-def report(state: PaperState, today: date, *, rebalanced: bool, note: str = "") -> str:
+def report(
+    state: PaperState, today: date, *, rebalanced: bool, note: str = "",
+    label: str = "GCFP v4", ticker_of=None,
+) -> str:
     book = state.book
     snaps = book.snapshots
+
+    def name(symbol: str) -> str:
+        ticker = ticker_of(symbol) if ticker_of else ""
+        return f"{ticker} ({symbol})" if ticker and ticker != symbol else symbol
+
     lines = [
         "=" * 78,
-        f"GCFP v4 — PAPER TRADING (§13.11) · {today.isoformat()}",
+        f"{label} — PAPER TRADING (§13.11) · {today.isoformat()}",
         "=" * 78,
         f"started {state.started_on.isoformat()} · "
         f"{(today - state.started_on).days / 30.44:.1f} months of the 2-3 required",
@@ -228,7 +249,7 @@ def report(state: PaperState, today: date, *, rebalanced: bool, note: str = "") 
         entry = p.cost_basis / p.shares if p.shares else 0.0
         change = p.last_price / entry - 1 if entry and p.last_price else 0.0
         lines.append(
-            f"  {symbol}: {p.classification.value} · bought {p.opened_on.isoformat()} "
+            f"  {name(symbol)}: {p.classification.value} · bought {p.opened_on.isoformat()} "
             f"at {entry:,.2f} · last {p.last_price:,.2f} ({change:+.1%}) · "
             f"conviction {p.conviction_at_purchase:.0f} · {p.anchor_mode}"
             + (f" · price missing {p.missed_marks} run(s)" if p.missed_marks else "")
@@ -237,12 +258,27 @@ def report(state: PaperState, today: date, *, rebalanced: bool, note: str = "") 
     if book.closed:
         lines.extend(["", "CLOSED PAPER POSITIONS"])
         for c in book.closed:
-            lines.append(f"  {c.symbol}: {c.opened_on.isoformat()} -> "
+            lines.append(f"  {name(c.symbol)}: {c.opened_on.isoformat()} -> "
                          f"{c.closed_on.isoformat()} · {c.total_return:+.1%} · {c.exit_reason}")
         curve = [(s.as_of, s.benchmark_level) for s in snaps if s.benchmark_level]
         versus = picks_vs_index(book.closed, curve, snaps)
         if versus is not None:
             lines.extend(versus.as_report_lines())
+
+    latest = state.log[-1] if state.log else None
+    if rebalanced and latest and latest.get("trades"):
+        lines.extend([
+            "",
+            f"THIS MONTH'S TRADES ({latest['date']}) — to copy with real money,",
+            "scale each by your own portfolio's size:",
+        ])
+        for t in sorted(latest["trades"], key=lambda t: t["side"] != "sell"):
+            share = t.get("share_of_portfolio")
+            lines.append(
+                f"  {t['side'].upper():4s} {name(t['symbol'])}"
+                + (f" · {share:.1%} of the portfolio" if share is not None else "")
+                + f" · about ${t['price']:,.2f} a share · {t['reason']}"
+            )
 
     lines.extend(["", "MONTHLY REBALANCES"])
     if not state.log:

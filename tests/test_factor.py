@@ -136,3 +136,35 @@ class TestVariantsTwoAndThree:
         assert rules_for(1).min_market_cap is None
         with pytest.raises(ValueError):
             rules_for(4)
+
+
+class TestEdgeStatistics:
+    def test_a_steady_excess_has_a_large_t_statistic(self):
+        from gcfp.backtest.factor import edge_statistics
+
+        days = [date(2015 + m // 12, m % 12 + 1, 28) for m in range(48)]
+        bench = [(d, 100 * 1.008 ** i) for i, d in enumerate(days)]
+        # +0.5%/month above the index, with a little noise.
+        strat = [(d, 100 * 1.013 ** i * (1 + (0.002 if i % 2 else -0.002)))
+                 for i, d in enumerate(days)]
+        text = "\n".join(edge_statistics(strat, bench))
+        t = float(text.split("t-statistic: ")[1].split()[0])
+        assert t > 2.4
+        assert "YEAR BY YEAR" in text
+
+    def test_paper_rebalance_logs_the_trades_to_copy(self, tmp_path):
+        import sys
+        from pathlib import Path
+
+        from gcfp.backtest import paper
+
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+        import run_paper
+
+        run_paper.main(["--source", "synthetic", "--strategy", "factor", "--variant", "2",
+                        "--book", str(tmp_path / "b.json"), "--out", str(tmp_path / "r.txt"),
+                        "--today", "2024-03-03"])
+        state = paper.load_state(tmp_path / "b.json")
+        trades = state.log[-1]["trades"]
+        assert trades and all(t["side"] == "buy" for t in trades)
+        assert "THIS MONTH'S TRADES" in (tmp_path / "r.txt").read_text()

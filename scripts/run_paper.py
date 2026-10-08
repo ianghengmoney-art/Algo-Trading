@@ -181,7 +181,17 @@ def run(args) -> int:
         paper.mark_to_market(backtester, state, today)
 
     paper.save_state(state, args.book)
-    text = paper.report(state, today, rebalanced=rebalanced, note=note)
+    def ticker_of(symbol: str) -> str:
+        resolve = getattr(backtester.adapter, "_price_symbol", None)
+        try:
+            resolved = resolve(symbol) if resolve else None
+        except Exception:
+            resolved = None
+        return resolved[0] if resolved else ""
+
+    label = f"FACTOR STRATEGY v{args.variant}" if args.strategy == "factor" else "GCFP v4"
+    text = paper.report(state, today, rebalanced=rebalanced, note=note,
+                        label=label, ticker_of=ticker_of)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(text)
     print(text)
