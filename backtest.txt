@@ -1,44 +1,63 @@
 ==============================================================================
-FACTOR STRATEGY — variant 1 of docs/FACTOR_STRATEGY.md
+FACTOR STRATEGY — variant 2 of 3 in docs/FACTOR_STRATEGY.md (sample of 1000 companies)
 ==============================================================================
 period: 2015-01-01..2025-09-30 · earlier half to 2021-06-13, later half from 2021-06-14
 spare money and benchmark: the S&P 500 total-return index (dividends reinvested)
 
 RETURNS (per year)
                    strategy  S&P 500 TR  difference  eq-wt universe
-  full period       +15.63%     +14.03%      +1.60%          +9.37%
-  earlier half      +16.88%     +14.76%      +2.12%         +14.43%
-  later half        +14.26%     +12.63%      +1.64%          +1.65%
+  full period       +17.61%     +14.03%      +3.58%          +9.12%
+  earlier half      +16.38%     +14.76%      +1.62%         +14.06%
+  later half        +19.91%     +12.63%      +7.28%          +1.54%
   
-  PRE-REGISTERED PASS CRITERIA (docs/FACTOR_STRATEGY.md, variant 1):
+  PRE-REGISTERED PASS CRITERIA (docs/FACTOR_STRATEGY.md, variant 2 of 3 registered):
     [PASS] beats the S&P 500 in the earlier half
     [PASS] beats the S&P 500 in the later half
     [PASS] beats the S&P 500 by at least 1%/yr over the full period
     [PASS] beats the equal-weight eligible universe over the full period
+    GOAL (5%/yr above the S&P 500 in both halves and overall): not met
     VERDICT: PASSED — proceed to paper trading before any real money.
 
+HOW LIKELY IS THE EDGE REAL? (monthly returns against the S&P 500)
+  months: 128 · ahead in 53% of them
+  average excess: +3.96%/yr · tracking error 10.1%/yr · information ratio +0.39
+  t-statistic: +1.27  (below ~2: consistent with luck; ~2.4+: strong evidence allowing for 3 variants tried)
+
+YEAR BY YEAR (calendar years, from each December's value)
+  year    strategy   S&P 500  eq-wt univ
+  2016      +25.2%    +12.0%      +18.6%
+  2017      +24.7%    +21.8%      +21.7%
+  2018       -4.7%     -4.4%      -12.4%
+  2019      +15.4%    +31.5%      +32.5%
+  2020      +28.8%    +18.4%      +19.6%
+  2021      +22.2%    +28.7%      +22.4%
+  2022       -3.6%    -18.1%      -20.3%
+  2023      +31.7%    +26.3%      +11.7%
+  2024      +33.7%    +25.0%       +8.0%
+  2025      +20.6%    +14.8%      +13.8%
+
 Factor strategy
-  99,900 -> 469,981 · +15.63%/yr
-  benchmark +14.03%/yr · excess +1.60%/yr
-  volatility 20.6%/yr
-  portfolio max drawdown: -29.6% from 2019-12-31 to 2020-03-31 (91 days), recovered in 335 days
-  positions closed: 143
-  median outcome: +7.1%   (mean +55.0% — reported second, deliberately)
-  quartiles: p25 -13.3% · p75 +45.9%
-  best +844.9% · worst -78.4%
-  loss rate: 39.9% · total losses (<= -90%): 0.0%
-  largest single-position drawdown: -80.9%
-  median holding period: 518 days
+  99,900 -> 563,488 · +17.61%/yr
+  benchmark +14.03%/yr · excess +3.58%/yr
+  volatility 19.9%/yr
+  portfolio max drawdown: -29.0% from 2018-08-31 to 2020-03-31 (578 days), recovered in 731 days
+  positions closed: 134
+  median outcome: +15.4%   (mean +69.7% — reported second, deliberately)
+  quartiles: p25 -13.3% · p75 +51.0%
+  best +1993.5% · worst -75.6%
+  loss rate: 36.6% · total losses (<= -90%): 0.0%
+  largest single-position drawdown: -88.5%
+  median holding period: 578 days
 
   Stock picks vs the index over each pick's own holding period:
-    picks compared: 143
-    median pick vs index: -11.5%   (mean +11.9%)
-    picks that beat the index: 31%
-    average share of the money in stock picks: 98.7% (the rest followed the index)
+    picks compared: 134
+    median pick vs index: -7.9%   (mean +24.0%)
+    picks that beat the index: 43%
+    average share of the money in stock picks: 97.8% (the rest followed the index)
 
 S&P 500 max drawdown over the same months: -23.9% from 2021-12-31 to 2022-09-30 (273 days), recovered in 730 days
-holdings per month: median 30 · eligible companies ranked per month: median 113
-positions sold over the period: 113
+holdings per month: median 30 · eligible companies ranked per month: median 112
+positions sold over the period: 106 · about 33% of the portfolio replaced per year
 
 NOTES
   Fills at the month-end close, 0.1% cost per fill; dividends credited on ex-dates.
@@ -51,5 +70,7 @@ NOTES
       of which a price history was found: 24
     still filing at the end: 462 (priced: 372)
     WARNING: only 4% of the companies that died could be priced. The unpriced ones could never be bought in this backtest, so the result still leans toward survivors. Treat the CAGR as an upper bound.
+  full data: reports/factor-v2-curves.csv
+  full data: reports/factor-v2-trades.csv
   run time: 19 min
 ==============================================================================
