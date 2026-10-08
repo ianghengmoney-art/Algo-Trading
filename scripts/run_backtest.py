@@ -102,7 +102,26 @@ def parse_args() -> argparse.Namespace:
             "290 on GitHub Actions, whose job is killed at 330 with no report."
         ),
     )
+    parser.add_argument(
+        "--strategy", choices=("gcfp", "factor"), default=default_strategy(),
+        help=(
+            "gcfp: the GCFP v4 rules. factor: the strategy pre-registered in "
+            "docs/FACTOR_STRATEGY.md. Defaults to scripts/backtest_defaults.json, "
+            "so the workflow, which passes no such option, runs what the branch "
+            "says."
+        ),
+    )
     return parser.parse_args()
+
+
+def default_strategy() -> str:
+    path = Path(__file__).resolve().parent / "backtest_defaults.json"
+    try:
+        import json
+
+        return json.loads(path.read_text()).get("strategy", "gcfp")
+    except (OSError, ValueError):
+        return "gcfp"
 
 
 def read_symbol_file(path: Path) -> list[str]:
@@ -193,6 +212,90 @@ def start_watchdog(budget_min: float | None) -> None:
     timer = threading.Timer((budget_min + WATCHDOG_GRACE_MIN) * 60, fire)
     timer.daemon = True
     timer.start()
+
+
+def run_factor(
+    args, adapter, config, settings, split, symbols, eligibility, peer_pool,
+    member_cache, benchmark_text, minutes, until_end_less, survivorship_lines,
+) -> int:
+    """The pre-registered factor strategy (docs/FACTOR_STRATEGY.md)."""
+    from gcfp.backtest.factor import VARIANT, FactorBacktester, judge
+    from gcfp.backtest.metrics import max_drawdown, picks_vs_index, summarise
+
+    backtester = FactorBacktester(
+        adapter, config, settings, symbols, label="Factor strategy",
+        split=split, eligibility=eligibility, member_cache=member_cache,
+    )
+    run = backtester.run(progress=args.progress, deadline=until_end_less(8))
+    verdict = judge(run, backtester.universe_curve, split)
+    summary = summarise("Factor strategy", run.equity_curve, run.book.closed,
+                        run.benchmark_curve)
+    versus = picks_vs_index(run.book.closed, run.benchmark_curve, run.book.snapshots)
+    counts = backtester.eligible_counts
+    held = [s.position_count for s in run.book.snapshots]
+    sells = sum(len(r.sells) for r in run.rebalances)
+
+    def lines(extra: list[str]) -> list[str]:
+        out = [
+            "=" * 78,
+            f"FACTOR STRATEGY — variant {VARIANT} of docs/FACTOR_STRATEGY.md",
+            "=" * 78,
+            f"period: {settings.start.isoformat()}..{settings.end.isoformat()} · "
+            f"earlier half to {split.train_end.isoformat()}, later half from "
+            f"{split.test_start.isoformat()}",
+            f"spare money and benchmark: {benchmark_text}",
+            "",
+            "RETURNS (per year)",
+            *[f"  {l}" for l in verdict.lines],
+            "",
+            *[l for l in summary.as_report_lines() if "Module I" not in l],
+        ]
+        if versus is not None:
+            out += ["", *versus.as_report_lines()]
+        drawdown = max_drawdown(run.benchmark_curve)
+        out += [
+            "",
+            f"S&P 500 max drawdown over the same months: "
+            + (drawdown.as_report_line() if drawdown else "n/a"),
+            f"holdings per month: median {sorted(held)[len(held) // 2] if held else 0}"
+            f" · eligible companies ranked per month: median "
+            f"{sorted(counts)[len(counts) // 2] if counts else 0}",
+            f"positions sold over the period: {sells}",
+        ]
+        if run.stopped_early_at is not None:
+            out.append(f"STOPPED EARLY at {run.stopped_early_at.isoformat()}: "
+                       "the verdict covers only the months completed.")
+        out += [
+            "",
+            "NOTES",
+            "  Fills at the month-end close, 0.1% cost per fill; dividends credited "
+            "on ex-dates.",
+            "  The equal-weight universe benchmark excludes trading costs, which "
+            "flatters it.",
+            *(["  EVALUATIONS THAT RAISED (a code fault, not a data gap):"]
+              + [f"    {n:5d}  {c}" for c, n in sorted(run.crashes.items(), key=lambda kv: -kv[1])[:10]]
+              if run.crashes else ["  No evaluation raised an error."]),
+            f"  Holdings closed as delisted at {settings.delisting_return:+.0%}: "
+            f"{run.assumed_delistings}.",
+            *[f"  {l}" for l in extra],
+            f"  run time: {minutes():.0f} min",
+            "=" * 78,
+        ]
+        return out
+
+    def write(extra: list[str]) -> str:
+        text = "\n".join(lines(extra)) + "\n"
+        if args.out:
+            args.out.parent.mkdir(parents=True, exist_ok=True)
+            args.out.write_text(text)
+            _REPORT_WRITTEN.set()
+        return text
+
+    text = write(["SURVIVORSHIP COVERAGE: not yet computed."] if survivorship_lines else [])
+    if survivorship_lines is not None:
+        text = write(survivorship_lines())
+    print(text, flush=True)
+    return 0
 
 
 def main() -> int:
@@ -290,6 +393,53 @@ def main() -> int:
 
     def until_end_less(margin_min: float) -> float | None:
         return None if hard_end is None else hard_end - margin_min * 60
+
+    def survivorship_lines() -> list[str]:
+        from gcfp.data.pit_universe import survivorship_coverage
+
+        coverage_deadline = until_end_less(4)
+        unchecked: list[str] = []
+
+        checked: list[str] = []
+
+        def has_prices(symbol: str) -> bool:
+            if coverage_deadline is not None and time.monotonic() > coverage_deadline:
+                unchecked.append(symbol)
+                return False
+            checked.append(symbol)
+            if len(checked) % 25 == 0:
+                print(f"    checked {len(checked)} ({minutes():.0f} min elapsed)",
+                      file=sys.stderr, flush=True)
+            try:
+                return bool(adapter.get_prices(symbol, args.start, args.end))
+            except Exception:
+                return False
+
+        print(f"  survivorship coverage ({minutes():.0f} min elapsed)", file=sys.stderr)
+        try:
+            with time_limit(until_end_less(3)):
+                coverage = survivorship_coverage(
+                    filer_index, symbols, args.end, has_prices
+                )
+            lines = coverage.lines()
+        except TimeBudgetExceeded:
+            return [
+                "SURVIVORSHIP COVERAGE not computed: the run reached its time "
+                "budget. Treat the CAGR as an upper bound."
+            ]
+        if unchecked:
+            lines.append(
+                f"  {len(unchecked)} companies were not checked for prices before "
+                "the time budget ran out and are counted as unpriced above."
+            )
+        return lines
+
+    if args.strategy == "factor":
+        return run_factor(
+            args, adapter, config, settings, split, symbols, eligibility,
+            peer_pool, member_cache, benchmark_text, minutes, until_end_less,
+            survivorship_lines if filer_index is not None else None,
+        )
 
     deadline = until_end_less(25)
     primary = Backtester(
@@ -550,46 +700,6 @@ def main() -> int:
             "companies that survived. The CAGR is an upper bound; rerun with "
             "--pit-sample for a survivorship-aware result."
         )
-
-    def survivorship_lines() -> list[str]:
-        from gcfp.data.pit_universe import survivorship_coverage
-
-        coverage_deadline = until_end_less(4)
-        unchecked: list[str] = []
-
-        checked: list[str] = []
-
-        def has_prices(symbol: str) -> bool:
-            if coverage_deadline is not None and time.monotonic() > coverage_deadline:
-                unchecked.append(symbol)
-                return False
-            checked.append(symbol)
-            if len(checked) % 25 == 0:
-                print(f"    checked {len(checked)} ({minutes():.0f} min elapsed)",
-                      file=sys.stderr, flush=True)
-            try:
-                return bool(adapter.get_prices(symbol, args.start, args.end))
-            except Exception:
-                return False
-
-        print(f"  survivorship coverage ({minutes():.0f} min elapsed)", file=sys.stderr)
-        try:
-            with time_limit(until_end_less(3)):
-                coverage = survivorship_coverage(
-                    filer_index, symbols, args.end, has_prices
-                )
-            lines = coverage.lines()
-        except TimeBudgetExceeded:
-            return [
-                "SURVIVORSHIP COVERAGE not computed: the run reached its time "
-                "budget. Treat the CAGR as an upper bound."
-            ]
-        if unchecked:
-            lines.append(
-                f"  {len(unchecked)} companies were not checked for prices before "
-                "the time budget ran out and are counted as unpriced above."
-            )
-        return lines
 
     def write_report(extra: list[str]) -> str:
         report = ValidationReport(

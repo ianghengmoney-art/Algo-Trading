@@ -1,0 +1,4 @@
+{
+  "strategy": "factor",
+  "_comment": "Which strategy the workflow's backtest job runs on this branch: 'factor' (docs/FACTOR_STRATEGY.md) or 'gcfp' (the GCFP v4 rules). The workflow passes no strategy option, so this file decides."
+}
