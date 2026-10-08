@@ -5,6 +5,7 @@ https://github.com/ianghengmoney-art/Algo-Trading/actions/workflows/gcfp.yml
 
 | Run | What | Outcome |
 |---|---|---|
+| [#21](https://github.com/ianghengmoney-art/Algo-Trading/actions/runs/37775864234) | Variant 1 recompute (same rules) + long-history premise check (1963 onward) | running |
 | [#20](https://github.com/ianghengmoney-art/Algo-Trading/actions/runs/37772817162) | Factor strategy, variant 2, 1,000 companies | **PASSED** all 4: +17.61%/yr vs S&P 500 TR +14.03% (+3.58%/yr); halves +1.62% / +7.28%; t = +1.27 (not significant); AppLovin alone was 31% of gains, without it about +14.7%/yr; 19 min |
 | [#19](https://github.com/ianghengmoney-art/Algo-Trading/actions/runs/37770217326) | Factor strategy, variant 1, 1,000 companies | **PASSED** all 4 criteria: +15.63%/yr vs S&P 500 TR +14.03% (+1.60%/yr); earlier half +2.12%/yr, later half +1.64%/yr; 19 min |
 | [#18](https://github.com/ianghengmoney-art/Algo-Trading/actions/runs/37479304024) | GCFP v4, every data fix, 1,000 companies | +14.00%/yr vs S&P 500 TR +14.03%; picks trailed the index (median -4.4%, 26 of 56 beat it); two Module I break criteria tripped |
