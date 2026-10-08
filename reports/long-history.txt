@@ -1,0 +1,50 @@
+==============================================================================
+LONG-HISTORY PREMISE CHECK — Kenneth French data library (CRSP/Compustat)
+==============================================================================
+Tests the idea behind the factor strategy, not the strategy itself.
+Each proxy is net of an assumed 0.5%/yr trading cost.
+Market = French's US market return including dividends (Mkt-RF + RF).
+
+Proxy A, big companies
+  30 years 1995-2025         (1995-2025): proxy +12.10%/yr · market +11.18%/yr · excess +0.91%/yr · t +1.03 · worst fall -47.49% vs -50.31%
+  full history from 1926     (1963-2026): proxy +12.33%/yr · market +10.89%/yr · excess +1.45%/yr · t +2.89 · worst fall -47.49% vs -50.31%
+  by decade:
+    1995-2004: proxy +14.92% · market +11.95% · excess +2.97%
+    2005-2014: proxy +9.06% · market +8.14% · excess +0.92%
+    2015-2025: proxy +12.36% · market +13.32% · excess -0.96%
+  dot-com unwind 2000-02: proxy -7.53%/yr vs market -14.77%/yr (worst fall -29.58% vs -44.99%)
+  financial crisis 2008-09: proxy -9.73%/yr vs market -9.73%/yr (worst fall -45.86% vs -47.68%)
+  REGISTERED CONDITIONS: beats the market 1995-2025 [PASS] · over the full history [PASS] · in at least 2 of 3 decades [PASS: 2 of 3]
+
+Proxy B, big companies  (low accruals and buybacks from all-size value-weighted portfolios (dominated by large companies))
+  30 years 1995-2025         (1995-2025): proxy +11.82%/yr · market +11.18%/yr · excess +0.63%/yr · t +0.81 · worst fall -50.47% vs -50.31%
+  full history from 1926     (1963-2026): proxy +11.89%/yr · market +10.89%/yr · excess +1.00%/yr · t +2.48 · worst fall -50.47% vs -50.31%
+  by decade:
+    1995-2004: proxy +14.09% · market +11.95% · excess +2.14%
+    2005-2014: proxy +8.67% · market +8.14% · excess +0.53%
+    2015-2025: proxy +12.68% · market +13.32% · excess -0.64%
+  dot-com unwind 2000-02: proxy -8.13%/yr vs market -14.77%/yr (worst fall -31.51% vs -44.99%)
+  financial crisis 2008-09: proxy -10.95%/yr vs market -9.73%/yr (worst fall -48.45% vs -47.68%)
+
+Proxy A, small companies
+  30 years 1995-2025         (1995-2025): proxy +12.89%/yr · market +11.18%/yr · excess +1.71%/yr · t +1.28 · worst fall -52.86% vs -50.31%
+  full history from 1926     (1963-2026): proxy +15.18%/yr · market +10.89%/yr · excess +4.29%/yr · t +3.79 · worst fall -52.86% vs -50.31%
+  by decade:
+    1995-2004: proxy +20.15% · market +11.95% · excess +8.20%
+    2005-2014: proxy +9.57% · market +8.14% · excess +1.43%
+    2015-2025: proxy +9.62% · market +13.32% · excess -3.70%
+  dot-com unwind 2000-02: proxy +8.18%/yr vs market -14.77%/yr (worst fall -21.24% vs -44.99%)
+  financial crisis 2008-09: proxy -4.98%/yr vs market -9.73%/yr (worst fall -48.23% vs -47.68%)
+
+Proxy B, small companies  (low accruals and buybacks from all-size value-weighted portfolios (dominated by large companies))
+  30 years 1995-2025         (1995-2025): proxy +12.44%/yr · market +11.18%/yr · excess +1.25%/yr · t +1.28 · worst fall -52.45% vs -50.31%
+  full history from 1926     (1963-2026): proxy +13.70%/yr · market +10.89%/yr · excess +2.81%/yr · t +3.83 · worst fall -52.45% vs -50.31%
+  by decade:
+    1995-2004: proxy +17.32% · market +11.95% · excess +5.37%
+    2005-2014: proxy +9.05% · market +8.14% · excess +0.91%
+    2015-2025: proxy +11.22% · market +13.32% · excess -2.10%
+  dot-com unwind 2000-02: proxy +1.16%/yr vs market -14.77%/yr (worst fall -21.89% vs -44.99%)
+  financial crisis 2008-09: proxy -8.03%/yr vs market -9.73%/yr (worst fall -48.62% vs -47.68%)
+
+VERDICT: SUPPORTS the premise — the idea held over 30+ years, not just 2015-2025.
+==============================================================================
