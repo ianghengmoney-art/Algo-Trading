@@ -95,3 +95,56 @@ and the honest recommendation is an index fund.
   could never be bought; results lean optimistic.
 - No data before 2009, so the 2000-02 and 2008 crashes are not covered.
 - Fills at the month-end close are optimistic about liquidity.
+
+---
+
+# Variants 2 and 3 — registered 2026-10-08, while variant 1 was still running
+
+Registered **before any result of variant 1 was known**, so neither design
+was influenced by it. Together with variant 1 this is a family of three,
+fixed now; no further variant is added on the strength of these results
+without saying so and counting it.
+
+The operator's goal is **5%/yr above the S&P 500**. Published evidence puts
+long-run factor premiums nearer 1-3%/yr, smaller since publication, and the
+2015-2025 period favoured large companies over small ones by roughly
+5%/yr. The criteria below say whether an edge exists at all; whether the
+5% goal is met is reported separately, and is not lowered.
+
+## Variant 2 — broader evidence, same universe as variant 1
+
+Same universe, portfolio (30 names, top-60 buffer, equal weight, monthly),
+costs and benchmarks as variant 1. The scores change: four **themes**, each
+the mean of its available component ranks; the composite is the mean of the
+themes, and a company needs at least **three** of the four.
+
+| Theme | Components (each a percentile rank, higher is better) |
+|---|---|
+| Value | TTM EBIT / enterprise value; TTM free cash flow / enterprise value. Enterprise value = market cap + total debt - cash, latest quarter |
+| Quality | TTM gross profit / total assets; low accruals = -(TTM net income - TTM operating cash flow) / total assets |
+| Shareholder yield | -(split-adjusted share count growth over the last year) — buybacks rank high, issuance low |
+| Momentum | 12-1 month price return; earnings growth = (TTM net income - the TTM net income a year earlier) / total assets |
+
+Evidence: enterprise multiples (Loughran & Wellman 2011), gross profitability
+(Novy-Marx 2013), accruals (Sloan 1996), net share issuance (Pontiff &
+Woodgate 2008), price momentum (Jegadeesh & Titman 1993), earnings momentum
+(Bernard & Thomas 1989; Chan, Jegadeesh & Lakonishok 1996). Each theme is
+weighted equally; no weight is fitted to data.
+
+## Variant 3 — variant 2 on larger companies
+
+Identical to variant 2 except the universe keeps only companies with a market
+cap of at least **$2 billion** on the date, so the strategy competes with the
+S&P 500 on its own ground rather than carrying the small-company headwind.
+It needs a larger sample to have enough such companies: the largest sample
+that finishes inside the job's time limit, at least 2,000, chosen from run
+times (not results).
+
+## Choosing among the three
+
+All three are reported, whatever they show. A variant **passes** on the
+variant-1 criteria (beats the S&P 500 total return in both halves, by at
+least 1%/yr over the full period, and beats its own equal-weight universe).
+If more than one passes, the one with the higher full-period excess return
+goes to paper trading, which is the final, out-of-sample test. If none
+passes, none goes forward, and the recommendation is an index fund.
