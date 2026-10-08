@@ -192,3 +192,20 @@ reviewed before anything else happens.
   5%/yr over any rolling three years, stop adding money and review. Shorter
   stretches behind are expected of factor strategies and are not a reason to
   quit.
+
+---
+
+# Operator goal revised — 2026-10-08
+
+The goal is now an absolute **15-20%/yr compound return** (previously 5%/yr
+above the S&P 500). Like the earlier goal, it is reported in every result
+and is **not** a pass criterion: it does not lower or raise the registered
+bar, and it does not choose between variants.
+
+Stated alongside it: in 2015-2025 the S&P 500 total return was about
+14%/yr, well above its long-run average of about 10%/yr. A strategy's
+compound return is the market's return plus its edge; only the edge is in
+the strategy's control. With a market return of 7-10%/yr and an edge of
+1-2%/yr, expect roughly 9-12%/yr. Reaching 15-20% would need an unusually
+strong market, or leverage or concentration, which raise the risk of large
+losses as much as the return; neither is part of any registered variant.

@@ -168,3 +168,16 @@ class TestEdgeStatistics:
         trades = state.log[-1]["trades"]
         assert trades and all(t["side"] == "buy" for t in trades)
         assert "THIS MONTH'S TRADES" in (tmp_path / "r.txt").read_text()
+
+
+class TestCagrGoal:
+    def test_the_goal_line_reports_the_market_and_the_edge_separately(self):
+        from gcfp.backtest.engine import WalkForwardSplit
+
+        strategy = [100 * 1.16 ** i for i in range(11)]
+        index = [100 * 1.14 ** i for i in range(11)]
+        result, days = TestVerdict().result_with(strategy, index)
+        split = WalkForwardSplit.by_fraction(days[0], days[-1])
+        text = "\n".join(judge(result, list(zip(days, index)), split).lines)
+        assert "GOAL 15%-20%/yr compound return: MET" in text
+        assert "the strategy added" in text

@@ -454,8 +454,11 @@ def write_run_data(path_prefix, result: BacktestResult, universe_curve, ticker_o
     return [str(curves), str(trades)]
 
 
-#: The operator's goal, reported against but never used to lower the bar.
+#: The operator's goals, reported against but never used to lower the bar
+#: or to choose a variant. Revised 2026-10-08 from "5%/yr above the S&P
+#: 500" to an absolute 15-20%/yr; the excess is still reported.
 GOAL_EXCESS = 0.05
+GOAL_CAGR = (0.15, 0.20)
 
 
 def judge(result: BacktestResult, universe_curve, split, variant: int = VARIANT) -> Verdict:
@@ -504,9 +507,25 @@ def judge(result: BacktestResult, universe_curve, split, variant: int = VARIANT)
         beats("earlier half", GOAL_EXCESS) and beats("later half", GOAL_EXCESS)
         and beats("full period", GOAL_EXCESS)
     )
+    full = cagr.get("full period", (None, None, None))
+    low, high = GOAL_CAGR
+    strategy_cagr, market_cagr = full[0], full[1]
+    if strategy_cagr is None:
+        cagr_goal = "n/a"
+    elif strategy_cagr >= low:
+        cagr_goal = f"MET ({strategy_cagr:+.2%}/yr)"
+    else:
+        cagr_goal = f"not met ({strategy_cagr:+.2%}/yr)"
+    lines.append(f"  GOAL {low:.0%}-{high:.0%}/yr compound return: {cagr_goal}")
+    if strategy_cagr is not None and market_cagr is not None:
+        lines.append(
+            f"    of which the S&P 500 itself returned {market_cagr:+.2%}/yr and the "
+            f"strategy added {strategy_cagr - market_cagr:+.2%}/yr. A future decade "
+            "with lower market returns lowers the first part, not the second."
+        )
     lines.append(
-        f"  GOAL ({GOAL_EXCESS:.0%}/yr above the S&P 500 in both halves and overall): "
-        + ("MET" if goal else "not met")
+        f"  ({GOAL_EXCESS:.0%}/yr above the S&P 500 in both halves and overall: "
+        + ("met)" if goal else "not met)")
     )
     lines.append(
         "  VERDICT: " + (
