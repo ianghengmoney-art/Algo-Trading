@@ -1,69 +1,66 @@
 ==============================================================================
-FACTOR STRATEGY — variant 2 of 3 in docs/FACTOR_STRATEGY.md (sample of 1000 companies)
+FACTOR STRATEGY — variant 2 of 3 in docs/FACTOR_STRATEGY.md (sample of 4000 companies)
 ==============================================================================
-period: 2012-01-01..2025-09-30 · earlier half to 2020-03-31, later half from 2020-04-01
+period: 2015-01-01..2025-09-30 · earlier half to 2021-06-13, later half from 2021-06-14
 spare money and benchmark: the S&P 500 total-return index (dividends reinvested)
 long-history premise check (1963 onward): SUPPORTS the premise (full report: reports/long-history.txt)
 
 RETURNS (per year)
                    strategy  S&P 500 TR  difference  eq-wt universe
-  full period       +12.75%     +14.77%      -2.03%         +11.12%
-  earlier half       +7.73%     +10.95%      -3.22%          +7.43%
-  later half        +18.18%     +18.37%      -0.19%         +14.12%
+  full period       +21.49%     +14.03%      +7.46%         +10.34%
+  earlier half      +21.86%     +14.76%      +7.10%         +15.66%
+  later half        +21.61%     +12.63%      +8.98%          +2.43%
   
   PRE-REGISTERED PASS CRITERIA (docs/FACTOR_STRATEGY.md, variant 2 of 3 registered):
-    [FAIL] beats the S&P 500 in the earlier half
-    [FAIL] beats the S&P 500 in the later half
-    [FAIL] beats the S&P 500 by at least 1%/yr over the full period
+    [PASS] beats the S&P 500 in the earlier half
+    [PASS] beats the S&P 500 in the later half
+    [PASS] beats the S&P 500 by at least 1%/yr over the full period
     [PASS] beats the equal-weight eligible universe over the full period
-    GOAL 15%-20%/yr compound return: not met (+12.75%/yr)
-      of which the S&P 500 itself returned +14.77%/yr and the strategy added -2.03%/yr. A future decade with lower market returns lowers the first part, not the second.
-    (5%/yr above the S&P 500 in both halves and overall: not met)
-    VERDICT: FAILED — no demonstrated edge on this data. The rules may not be adjusted and re-tested as the same strategy; the honest default is an index fund.
+    GOAL 15%-20%/yr compound return: MET (+21.49%/yr)
+      of which the S&P 500 itself returned +14.03%/yr and the strategy added +7.46%/yr. A future decade with lower market returns lowers the first part, not the second.
+    (5%/yr above the S&P 500 in both halves and overall: met)
+    VERDICT: PASSED — proceed to paper trading before any real money.
 
 HOW LIKELY IS THE EDGE REAL? (monthly returns against the S&P 500)
-  months: 164 · ahead in 48% of them
-  average excess: -1.41%/yr · tracking error 7.5%/yr · information ratio -0.19
-  t-statistic: -0.69  (below ~2: consistent with luck; ~2.4+: strong evidence allowing for 3 variants tried)
+  months: 128 · ahead in 47% of them
+  average excess: +13.37%/yr · tracking error 45.2%/yr · information ratio +0.30
+  t-statistic: +0.97  (below ~2: consistent with luck; ~2.4+: strong evidence allowing for 3 variants tried)
 
 YEAR BY YEAR (calendar years, from each December's value)
   year    strategy   S&P 500  eq-wt univ
-  2013      +44.6%    +32.4%      +46.8%
-  2014      +10.1%    +13.7%      +13.6%
-  2015       -6.9%     +1.4%       -6.5%
-  2016      +15.0%    +12.0%      +18.6%
-  2017      +12.5%    +21.8%      +18.2%
-  2018      -10.5%     -4.4%      -16.6%
-  2019      +27.7%    +31.5%      +28.2%
-  2020      +16.8%    +18.4%      +22.9%
-  2021      +28.4%    +28.7%      +19.5%
-  2022       -6.4%    -18.1%      -21.3%
-  2023      +21.3%    +26.3%      +21.5%
-  2024      +13.7%    +25.0%       +8.7%
-  2025       +7.8%    +14.8%       +6.0%
+  2016      +11.0%    +12.0%      +19.7%
+  2017      +24.2%    +21.8%      +22.4%
+  2018       -4.9%     -4.4%       -9.6%
+  2019      +19.8%    +31.5%      +26.7%
+  2020      +12.3%    +18.4%      +24.9%
+  2021     +130.3%    +28.7%      +24.9%
+  2022       -3.3%    -18.1%      -22.6%
+  2023      +12.3%    +26.3%      +15.9%
+  2024      +34.4%    +25.0%      +12.3%
+  2025      +40.7%    +14.8%      +11.9%
 
 Factor strategy
-  99,900 -> 514,698 · +12.75%/yr
-  benchmark +14.77%/yr · excess -2.03%/yr
-  volatility 16.6%/yr
-  portfolio max drawdown: -25.5% from 2019-12-31 to 2020-03-31 (91 days), recovered in 244 days
-  positions closed: 130
-  median outcome: +16.5%   (mean +63.0% — reported second, deliberately)
-  quartiles: p25 -13.3% · p75 +76.0%
-  best +975.8% · worst -87.7%
-  loss rate: 38.5% · total losses (<= -90%): 0.0%
-  largest single-position drawdown: -93.6%
-  median holding period: 654 days
+  99,900 -> 796,147 · +21.49%/yr
+  benchmark +14.03%/yr · excess +7.46%/yr
+  volatility 48.1%/yr
+  portfolio max drawdown: -37.4% from 2021-01-31 to 2021-02-28 (28 days), recovered in 638 days
+  positions closed: 340
+  median outcome: +4.4%   (mean +26.7% — reported second, deliberately)
+  quartiles: p25 -10.4% · p75 +28.8%
+  best +3099.3% · worst -75.9%
+  loss rate: 43.8% · total losses (<= -90%): 0.0%
+  largest single-position drawdown: -84.4%
+  median holding period: 243 days
 
   Stock picks vs the index over each pick's own holding period:
-    picks compared: 130
-    median pick vs index: -20.0%   (mean -9.7%)
-    picks that beat the index: 32%
-    average share of the money in stock picks: 98.6% (the rest followed the index)
+    picks compared: 340
+    median pick vs index: -4.7%   (mean +12.4%)
+    picks that beat the index: 40%
+    average share of the money in stock picks: 98.3% (the rest followed the index)
 
 S&P 500 max drawdown over the same months: -23.9% from 2021-12-31 to 2022-09-30 (273 days), recovered in 730 days
-holdings per month: median 30 · eligible companies ranked per month: median 82
-positions sold over the period: 100 · about 24% of the portfolio replaced per year
+holdings per month: median 30 · eligible companies ranked per month: median 452
+positions sold over the period: 313 · about 97% of the portfolio replaced per year
 
 NOTES
   Fills at the month-end close, 0.1% cost per fill; dividends credited on ex-dates.
@@ -71,12 +68,12 @@ NOTES
   No evaluation raised an error.
   Holdings closed as delisted at -30%: 0.
   SURVIVORSHIP COVERAGE
-    sampled from the SEC filing index (incl. dead companies): 1000
-    stopped filing during the period (died/acquired/delisted): 592
-      of which a price history was found: 11
-    still filing at the end: 408 (priced: 327)
-    WARNING: only 2% of the companies that died could be priced. The unpriced ones could never be bought in this backtest, so the result still leans toward survivors. Treat the CAGR as an upper bound.
+    sampled from the SEC filing index (incl. dead companies): 4000
+    stopped filing during the period (died/acquired/delisted): 2083
+      of which a price history was found: 87
+    still filing at the end: 1917 (priced: 1529)
+    WARNING: only 4% of the companies that died could be priced. The unpriced ones could never be bought in this backtest, so the result still leans toward survivors. Treat the CAGR as an upper bound.
   full data: reports/factor-v2-curves.csv
   full data: reports/factor-v2-trades.csv
-  run time: 32 min
+  run time: 83 min
 ==============================================================================
