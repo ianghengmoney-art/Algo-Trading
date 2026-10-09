@@ -261,3 +261,23 @@ registered variant or the choice between them.
 The winning variant is also run from **2012-01-01**, the earliest start the
 SEC data supports, as a robustness check reported alongside the registered
 2015-2025 result. It does not change the selection.
+
+---
+
+# Selection and an added robustness check — 2026-10-09, after all three results
+
+Results: variant 1 passed (+1.60%/yr over the S&P 500 total return, t
++0.74), variant 2 passed (+3.58%/yr, t +1.27), variant 3 failed (-0.59%/yr,
+t +0.07, on a 4,000-company sample). By the registered rule (all that pass;
+the higher full-period excess wins), **variant 2 is selected** and goes to
+paper trading.
+
+Added now, **before it is run**, as a robustness check that cannot change the
+selection: variant 2's unchanged rules on the **4,000-company sample**
+variant 3 used. Variant 2 was tested on 1,000 companies, and one holding
+(AppLovin) produced 31% of its gains; variant 3, on 4,000, found no edge.
+Running variant 2 on the larger sample shows whether its result survives a
+bigger, more representative universe. Reported plainly either way; if it does
+not beat the S&P 500 there, the expectation for paper trading is set
+accordingly (no demonstrated edge), and paper trading remains the deciding
+test.
