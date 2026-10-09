@@ -463,6 +463,15 @@ def run_factor(
 
 def main() -> int:
     args = parse_args()
+    if _defaults().get("leverage_only"):
+        # The leveraged trend test (docs/LEVERAGE_STRATEGY.md): monthly
+        # French data only, no stock data, a few minutes.
+        from run_leverage import main as leverage_main
+
+        code = leverage_main(["--cache-dir", str(args.cache_dir)])
+        if args.out:
+            args.out.write_text(Path("reports/leverage.txt").read_text())
+        return code
     if _defaults().get("attribution_only"):
         # A diagnostic job: regress the saved runs on the French factors and
         # stop. The workflow's backtest job is how it reaches GitHub Actions.

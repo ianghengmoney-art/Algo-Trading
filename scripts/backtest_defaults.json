@@ -30,5 +30,7 @@
       "buffer_rank": 400
     }
   ],
-  "_comment_sensitivity": "sensitivity: variant 4 reruns with one thing changed, reported as a range and never used to choose (docs/FACTOR_STRATEGY.md)."
+  "_comment_sensitivity": "sensitivity: variant 4 reruns with one thing changed, reported as a range and never used to choose (docs/FACTOR_STRATEGY.md).",
+  "leverage_only": true,
+  "_comment_leverage": "leverage_only: the backtest job runs only the leveraged trend test (scripts/run_leverage.py, docs/LEVERAGE_STRATEGY.md) and stops."
 }
