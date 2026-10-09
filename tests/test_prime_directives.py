@@ -242,3 +242,14 @@ def test_directive_9_a1_logs_which_branch_applied(market, config):
     )
     assert on_cash.passed
     assert on_cash.branch == "operating_cash_flow"
+
+
+def test_the_quantconnect_algorithm_refuses_to_trade_live():
+    """quantconnect/main.py runs on a platform that can trade through a linked
+    broker. It must refuse live mode, so it can only ever be a backtest."""
+    from pathlib import Path
+
+    source = (Path(__file__).resolve().parents[1] / "quantconnect" / "main.py").read_text()
+    init = source[source.index("def initialize(self):"):]
+    first_lines = init[: init.index("self.variant")]
+    assert "if self.live_mode:" in first_lines and "raise" in first_lines
