@@ -385,3 +385,46 @@ pick a configuration. A wide range means the headline number is fragile.
   market-timing rule with its own parameters, which means more chances to
   overfit. Diversifying to 100 names attacks the same 48% volatility
   directly.
+
+---
+
+# Variant 4 result — 2026-10-09 (run #28)
+
+| | Variant 4 | S&P 500 TR, same 30% dividend tax |
+|---|---|---|
+| Full period 2015-2025 | +13.18%/yr | +13.42%/yr (-0.24%/yr) |
+| Earlier half | +15.80%/yr | +14.08%/yr (+1.73%) |
+| Later half | +9.46%/yr | +12.13%/yr (-2.67%) |
+| Equal-weight eligible universe | | +9.86%/yr (beaten) |
+| Fama-French 5 + momentum alpha | +0.37%/yr, t +0.20 | |
+| Deflated Sharpe ratio (8 strategies tried) | 10% | |
+| Volatility / tracking error | 20% / 10.4% (variant 2 on 4,000: 48% / 45%) | |
+
+Criteria 1 and 4 pass. Criteria 2, 3 and 5 fail. **Variant 4 fails.**
+
+Reading, stated plainly: the risk fixes did what they were meant to. Volatility
+fell from 48% to 20%, and no one stock could carry the portfolio (46 trims).
+With the lottery tickets removed, what remains is the market plus known
+factor tilts: small size (+0.66), value, profitability and momentum, with an
+alpha indistinguishable from zero. Variant 2's earlier lead on the same 4,000
+companies came from concentration in a few extreme winners, not from a
+repeatable edge. Beating the equal-weight universe by about 3%/yr is real but
+is the factor tilts at work (the attribution explains it), and it still trails
+the S&P 500 after costs and tax.
+
+Sensitivity: only the 7th-of-month rerun finished inside the job (-0.94%/yr
+against the index). The other four (14th, 21st, 50 and 200 names) were skipped
+for time. With the registered verdict a clear fail at t +0.20, they are not
+rerun: they would show the range around a result that has no edge to be
+fragile about.
+
+## What the registered rules say happens next
+
+- Variant 4 fails one of criteria 1-4, so the outcome is the plain one:
+  **an index fund is the recommendation**, without the factor-fund option.
+- Variant 2's paper trading continues as registered. It is the pipeline
+  test, and its stage 2 conditions are unchanged.
+- No further variant is registered on the strength of this result. Every
+  test so far points the same way: on free data, 2015-2025, these factor
+  rules did not beat a low-cost S&P 500 fund once concentration luck,
+  realistic costs and dividend tax are counted.
