@@ -205,6 +205,32 @@ def mark_to_market(backtester: Backtester, state: PaperState, today: date) -> No
     state.book.snapshot(today, prices, benchmark)
 
 
+#: A week's move this large in one holding, or in the whole account, is more
+#: often a bad price (a missed split, a wrong ticker) than a real one, so the
+#: report flags it for a person to check. It never trades or blocks anything.
+SUSPECT_HOLDING_MOVE = 0.50
+SUSPECT_ACCOUNT_MOVE = 0.15
+
+
+def suspicious_moves(before: dict[str, float], state: PaperState) -> list[str]:
+    """Price moves since the last run large enough to be worth checking by
+    hand. ``before`` is each holding's last price before this run."""
+    flags = []
+    for symbol, p in sorted(state.book.positions.items()):
+        old = before.get(symbol)
+        if old and p.last_price:
+            move = p.last_price / old - 1
+            if abs(move) >= SUSPECT_HOLDING_MOVE:
+                flags.append(f"{symbol} moved {move:+.0%} since the last run "
+                             f"({old:,.2f} -> {p.last_price:,.2f})")
+    snaps = state.book.snapshots
+    if len(snaps) >= 2 and snaps[-2].total_value:
+        move = snaps[-1].total_value / snaps[-2].total_value - 1
+        if abs(move) >= SUSPECT_ACCOUNT_MOVE:
+            flags.append(f"the whole account moved {move:+.0%} since the last run")
+    return flags
+
+
 #: docs/FACTOR_STRATEGY.md, stage 2.
 STAGE_TWO_REBALANCES = 3
 STAGE_TWO_MAX_BEHIND = 0.15

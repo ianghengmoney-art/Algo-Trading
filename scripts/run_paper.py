@@ -157,6 +157,7 @@ def run(args) -> int:
     )
 
     rebalanced, note = False, ""
+    prices_before = {s: p.last_price for s, p in state.book.positions.items()}
     if state.due(today) or args.force_rebalance:
         deadline = (
             started + args.time_budget_min * 60 if args.time_budget_min else None
@@ -180,6 +181,12 @@ def run(args) -> int:
     if not rebalanced:
         paper.mark_to_market(backtester, state, today)
 
+    flags = paper.suspicious_moves(prices_before, state)
+    if flags:
+        # Flag, never act: the book is saved as computed, and the weekly
+        # check looks at each flagged price by hand.
+        note = "; ".join(filter(None, [note, "CHECK PRICES: " + "; ".join(flags)]))
+        print(f"  {note}", file=sys.stderr)
     paper.save_state(state, args.book)
     def ticker_of(symbol: str) -> str:
         resolve = getattr(backtester.adapter, "_price_symbol", None)

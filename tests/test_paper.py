@@ -129,3 +129,24 @@ class TestStageTwoStatus:
             Snapshot(date(2027, 1, 3), 80.0, 80.0, 0.0, 0, 80.0, 0.0, 0.0, 5000.0),
         ]
         assert "REVIEW" in "\n".join(paper.stage_two_status(state))
+
+
+class TestSuspiciousMoves:
+    def state(self) -> paper.PaperState:
+        return paper.PaperState(started_on=date(2026, 10, 4), symbols=["A"], book=a_book())
+
+    def test_an_ordinary_week_raises_nothing(self):
+        assert paper.suspicious_moves({"A": 42.0}, self.state()) == []
+
+    def test_a_price_that_halves_or_doubles_is_flagged(self):
+        state = self.state()
+        assert "A moved +120%" in paper.suspicious_moves({"A": 20.0}, state)[0]
+        state.book.positions["A"].last_price = 10.0
+        assert "A moved -75%" in paper.suspicious_moves({"A": 40.0}, state)[0]
+
+    def test_a_large_move_in_the_whole_account_is_flagged(self):
+        state = self.state()
+        state.book.cash *= 3  # as if a bad price inflated the account
+        state.book.snapshot(date(2026, 11, 8), {"A": 44.0}, 5_000.0)
+        flags = paper.suspicious_moves({"A": 44.0}, state)
+        assert flags == ["the whole account moved +114% since the last run"]
