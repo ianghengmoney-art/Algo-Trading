@@ -3,7 +3,7 @@ FACTOR STRATEGY v2 — PAPER TRADING (§13.11) · 2026-10-09
 ==============================================================================
 started 2026-10-09 · 0.0 months of the 2-3 required
 companies screened each month: 1000 (fixed at the start)
-this run: monthly rebalance · last rebalance 2026-10-09
+this run: marked to market only · last rebalance 2026-10-09
 
 value: 99,900 -> 99,900 (+0.00%)
 S&P 500 (dividends reinvested) over the same dates: +0.00%
@@ -40,39 +40,6 @@ OPEN PAPER POSITIONS
   CCSI (CIK0001866633): CORE-STABLE · bought 2026-10-09 at 36.66 · last 36.62 (-0.1%) · conviction 77 · FACTOR
   DKNG (CIK0001883685): SPEC-GROWTH · bought 2026-10-09 at 19.89 · last 19.87 (-0.1%) · conviction 76 · FACTOR
   PHIN (CIK0001968915): CORE-STABLE · bought 2026-10-09 at 58.52 · last 58.46 (-0.1%) · conviction 71 · FACTOR
-
-THIS MONTH'S TRADES (2026-10-09) — to copy with real money,
-scale each by your own portfolio's size:
-  BUY  CARG (CIK0001494259) · 3.3% of the portfolio · about $29.27 a share · rank 1 of 350
-  BUY  DAVE (CIK0001841408) · 3.3% of the portfolio · about $353.75 a share · rank 2 of 350
-  BUY  CALY (CIK0000837465) · 3.3% of the portfolio · about $13.88 a share · rank 3 of 350
-  BUY  ANF (CIK0001018840) · 3.3% of the portfolio · about $141.55 a share · rank 4 of 350
-  BUY  TPR (CIK0001116132) · 3.3% of the portfolio · about $115.94 a share · rank 5 of 350
-  BUY  CRCT (CIK0001828962) · 3.3% of the portfolio · about $6.41 a share · rank 6 of 350
-  BUY  YELP (CIK0001345016) · 3.3% of the portfolio · about $19.39 a share · rank 7 of 350
-  BUY  HCA (CIK0000860730) · 3.3% of the portfolio · about $445.45 a share · rank 8 of 350
-  BUY  EVER (CIK0001640428) · 3.3% of the portfolio · about $20.76 a share · rank 9 of 350
-  BUY  FICO (CIK0000814547) · 3.3% of the portfolio · about $708.14 a share · rank 10 of 350
-  BUY  CCSI (CIK0001866633) · 3.3% of the portfolio · about $36.66 a share · rank 11 of 350
-  BUY  VLO (CIK0001035002) · 3.3% of the portfolio · about $444.24 a share · rank 12 of 350
-  BUY  DKNG (CIK0001883685) · 3.3% of the portfolio · about $19.89 a share · rank 13 of 350
-  BUY  DXCM (CIK0001093557) · 3.3% of the portfolio · about $84.49 a share · rank 14 of 350
-  BUY  FTI (CIK0001681459) · 3.3% of the portfolio · about $69.70 a share · rank 15 of 350
-  BUY  EBF (CIK0000033002) · 3.3% of the portfolio · about $22.77 a share · rank 16 of 350
-  BUY  GPOR (CIK0000874499) · 3.3% of the portfolio · about $164.80 a share · rank 17 of 350
-  BUY  ATRO (CIK0000008063) · 3.3% of the portfolio · about $64.51 a share · rank 18 of 350
-  BUY  TNET (CIK0000937098) · 3.3% of the portfolio · about $66.56 a share · rank 19 of 350
-  BUY  TTD (CIK0001671933) · 3.3% of the portfolio · about $12.35 a share · rank 20 of 350
-  BUY  PHIN (CIK0001968915) · 3.3% of the portfolio · about $58.52 a share · rank 21 of 350
-  BUY  HOV (CIK0000357294) · 3.3% of the portfolio · about $110.11 a share · rank 22 of 350
-  BUY  MQ (CIK0001522540) · 3.3% of the portfolio · about $17.46 a share · rank 23 of 350
-  BUY  HALO (CIK0001159036) · 3.3% of the portfolio · about $109.95 a share · rank 24 of 350
-  BUY  LZ (CIK0001286139) · 3.3% of the portfolio · about $5.93 a share · rank 25 of 350
-  BUY  IT (CIK0000749251) · 3.3% of the portfolio · about $195.61 a share · rank 26 of 350
-  BUY  TMUS (CIK0001283699) · 3.3% of the portfolio · about $171.48 a share · rank 27 of 350
-  BUY  NX (CIK0001423221) · 3.3% of the portfolio · about $18.56 a share · rank 28 of 350
-  BUY  BWA (CIK0000908255) · 3.3% of the portfolio · about $61.78 a share · rank 29 of 350
-  BUY  CRM (CIK0001108524) · 3.3% of the portfolio · about $228.03 a share · rank 30 of 350
 
 STAGE 2 STATUS (docs/FACTOR_STRATEGY.md)
   monthly rebalances completed: 1 of 3

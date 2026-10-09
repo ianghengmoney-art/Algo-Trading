@@ -1,0 +1,28 @@
+{
+  "started_on": "2026-10-09",
+  "leverage": 2.0,
+  "value": 99800.0,
+  "level_at_rebalance": 17496.51953125,
+  "rebalanced_on": "2026-10-09",
+  "risk_on": true,
+  "signal_month": "2026-09",
+  "start_level": 17496.51953125,
+  "log": [
+    {
+      "date": "2026-10-09",
+      "signal_month": "2026-09",
+      "month_end_level": 17160.41,
+      "average": 16148.79,
+      "risk_on": true,
+      "value": 99800.0,
+      "action": "HOLD 2.0x THE S&P 500"
+    }
+  ],
+  "marks": [
+    {
+      "date": "2026-10-09",
+      "level": 17496.52,
+      "value": 99800.0
+    }
+  ]
+}
