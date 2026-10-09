@@ -5,7 +5,7 @@ https://github.com/ianghengmoney-art/Algo-Trading/actions/workflows/gcfp.yml
 
 | Run | What | Outcome |
 |---|---|---|
-| [#23](https://github.com/ianghengmoney-art/Algo-Trading/actions/runs/37894266786) | Variant 2 (selected) from 2012-01-01, 1,000 companies — registered robustness check | running |
+| [#23](https://github.com/ianghengmoney-art/Algo-Trading/actions/runs/37894266786) | Variant 2 (selected) from 2012-01-01, 1,000 companies — registered robustness check | **FAILED**: +12.75%/yr vs S&P 500 TR +14.77% (-2.03%/yr); halves -3.22% / -0.19%; t = -0.69; different holdings (Meta was 16% of gains), so the 2015 result was sensitive to the start date; 32 min |
 | [#22](https://github.com/ianghengmoney-art/Algo-Trading/actions/runs/37778949106) | Factor strategy, variant 3 ($2bn+ companies), 4,000-company sample | **FAILED**: +13.44%/yr vs S&P 500 TR +14.03% (-0.59%/yr); halves -3.39% / +4.41%; t = +0.07; AppLovin 19% and Oklo 17% of gains; 109 min |
 | [#21](https://github.com/ianghengmoney-art/Algo-Trading/actions/runs/37775864234) | Variant 1 recompute (same rules) + long-history premise check (1963 onward) | v1 unchanged (+15.63%/yr), t = +0.74; without AppLovin +14.48%/yr, without APP and NVDA +13.42%. Long history SUPPORTS the premise: big-company Proxy A +1.45%/yr over the market 1963-2026 (t +2.89), +0.91%/yr 1995-2025, but -0.96%/yr in 2015-2025 |
 | [#20](https://github.com/ianghengmoney-art/Algo-Trading/actions/runs/37772817162) | Factor strategy, variant 2, 1,000 companies | **PASSED** all 4: +17.61%/yr vs S&P 500 TR +14.03% (+3.58%/yr); halves +1.62% / +7.28%; t = +1.27 (not significant); AppLovin alone was 31% of gains, without it about +14.7%/yr; 19 min |
