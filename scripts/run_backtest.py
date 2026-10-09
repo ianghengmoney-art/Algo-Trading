@@ -470,7 +470,8 @@ def main() -> int:
 
         code = leverage_main(["--cache-dir", str(args.cache_dir)])
         if args.out:
-            args.out.write_text(Path("reports/leverage.txt").read_text())
+            args.out.write_text(Path("reports/leverage.txt").read_text()
+                                + "\n" + Path("reports/leverage-daily.txt").read_text())
         return code
     if _defaults().get("attribution_only"):
         # A diagnostic job: regress the saved runs on the French factors and

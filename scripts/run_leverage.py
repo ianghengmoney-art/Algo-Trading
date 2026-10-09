@@ -35,6 +35,14 @@ def main(argv=None) -> int:
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(text)
     print(text)
+
+    # Crash protection on daily data (registered after the monthly result).
+    from gcfp.backtest import leverage_daily
+
+    daily_text, _ = leverage_daily.run(http_get, args.cache_dir)
+    daily_out = args.out.with_name("leverage-daily.txt")
+    daily_out.write_text(daily_text)
+    print(daily_text)
     return 0
 
 
