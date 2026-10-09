@@ -172,3 +172,61 @@ The operator added one condition: **an email before any margin call.**
   or account detail is stored in this public repository.
 - Stage 2 passes after **3 monthly signals** with no failed check. Stage 3
   then starts with a small share of the money, as registered.
+
+---
+
+# Crash protection: two variants registered 2026-10-09, before any test
+
+## The problem
+
+The monthly signal protects against slow bear markets (2000-02, 2008), not
+fast crashes. Those happen before a month-end comes round: October 1929,
+October 1987 (-20% in one day) and February-March 2020 (-34% in five weeks).
+At 2x, October 1987 cost 46% in a month on monthly data. On daily data the
+index stood about 30% below its September close at the October 19-20 low,
+close to the 33% that triggers a margin call at 2x with a 25% maintenance
+requirement. Monthly data also hides the worst moments inside a month, so
+the monthly test understates the true falls.
+
+## Data
+
+Kenneth French's **daily** US market and T-bill returns, from July 1926.
+The monthly trend signal is computed from the daily index's month-end
+levels, exactly as before.
+
+## Variants (in addition to L2, which is re-tested on daily data as the reference)
+
+- **L2-V, volatility-scaled.** As L2, but while risk-on the leverage is set
+  every 5 trading days to **min(2.0, 30% / the last 20 days' annualised
+  volatility)**. 30% is 2x a typical 15% market volatility, so calm markets
+  keep the full 2x, and leverage falls as markets get rough. Volatility
+  usually jumps as a crash begins. Moreira & Muir (2017) found managing
+  exposure this way improved risk-adjusted returns.
+- **L2-VS, volatility-scaled with a crash stop.** As L2-V, plus a stop: if
+  the index closes **10% or more below its level at the last month-end
+  re-levering**, everything moves to T-bills until the next month-end
+  signal. 10% is under a third of the way to a margin call at 2x.
+
+## Costs (daily)
+
+As before: borrowing at T-bills + 1.0%/yr on the borrowed part, 0.3%/yr
+while levered, and 0.2% per switch in or out (the stop included). Each
+leverage change also costs **0.05% per 1.0x changed**.
+
+## Pass criteria: all must hold
+
+1-3. As registered for L1/L2: beats buy-and-hold by at least 1%/yr over the
+     full period, in each half, and since 2008.
+4.   Maximum drawdown, **measured on daily closes**, no deeper than -55%.
+5.   **Worst calendar month no worse than -30%.** This is the "die in a
+     crash" test.
+6.   **No margin call** on daily closes with a 25% maintenance requirement:
+     equity never below 25% of exposure.
+
+## Selection
+
+If both pass, the higher full-period CAGR is selected and replaces L2 in
+paper trading. If neither passes, L2 stays in paper trading under the
+operator's decision, and the daily-data L2 row shows its true crash risk.
+These are the 3rd and 4th leverage variants. Counting everything, about 12
+strategies have now been tested on this data.

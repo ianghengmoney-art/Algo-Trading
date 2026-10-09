@@ -40,7 +40,11 @@ def fetch(today: date) -> tuple[list[tuple[date, float]], float]:
 
     source = YahooPriceSource()
     points = source.get_prices(INDEX, today - timedelta(days=420), today)
-    closes = [(p.price_date, p.close) for p in points]
+    # Before about 21:00 UTC the US session is still open and Yahoo's bar for
+    # today is a live quote, not a close: leave it out.
+    still_open = datetime.utcnow().hour < 21
+    closes = [(p.price_date, p.close) for p in points
+              if not (still_open and p.price_date >= today)]
     try:
         bills = source.get_prices(TBILL, today - timedelta(days=14), today)
         rf = bills[0].close / 100.0  # newest first

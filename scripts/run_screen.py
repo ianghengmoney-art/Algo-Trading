@@ -124,6 +124,12 @@ def main() -> int:
         args.source == "edgar" and not args.symbols
     )
     if args.source == "edgar":
+        if not args.user_agent:
+            raise SystemExit(
+                "EDGAR requires --user-agent identifying you with contact "
+                'details, e.g. --user-agent "jane jane@example.com". '
+                "The SEC blocks anonymous scrapers."
+            )
         start_hard_stop()
     if paper:
         # The leveraged trend strategy's paper book and margin alarm: a few
