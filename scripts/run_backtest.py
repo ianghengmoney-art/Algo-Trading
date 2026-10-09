@@ -362,6 +362,15 @@ def run_factor(
 
 def main() -> int:
     args = parse_args()
+    if _defaults().get("attribution_only"):
+        # A diagnostic job: regress the saved runs on the French factors and
+        # stop. The workflow's backtest job is how it reaches GitHub Actions.
+        from run_attribution import main as attribution_main
+
+        code = attribution_main(["--cache-dir", str(args.cache_dir)])
+        if args.out:
+            args.out.write_text(Path("reports/attribution.txt").read_text())
+        return code
     started = time.monotonic()
     start_watchdog(args.time_budget_min)
 
