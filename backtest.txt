@@ -1,101 +1,103 @@
 ==============================================================================
-FACTOR ATTRIBUTION — how much of each run is known factors (beta), how much is left (alpha)
+FACTOR STRATEGY — variant 4 of 4 in docs/FACTOR_STRATEGY.md (sample of 4000 companies)
 ==============================================================================
-Monthly returns regressed on Kenneth French's US factors (CRSP/Compustat,
-no survivorship bias). Newey-West standard errors, 3 lags. Alpha is the
-return the factors do not explain, per year; |t| >= 2 is the usual bar
-for 'probably not luck', higher still allowing for the variants tried.
-French data through 2026-08; months after that are not used.
+period: 2015-01-01..2025-09-30 · earlier half to 2021-06-13, later half from 2021-06-14
+spare money and benchmark: the S&P 500 total-return index (dividends reinvested), after 30% dividend withholding (the book's dividends lose the same share)
+long-history premise check (1963 onward): SUPPORTS the premise (full report: reports/long-history.txt)
 
-Variant 1, 1,000 companies, 2015-2025 (#19/#21)  [reports/factor-v1-1000-curves.csv]
+RETURNS (per year)
+                   strategy  S&P 500 TR  difference  eq-wt universe
+  full period       +13.18%     +13.42%      -0.24%          +9.86%
+  earlier half      +15.80%     +14.08%      +1.73%         +15.16%
+  later half         +9.46%     +12.13%      -2.67%          +1.98%
+  
+  PRE-REGISTERED PASS CRITERIA (docs/FACTOR_STRATEGY.md, variant 4 of 4 registered):
+    [PASS] beats the S&P 500 in the earlier half
+    [FAIL] beats the S&P 500 in the later half
+    [FAIL] beats the S&P 500 by at least 1%/yr over the full period
+    [PASS] beats the equal-weight eligible universe over the full period
+    [FAIL] Fama-French 5 + momentum alpha above 0 with t >= 2.0 (alpha +0.37%/yr, t +0.20)
+    GOAL 15%-20%/yr compound return: not met (+13.18%/yr)
+      of which the S&P 500 itself returned +13.42%/yr and the strategy added -0.24%/yr. A future decade with lower market returns lowers the first part, not the second.
+    (5%/yr above the S&P 500 in both halves and overall: not met)
+    VERDICT: FAILED — no demonstrated edge on this data. The rules may not be adjusted and re-tested as the same strategy; the honest default is an index fund.
+
+HOW LIKELY IS THE EDGE REAL? (monthly returns against the S&P 500)
+  months: 128 · ahead in 48% of them
+  average excess: +0.62%/yr · tracking error 10.4%/yr · information ratio +0.06
+  t-statistic: +0.20  (below ~2: consistent with luck; ~2.4+: strong evidence allowing for the variants tried)
+  deflated Sharpe ratio of the excess: 10% probability the edge beats the luck of the best of 8 strategies tried (95%+ is convincing)
+
+YEAR BY YEAR (calendar years, from each December's value)
+  year    strategy   S&P 500  eq-wt univ
+  2016      +16.2%    +11.2%      +19.1%
+  2017      +22.4%    +21.1%      +21.9%
+  2018      -11.0%     -4.9%      -10.0%
+  2019      +21.7%    +30.7%      +26.2%
+  2020      +20.7%    +17.8%      +24.4%
+  2021      +54.9%    +28.2%      +24.5%
+  2022      -11.1%    -18.5%      -22.9%
+  2023      +21.6%    +25.7%      +15.4%
+  2024      +13.6%    +24.5%      +11.8%
+  2025      +10.5%    +14.5%      +11.6%
+
+FACTOR ATTRIBUTION (Kenneth French's US factors)
   CAPM (market only)
-    alpha +0.46%/yr (t +0.17) · R² 0.78 · unexplained volatility 9.6%/yr · 128 months
-    loadings: market +1.16 (t +18.0)
+    alpha -1.41%/yr (t -0.46) · R² 0.78 · unexplained volatility 9.4%/yr · 128 months
+    loadings: market +1.13 (t +19.2)
   Fama-French 3 + momentum
-    alpha +1.34%/yr (t +0.58) · R² 0.84 · unexplained volatility 8.4%/yr · 128 months
-    loadings: market +1.15 (t +18.1) · small size +0.37 (t +3.9) · value (book/price) +0.20 (t +3.7) · momentum +0.20 (t +2.8)
+    alpha +0.93%/yr (t +0.49) · R² 0.89 · unexplained volatility 6.7%/yr · 128 months
+    loadings: market +1.05 (t +25.0) · small size +0.57 (t +4.9) · value (book/price) +0.23 (t +4.6) · momentum +0.13 (t +1.5)
   Fama-French 5 + momentum
-    alpha +0.71%/yr (t +0.32) · R² 0.85 · unexplained volatility 8.1%/yr · 128 months
-    loadings: market +1.12 (t +18.1) · small size +0.45 (t +4.7) · value (book/price) +0.30 (t +4.1) · profitability +0.27 (t +2.5) · conservative investment -0.31 (t -3.2) · momentum +0.24 (t +3.6)
-  S&P 500 TR, for comparison (Fama-French 5 + momentum)
-    alpha -0.20%/yr (t -0.79) · R² 1.00 · unexplained volatility 0.8%/yr · 128 months
-    loadings: market +0.98 (t +158.4) · small size -0.11 (t -12.0) · value (book/price) +0.01 (t +1.0) · profitability +0.07 (t +4.8) · conservative investment +0.03 (t +2.5) · momentum -0.00 (t -0.4)
-  equal-weight universe, for comparison (Fama-French 5 + momentum)
-    alpha -1.86%/yr (t -1.36) · R² 0.96 · unexplained volatility 4.4%/yr · 128 months
-    loadings: market +1.07 (t +41.3) · small size +0.66 (t +11.6) · value (book/price) +0.11 (t +2.3) · profitability -0.06 (t -1.0) · conservative investment -0.02 (t -0.4) · momentum -0.03 (t -1.0)
+    alpha +0.37%/yr (t +0.20) · R² 0.90 · unexplained volatility 6.5%/yr · 128 months
+    loadings: market +1.05 (t +27.8) · small size +0.66 (t +5.8) · value (book/price) +0.14 (t +2.6) · profitability +0.22 (t +3.0) · conservative investment +0.14 (t +1.0) · momentum +0.14 (t +1.8)
 
-Variant 2, 1,000 companies, 2015-2025 (#20) — SELECTED  [reports/factor-v2-1000-curves.csv]
-  CAPM (market only)
-    alpha +2.45%/yr (t +0.96) · R² 0.79 · unexplained volatility 9.2%/yr · 128 months
-    loadings: market +1.13 (t +19.3)
-  Fama-French 3 + momentum
-    alpha +4.23%/yr (t +2.02) · R² 0.86 · unexplained volatility 7.6%/yr · 128 months
-    loadings: market +1.07 (t +20.8) · small size +0.40 (t +4.1) · value (book/price) +0.22 (t +4.5) · momentum +0.09 (t +1.2)
-  Fama-French 5 + momentum
-    alpha +3.95%/yr (t +1.77) · R² 0.86 · unexplained volatility 7.5%/yr · 128 months
-    loadings: market +1.05 (t +20.4) · small size +0.43 (t +5.0) · value (book/price) +0.31 (t +4.1) · profitability +0.12 (t +1.3) · conservative investment -0.24 (t -2.6) · momentum +0.11 (t +1.7)
-  S&P 500 TR, for comparison (Fama-French 5 + momentum)
-    alpha -0.20%/yr (t -0.79) · R² 1.00 · unexplained volatility 0.8%/yr · 128 months
-    loadings: market +0.98 (t +158.4) · small size -0.11 (t -12.0) · value (book/price) +0.01 (t +1.0) · profitability +0.07 (t +4.8) · conservative investment +0.03 (t +2.5) · momentum -0.00 (t -0.4)
-  equal-weight universe, for comparison (Fama-French 5 + momentum)
-    alpha -2.07%/yr (t -1.52) · R² 0.96 · unexplained volatility 4.4%/yr · 128 months
-    loadings: market +1.07 (t +39.6) · small size +0.67 (t +11.8) · value (book/price) +0.12 (t +2.5) · profitability -0.05 (t -0.9) · conservative investment -0.02 (t -0.3) · momentum -0.03 (t -1.1)
+Factor strategy
+  99,784 -> 373,787 · +13.18%/yr
+  benchmark +13.42%/yr · excess -0.24%/yr
+  volatility 20.0%/yr
+  portfolio max drawdown: -31.3% from 2018-08-31 to 2020-03-31 (578 days), recovered in 822 days
+  positions closed: 566
+  median outcome: +5.2%   (mean +38.6% — reported second, deliberately)
+  quartiles: p25 -19.0% · p75 +41.3%
+  best +2517.6% · worst -91.6%
+  loss rate: 43.8% · total losses (<= -90%): 0.2%
+  largest single-position drawdown: -93.6%
+  median holding period: 395 days
 
-Variant 2, 1,000 companies, from 2012 (#23)  [reports/factor-v2-from-2012-curves.csv]
-  CAPM (market only)
-    alpha -1.88%/yr (t -1.05) · R² 0.83 · unexplained volatility 6.9%/yr · 164 months
-    loadings: market +1.04 (t +23.7)
-  Fama-French 3 + momentum
-    alpha -0.35%/yr (t -0.24) · R² 0.90 · unexplained volatility 5.4%/yr · 164 months
-    loadings: market +0.98 (t +23.7) · small size +0.29 (t +5.0) · value (book/price) +0.24 (t +4.2) · momentum +0.01 (t +0.3)
-  Fama-French 5 + momentum
-    alpha -0.64%/yr (t -0.46) · R² 0.91 · unexplained volatility 5.2%/yr · 164 months
-    loadings: market +0.99 (t +25.5) · small size +0.36 (t +5.7) · value (book/price) +0.13 (t +2.2) · profitability +0.14 (t +1.8) · conservative investment +0.19 (t +2.1) · momentum +0.01 (t +0.3)
-  S&P 500 TR, for comparison (Fama-French 5 + momentum)
-    alpha -0.12%/yr (t -0.57) · R² 1.00 · unexplained volatility 0.8%/yr · 164 months
-    loadings: market +0.98 (t +174.3) · small size -0.11 (t -13.1) · value (book/price) +0.01 (t +1.1) · profitability +0.07 (t +5.2) · conservative investment +0.03 (t +2.6) · momentum -0.00 (t -0.6)
-  equal-weight universe, for comparison (Fama-French 5 + momentum)
-    alpha -1.36%/yr (t -1.24) · R² 0.96 · unexplained volatility 4.1%/yr · 164 months
-    loadings: market +1.09 (t +49.7) · small size +0.49 (t +11.0) · value (book/price) +0.06 (t +1.5) · profitability -0.21 (t -3.7) · conservative investment +0.08 (t +1.1) · momentum -0.14 (t -5.2)
+  Stock picks vs the index over each pick's own holding period:
+    picks compared: 566
+    median pick vs index: -11.2%   (mean +6.4%)
+    picks that beat the index: 38%
+    average share of the money in stock picks: 96.3% (the rest followed the index)
 
-Variant 2, 4,000 companies, 2015-2025 (#24)  [reports/factor-v2-4000-curves.csv]
-  CAPM (market only)
-    alpha +12.09%/yr (t +0.99) · R² 0.13 · unexplained volatility 45.0%/yr · 128 months
-    loadings: market +1.11 (t +9.1)
-  Fama-French 3 + momentum
-    alpha +13.83%/yr (t +1.25) · R² 0.25 · unexplained volatility 42.2%/yr · 128 months
-    loadings: market +1.13 (t +10.9) · small size +1.42 (t +1.6) · value (book/price) +0.53 (t +2.8) · momentum +0.97 (t +1.5)
-  Fama-French 5 + momentum
-    alpha +13.99%/yr (t +1.22) · R² 0.30 · unexplained volatility 41.1%/yr · 128 months
-    loadings: market +1.27 (t +9.7) · small size +1.52 (t +1.8) · value (book/price) -0.25 (t -0.5) · profitability -0.14 (t -0.3) · conservative investment +1.82 (t +1.2) · momentum +0.83 (t +1.6)
-  S&P 500 TR, for comparison (Fama-French 5 + momentum)
-    alpha -0.20%/yr (t -0.79) · R² 1.00 · unexplained volatility 0.8%/yr · 128 months
-    loadings: market +0.98 (t +158.4) · small size -0.11 (t -12.0) · value (book/price) +0.01 (t +1.0) · profitability +0.07 (t +4.8) · conservative investment +0.03 (t +2.5) · momentum -0.00 (t -0.4)
-  equal-weight universe, for comparison (Fama-French 5 + momentum)
-    alpha -0.82%/yr (t -0.87) · R² 0.98 · unexplained volatility 3.2%/yr · 128 months
-    loadings: market +1.08 (t +48.8) · small size +0.71 (t +15.3) · value (book/price) +0.02 (t +0.5) · profitability -0.11 (t -2.3) · conservative investment +0.08 (t +1.6) · momentum -0.04 (t -1.8)
+S&P 500 max drawdown over the same months: -24.1% from 2021-12-31 to 2022-09-30 (273 days), recovered in 730 days
+holdings per month: median 100 · eligible companies ranked per month: median 452
+positions sold over the period: 466 · about 43% of the portfolio replaced per year
 
-Variant 3, $2bn+, 4,000 companies (#22)  [reports/factor-v3-4000-curves.csv]
-  CAPM (market only)
-    alpha -0.67%/yr (t -0.23) · R² 0.76 · unexplained volatility 9.6%/yr · 128 months
-    loadings: market +1.08 (t +16.3)
-  Fama-French 3 + momentum
-    alpha -0.22%/yr (t -0.10) · R² 0.83 · unexplained volatility 8.2%/yr · 128 months
-    loadings: market +1.09 (t +20.3) · small size +0.20 (t +2.1) · value (book/price) +0.36 (t +6.1) · momentum +0.16 (t +2.4)
-  Fama-French 5 + momentum
-    alpha -0.93%/yr (t -0.44) · R² 0.84 · unexplained volatility 8.1%/yr · 128 months
-    loadings: market +1.08 (t +20.3) · small size +0.31 (t +3.9) · value (book/price) +0.31 (t +4.3) · profitability +0.29 (t +2.3) · conservative investment +0.01 (t +0.1) · momentum +0.19 (t +2.6)
-  S&P 500 TR, for comparison (Fama-French 5 + momentum)
-    alpha -0.20%/yr (t -0.79) · R² 1.00 · unexplained volatility 0.8%/yr · 128 months
-    loadings: market +0.98 (t +158.4) · small size -0.11 (t -12.0) · value (book/price) +0.01 (t +1.0) · profitability +0.07 (t +4.8) · conservative investment +0.03 (t +2.5) · momentum -0.00 (t -0.4)
-  equal-weight universe, for comparison (Fama-French 5 + momentum)
-    alpha -2.44%/yr (t -2.70) · R² 0.97 · unexplained volatility 3.5%/yr · 128 months
-    loadings: market +1.05 (t +50.8) · small size +0.43 (t +9.5) · value (book/price) +0.06 (t +1.4) · profitability +0.02 (t +0.4) · conservative investment +0.03 (t +0.5) · momentum -0.03 (t -1.3)
-
-READING IT
-  The S&P 500 rows are a plumbing check: alpha near 0, market loading
-  near 1, R² near 1. If they are not, the data are misaligned.
-  A strategy whose alpha shrinks toward 0 as factors are added earned
-  those factors' premia, which index funds sell for a fraction of the
-  cost. What survives the last model, if |t| >= 2, is stock selection.
+NOTES
+  Fills at the rebalance-day close; cost per fill by liquidity (0.10% at $50M+/day, 0.25% at $10-50M, 0.50% below); 70% of dividends credited on ex-dates.
+  Holdings trimmed back to 1% after passing 2%: 46 times; at most 15 holdings per SIC major group.
+  The S&P 500 before dividend tax returned +14.03%/yr.
+  The equal-weight universe benchmark excludes trading costs, which flatters it.
+  No evaluation raised an error.
+  Holdings closed as delisted at -30%: 1.
+  SURVIVORSHIP COVERAGE
+    sampled from the SEC filing index (incl. dead companies): 4000
+    stopped filing during the period (died/acquired/delisted): 2083
+      of which a price history was found: 87
+    still filing at the end: 1917 (priced: 1528)
+    WARNING: only 4% of the companies that died could be priced. The unpriced ones could never be bought in this backtest, so the result still leans toward survivors. Treat the CAGR as an upper bound.
+  
+  SENSITIVITY — same rules, one thing changed (reported, never used to choose)
+    change                                 CAGR    index   excess      t  max DD
+    as registered (100 names)           +13.18%  +13.42%   -0.24%  +0.20    -31%
+    rebalance on the 7th                +11.98%  +12.92%   -0.94%  -0.11    -29%
+    rebalance on the 14th              skipped: not enough time left in the job
+    rebalance on the 21st              skipped: not enough time left in the job
+    50 names (buffer 100)              skipped: not enough time left in the job
+    200 names (buffer 400)             skipped: not enough time left in the job
+  full data: reports/factor-v4-curves.csv
+  full data: reports/factor-v4-trades.csv
+  run time: 172 min
 ==============================================================================
