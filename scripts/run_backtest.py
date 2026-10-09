@@ -113,7 +113,7 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
-        "--variant", type=int, choices=(1, 2, 3),
+        "--variant", type=int, choices=(1, 2, 3, 4),
         default=int(_defaults().get("variant", 1)),
         help="which registered factor variant (docs/FACTOR_STRATEGY.md)",
     )
@@ -230,7 +230,8 @@ def run_factor(
 ) -> int:
     """The pre-registered factor strategy (docs/FACTOR_STRATEGY.md)."""
     from gcfp.backtest.factor import (
-        FactorBacktester, edge_statistics, judge, rules_for, write_run_data,
+        REGISTERED_VARIANTS, FactorBacktester, edge_statistics, judge, rules_for,
+        write_run_data,
     )
 
     VARIANT = args.variant
@@ -255,13 +256,37 @@ def run_factor(
     except Exception as exc:
         long_history = f"failed: {type(exc).__name__}: {exc}"
 
+    rules = rules_for(VARIANT)
     backtester = FactorBacktester(
         adapter, config, settings, symbols, label="Factor strategy",
         split=split, eligibility=eligibility, member_cache=member_cache,
-        rules=rules_for(VARIANT),
+        rules=rules,
     )
+    run_started = time.monotonic()
     run = backtester.run(progress=args.progress, deadline=until_end_less(8))
-    verdict = judge(run, backtester.universe_curve, split, VARIANT)
+    run_minutes = (time.monotonic() - run_started) / 60
+
+    # Factor attribution of this run (docs/FACTOR_STRATEGY.md, variant 4's
+    # fifth criterion; reported for every variant).
+    alpha = None
+    attribution_lines: list[str] = []
+    try:
+        from gcfp.backtest import attribution
+        from run_long_history import http_get
+
+        factors = attribution.load_factors(http_get, args.cache_dir)
+        fits = attribution.attribute(
+            attribution.monthly_from_curve(run.equity_curve), factors
+        )
+        model, fit = fits[-1]
+        alpha = (fit.alpha_per_year, fit.t(0))
+        attribution_lines = ["FACTOR ATTRIBUTION (Kenneth French's US factors)"]
+        for model, fit in fits:
+            attribution_lines.append(f"  {model}")
+            attribution_lines += attribution._fit_lines(fit)
+    except Exception as exc:
+        attribution_lines = [f"FACTOR ATTRIBUTION: not run ({type(exc).__name__}: {exc})"]
+    verdict = judge(run, backtester.universe_curve, split, VARIANT, alpha=alpha)
     summary = summarise("Factor strategy", run.equity_curve, run.book.closed,
                         run.benchmark_curve)
     versus = picks_vs_index(run.book.closed, run.benchmark_curve, run.book.snapshots)
@@ -272,6 +297,9 @@ def run_factor(
     turnover = sells / years / max(backtester.rules.holdings, 1)
     stats = edge_statistics(run.equity_curve, run.benchmark_curve,
                             backtester.universe_curve)
+    from gcfp.backtest.metrics import annualised_return
+
+    gross_cagr = annualised_return(backtester.gross_benchmark_curve)
 
     def ticker_of(symbol: str) -> str:
         resolve = getattr(adapter, "_price_symbol", None)
@@ -294,19 +322,24 @@ def run_factor(
     def lines(extra: list[str]) -> list[str]:
         out = [
             "=" * 78,
-            f"FACTOR STRATEGY — variant {VARIANT} of 3 in docs/FACTOR_STRATEGY.md "
+            f"FACTOR STRATEGY — variant {VARIANT} of {REGISTERED_VARIANTS} in docs/FACTOR_STRATEGY.md "
             f"(sample of {len(symbols)} companies)",
             "=" * 78,
             f"period: {settings.start.isoformat()}..{settings.end.isoformat()} · "
             f"earlier half to {split.train_end.isoformat()}, later half from "
             f"{split.test_start.isoformat()}",
-            f"spare money and benchmark: {benchmark_text}",
+            f"spare money and benchmark: {benchmark_text}"
+            + (f", after {rules.dividend_withholding:.0%} dividend withholding "
+               "(the book's dividends lose the same share)"
+               if rules.dividend_withholding else ""),
             f"long-history premise check (1963 onward): {long_history}",
             "",
             "RETURNS (per year)",
             *[f"  {l}" for l in verdict.lines],
             "",
             *stats,
+            "",
+            *attribution_lines,
             "",
             *[l for l in summary.as_report_lines() if "Module I" not in l],
         ]
@@ -329,8 +362,18 @@ def run_factor(
         out += [
             "",
             "NOTES",
-            "  Fills at the month-end close, 0.1% cost per fill; dividends credited "
-            "on ex-dates.",
+            ("  Fills at the rebalance-day close; cost per fill by liquidity "
+             "(0.10% at $50M+/day, 0.25% at $10-50M, 0.50% below); "
+             f"{1 - rules.dividend_withholding:.0%} of dividends credited on ex-dates."
+             if rules.cost_tiers else
+             "  Fills at the month-end close, 0.1% cost per fill; dividends credited "
+             "on ex-dates."),
+            *([f"  Holdings trimmed back to {1 / rules.holdings:.0%} after passing "
+               f"{rules.max_weight:.0%}: {backtester.trims} times; at most "
+               f"{rules.max_per_industry} holdings per SIC major group."]
+              if rules.max_weight else []),
+            *([f"  The S&P 500 before dividend tax returned {gross_cagr:+.2%}/yr."]
+              if rules.dividend_withholding and gross_cagr is not None else []),
             "  The equal-weight universe benchmark excludes trading costs, which "
             "flatters it.",
             *(["  EVALUATIONS THAT RAISED (a code fault, not a data gap):"]
@@ -354,9 +397,67 @@ def run_factor(
         return text
 
     text = write(["SURVIVORSHIP COVERAGE: not yet computed."] if survivorship_lines else [])
+    surv: list[str] = []
     if survivorship_lines is not None:
-        text = write(survivorship_lines())
+        surv = survivorship_lines()
+        text = write(surv)
     print(text, flush=True)
+
+    # Sensitivity (docs/FACTOR_STRATEGY.md, variant 4): the same rules with
+    # another rebalance day or holding count. Reported as a range, never used
+    # to choose. Each run is skipped when the job has too little time left.
+    configs = _defaults().get("sensitivity") or []
+    if configs and VARIANT >= 4:
+        import dataclasses
+
+        from gcfp.backtest.factor import _monthly_returns
+
+        rows = ["SENSITIVITY — same rules, one thing changed (reported, never used to choose)",
+                f"  {'change':34s} {'CAGR':>8s} {'index':>8s} {'excess':>8s} {'t':>6s} {'max DD':>7s}"]
+
+        def row(label: str, result, bench) -> str:
+            s_c, b_c = annualised_return(result.equity_curve), annualised_return(bench)
+            strat, idx = _monthly_returns(result.equity_curve), _monthly_returns(bench)
+            days = sorted(set(strat) & set(idx))
+            excess = [strat[d] - idx[d] for d in days]
+            t = float("nan")
+            if len(excess) > 12:
+                import statistics as st
+
+                sd = st.stdev(excess)
+                t = st.fmean(excess) / (sd / len(excess) ** 0.5) if sd > 0 else t
+            dd = max_drawdown(result.equity_curve)
+            pct = lambda x: f"{x:+.2%}" if x is not None else "n/a"
+            diff = s_c - b_c if s_c is not None and b_c is not None else None
+            return (f"  {label:34s} {pct(s_c):>8s} {pct(b_c):>8s} {pct(diff):>8s} "
+                    f"{t:+6.2f} {(f'{dd.depth:.0%}' if dd else 'n/a'):>7s}")
+
+        rows.append(row(f"as registered ({rules.holdings} names)", run,
+                        run.benchmark_curve))
+        for cfg in configs:
+            label = cfg.get("label") or ", ".join(f"{k} {v}" for k, v in cfg.items())
+            deadline = until_end_less(8)
+            if deadline is not None and deadline - time.monotonic() < run_minutes * 60 * 1.25 + 300:
+                rows.append(f"  {label:34s} skipped: not enough time left in the job")
+                continue
+            s_rules = dataclasses.replace(
+                rules, **{k: cfg[k] for k in ("holdings", "buffer_rank") if k in cfg})
+            s_settings = dataclasses.replace(settings, rebalance_day=cfg.get("rebalance_day"))
+            print(f"sensitivity: {label}", file=sys.stderr, flush=True)
+            try:
+                bt = FactorBacktester(
+                    adapter, config, s_settings, symbols, label=f"sensitivity {label}",
+                    split=split, eligibility=eligibility, member_cache=member_cache,
+                    rules=s_rules,
+                )
+                result = bt.run(progress=False, deadline=deadline)
+                rows.append(row(label, result, result.benchmark_curve)
+                            + (" (stopped early)" if result.stopped_early_at else ""))
+            except Exception as exc:
+                rows.append(f"  {label:34s} failed: {type(exc).__name__}: {exc}")
+            text = write(surv + ["", *rows])
+        text = write(surv + ["", *rows])
+        print("\n".join(rows), flush=True)
     return 0
 
 

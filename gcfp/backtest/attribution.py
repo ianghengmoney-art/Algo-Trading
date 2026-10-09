@@ -244,3 +244,53 @@ def report(runs: list[tuple[str, Path]], factors: dict[str, Series]) -> str:
 def run(runs: list[tuple[str, Path]], get: Callable[[str], bytes],
         cache_dir: Path | None = None) -> str:
     return report(runs, load_factors(get, cache_dir))
+
+
+# ------------------------------------------------------- deflated Sharpe ratio
+
+EULER_GAMMA = 0.5772156649
+
+
+def deflated_sharpe(returns: list[float], trials: int) -> tuple[float, float] | None:
+    """Bailey & López de Prado's deflated Sharpe ratio of monthly returns.
+
+    The best of ``trials`` strategies tried on the same data has a high
+    Sharpe ratio by luck alone. This is the probability that the true Sharpe
+    ratio is above that luck threshold, allowing for the returns' skew and
+    fat tails. Returns (annualised Sharpe ratio, probability), or None with
+    too few months. The spread of Sharpe ratios across trials, which the
+    paper estimates from them, is taken as its value under no skill, 1/T.
+    """
+    from statistics import NormalDist, fmean, pstdev
+
+    n = len(returns)
+    if n < 24 or trials < 1:
+        return None
+    mean, sd = fmean(returns), pstdev(returns)
+    if sd <= 0:
+        return None
+    sr = mean / sd
+    skew = fmean([((r - mean) / sd) ** 3 for r in returns])
+    kurt = fmean([((r - mean) / sd) ** 4 for r in returns])
+    norm = NormalDist()
+    if trials == 1:
+        threshold = 0.0
+    else:
+        threshold = math.sqrt(1.0 / n) * (
+            (1 - EULER_GAMMA) * norm.inv_cdf(1 - 1 / trials)
+            + EULER_GAMMA * norm.inv_cdf(1 - 1 / (trials * math.e))
+        )
+    denom = 1 - skew * sr + (kurt - 1) / 4 * sr * sr
+    if denom <= 0:
+        return None
+    z = (sr - threshold) * math.sqrt(n - 1) / math.sqrt(denom)
+    return sr * math.sqrt(12), norm.cdf(z)
+
+
+def monthly_from_curve(curve) -> Series:
+    """YYYYMM -> return, from a list of (date, value) month-end points."""
+    out: Series = {}
+    for (_, a), (day, b) in zip(curve, curve[1:]):
+        if a and a > 0:
+            out[day.year * 100 + day.month] = b / a - 1
+    return out

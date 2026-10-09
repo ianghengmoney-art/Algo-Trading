@@ -134,8 +134,16 @@ class TestVariantsTwoAndThree:
 
         assert rules_for(3).min_market_cap == 2e9 and rules_for(3).holdings == 30
         assert rules_for(1).min_market_cap is None
+        four = rules_for(4)
+        assert (four.holdings, four.buffer_rank, four.max_weight, four.max_per_industry,
+                four.dividend_withholding) == (100, 200, 0.02, 15, 0.30)
+        # Variants 1-3 are untouched by variant 4's fields.
+        for v in (1, 2, 3):
+            r = rules_for(v)
+            assert r.max_weight is None and r.max_per_industry is None
+            assert r.cost_tiers is None and r.dividend_withholding == 0.0
         with pytest.raises(ValueError):
-            rules_for(4)
+            rules_for(5)
 
 
 class TestEdgeStatistics:
@@ -181,3 +189,98 @@ class TestCagrGoal:
         text = "\n".join(judge(result, list(zip(days, index)), split).lines)
         assert "GOAL 15%-20%/yr compound return: MET" in text
         assert "the strategy added" in text
+
+
+class TestVariantFour:
+    @staticmethod
+    def engine(rules, start=date(2014, 1, 1), end=date(2016, 12, 31), **settings_kw):
+        from gcfp.backtest.engine import BacktestSettings
+        from gcfp.backtest.factor import FactorBacktester
+        from gcfp.backtest.fixtures import build_synthetic_market
+        from gcfp.runner import free_stack_config
+
+        market = build_synthetic_market(date(2008, 1, 1), end)
+        symbols = [s for s in sorted(market.companies) if not s.startswith("^")]
+        settings = BacktestSettings(start=start, end=end, **settings_kw)
+        return FactorBacktester(market, free_stack_config(), settings, symbols,
+                                rules=rules)
+
+    def test_costs_follow_liquidity_and_unknown_is_dearest(self):
+        from gcfp.backtest.factor import rules_for
+
+        bt = self.engine(rules_for(4))
+        bt._adv.update({"BIG": 80e6, "MID": 20e6, "SMALL": 3e6})
+        assert [bt._cost_of(s) for s in ("BIG", "MID", "SMALL", "NEVER-SEEN")] == [
+            0.001, 0.0025, 0.005, 0.005]
+        assert self.engine(rules_for(2))._cost_of("BIG") == 0.001
+
+    def test_the_industry_limit_counts_holdings_per_group(self):
+        from dataclasses import replace
+
+        from gcfp.backtest.factor import rules_for
+
+        bt = self.engine(replace(rules_for(4), max_per_industry=2))
+        bt._industry.update({"A": "73", "B": "73", "C": "73", "D": "28"})
+        assert bt._industry_ok("C", {"73": 1})
+        assert not bt._industry_ok("C", {"73": 2})
+        assert bt._industry_ok("D", {"73": 2})
+        assert bt._industry_ok("UNKNOWN", {"73": 2})  # no code: not limited
+
+    def test_no_holding_stays_above_the_cap_after_a_rebalance(self):
+        from dataclasses import replace
+
+        from gcfp.backtest.factor import rules_for
+
+        rules = replace(rules_for(4), holdings=4, buffer_rank=8, max_weight=0.30,
+                        cost_tiers=None, dividend_withholding=0.0)
+        bt = self.engine(rules)
+        result = bt.run()
+        assert result.rebalances, "the synthetic run made no rebalances"
+        for snap in result.book.snapshots:
+            assert snap.total_value > 0
+        # Every trim leaves the name at its equal weight; check the fills say so.
+        trims = [f for f in result.book.fills if f.reason.startswith("trimmed")]
+        assert bt.trims == len(trims)
+
+    def test_withholding_costs_the_book_and_the_benchmark_alike(self):
+        from dataclasses import replace
+
+        from gcfp.backtest.factor import rules_for
+
+        base = replace(rules_for(2))
+        taxed = replace(base, dividend_withholding=0.30)
+        plain = self.engine(base)
+        bt = self.engine(taxed)
+        assert bt.settings.dividend_withholding == 0.30
+        assert plain.settings.dividend_withholding == 0.0
+        r = bt.run()
+        # The synthetic benchmark is itself the price-only index, so it has
+        # no dividend part to tax: net equals gross.
+        assert [v for _, v in r.benchmark_curve] == pytest.approx(
+            [v for _, v in bt.gross_benchmark_curve])
+
+    def test_the_rebalance_day_moves_every_date(self):
+        from gcfp.backtest.engine import month_ends
+
+        assert month_ends(date(2015, 1, 1), date(2015, 3, 31), 1, 14) == [
+            date(2015, 1, 14), date(2015, 2, 14), date(2015, 3, 14)]
+        assert month_ends(date(2015, 1, 1), date(2015, 2, 28), 1, 31) == [
+            date(2015, 1, 31), date(2015, 2, 28)]
+        assert month_ends(date(2015, 1, 1), date(2015, 2, 28)) == [
+            date(2015, 1, 31), date(2015, 2, 28)]
+
+
+class TestIndexGrowthAfterTax:
+    def test_only_the_dividend_part_is_taxed(self):
+        from gcfp.backtest.engine import Backtester, BacktestSettings
+
+        bt = Backtester.__new__(Backtester)
+        bt.settings = BacktestSettings(start=date(2015, 1, 1), end=date(2015, 2, 1),
+                                       dividend_withholding=0.30)
+        prices = {date(2015, 1, 31): 100.0, date(2015, 2, 28): 101.0}
+        bt._price_on = lambda symbol, as_of: prices.get(as_of)
+        bt._ballast_price_level = None
+        assert bt._index_growth(1000.0, None, date(2015, 1, 31)) is None
+        # The total-return index rose 3%; the price index 1%: dividends 2%.
+        growth = bt._index_growth(1030.0, 1000.0, date(2015, 2, 28))
+        assert growth == pytest.approx(1.03 - 0.30 * 0.02)

@@ -114,6 +114,16 @@ class BacktestSettings:
     #: Rebalances a holding may go unpriced before it is treated as delisted.
     #: One allows for a feed hiccup without carrying a dead name for months.
     delisting_grace_rebalances: int = 1
+    #: Day of the month to rebalance on; None is the last day. Moving it
+    #: shows how much of a result is the luck of one trading date.
+    rebalance_day: int | None = None
+    #: Share of every cash dividend lost to tax before it reaches the book:
+    #: 0.30 is the US withholding a Singapore resident pays. Money parked in
+    #: the index loses the same share of the index's dividends.
+    dividend_withholding: float = 0.0
+    #: The price-only index matching a total-return benchmark, used to split
+    #: the index's return into price and dividends when tax is withheld.
+    price_index_symbol: str = "^GSPC"
 
 
 @dataclass
@@ -308,8 +318,11 @@ def choose_benchmark(adapter, first: date, last: date) -> tuple[str, str]:
     )
 
 
-def month_ends(start: date, end: date, step_months: int = 1) -> list[date]:
-    """Rebalance dates, on the last calendar day of each step."""
+def month_ends(
+    start: date, end: date, step_months: int = 1, day_of_month: int | None = None
+) -> list[date]:
+    """Rebalance dates, on the last calendar day of each step, or on
+    ``day_of_month`` (capped at the month's last day) when given."""
     out: list[date] = []
     year, month = start.year, start.month
     while True:
@@ -318,6 +331,8 @@ def month_ends(start: date, end: date, step_months: int = 1) -> list[date]:
         else:
             nxt = date(year, month + 1, 1)
         day = nxt - timedelta(days=1)
+        if day_of_month is not None:
+            day = date(year, month, min(day_of_month, day.day))
         if day > end:
             break
         if day >= start:
@@ -502,6 +517,7 @@ class Backtester:
         settings = self.settings
         book = BacktestBook(cash=settings.initial_capital)
         self._ballast_level: float | None = None
+        self._ballast_price_level: float | None = None
         result = BacktestResult(
             label=self.label,
             settings=settings,
@@ -510,7 +526,8 @@ class Backtester:
             config_fingerprint=self.config.fingerprint,
         )
 
-        dates = month_ends(settings.start, settings.end, settings.rebalance_months)
+        dates = month_ends(settings.start, settings.end, settings.rebalance_months,
+                           settings.rebalance_day)
         if not dates:
             result.notes.append("no rebalance dates in the requested period")
             return result
@@ -560,7 +577,7 @@ class Backtester:
         for symbol in list(book.positions):
             price = prices.get(symbol)
             if price is not None:
-                book.sell(symbol, price * (1 - settings.transaction_cost), final,
+                book.sell(symbol, price * (1 - self._cost_of(symbol)), final,
                           "end of backtest period")
             else:
                 # Previously left open, which removed it from every return
@@ -580,9 +597,40 @@ class Backtester:
         if level is None or level <= 0:
             return
         previous = self._ballast_level
-        if previous:
-            book.cash *= level / previous
+        growth = self._index_growth(level, previous, as_of)
+        if growth is not None:
+            book.cash *= growth
         self._ballast_level = level
+
+    def _index_growth(
+        self, level: float, previous: float | None, as_of: date
+    ) -> float | None:
+        """The index's growth since ``previous``, after dividend tax.
+
+        With withholding, the total-return index's growth is split into its
+        price part (from the price-only index) and its dividend part, and
+        the tax share of the dividend part is removed. Without a price-only
+        level the growth is left untaxed rather than guessed.
+        """
+        tax = self.settings.dividend_withholding
+        price_now = (
+            self._price_on(self.settings.price_index_symbol, as_of) if tax > 0 else None
+        )
+        price_then = getattr(self, "_ballast_price_level", None)
+        if price_now:
+            self._ballast_price_level = price_now
+        if not previous:
+            return None
+        growth = level / previous
+        if tax > 0 and price_now and price_then:
+            dividends = growth - price_now / price_then
+            growth -= tax * max(dividends, 0.0)
+        return growth
+
+    def _cost_of(self, symbol: str) -> float:
+        """The cost of one fill in ``symbol``: flat unless a strategy
+        models it from liquidity."""
+        return self.settings.transaction_cost
 
     def credit_dividends(self, book: BacktestBook, as_of: date) -> float:
         """Pay each holding the dividends that went ex since the last mark.
@@ -606,9 +654,10 @@ class Backtester:
                 )
             except Exception:
                 continue
+            kept = 1.0 - self.settings.dividend_withholding
             for event in events:
                 if since < event.ex_date <= as_of:
-                    paid += book.credit_dividend(symbol, event.amount)
+                    paid += book.credit_dividend(symbol, event.amount * kept)
         return paid
 
     @staticmethod

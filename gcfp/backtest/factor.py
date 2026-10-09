@@ -40,6 +40,22 @@ class FactorRules:
     #: Momentum window: from 12 months to 1 month before the date.
     momentum_from_days: int = 365
     momentum_to_days: int = 30
+    # Variant 4 (the review's risk fixes); None/0 leaves variants 1-3 as
+    # they were registered.
+    #: A holding above this share of the portfolio at a rebalance is
+    #: trimmed back to its equal weight.
+    max_weight: float | None = None
+    #: At most this many holdings in one 2-digit SIC major group.
+    max_per_industry: int | None = None
+    #: Cost per fill by 3-month average daily dollar volume: (floor, cost)
+    #: pairs, highest floor first. None is the flat settings cost.
+    cost_tiers: tuple[tuple[float, float], ...] | None = None
+    #: Share of dividends lost to tax, on the holdings and the benchmark.
+    dividend_withholding: float = 0.0
+
+
+#: Variant 4's liquidity-based costs (docs/FACTOR_STRATEGY.md).
+LIQUIDITY_COSTS = ((50e6, 0.001), (10e6, 0.0025), (0.0, 0.005))
 
 
 def percentile_ranks(values: dict[str, float]) -> dict[str, float]:
@@ -86,6 +102,12 @@ def rules_for(variant: int) -> "FactorRules":
         return FactorRules(variant=2, min_scores=3)
     if variant == 3:
         return FactorRules(variant=3, min_scores=3, min_market_cap=2_000_000_000.0)
+    if variant == 4:
+        return FactorRules(
+            variant=4, min_scores=3, holdings=100, buffer_rank=200,
+            max_weight=0.02, max_per_industry=15, cost_tiers=LIQUIDITY_COSTS,
+            dividend_withholding=0.30,
+        )
     raise ValueError(f"variant {variant} is not registered in docs/FACTOR_STRATEGY.md")
 
 
@@ -209,12 +231,70 @@ class FactorBacktester(Backtester):
     def __init__(self, *args, rules: FactorRules = FactorRules(), **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.rules = rules
+        if rules.dividend_withholding:
+            import dataclasses
+
+            self.settings = dataclasses.replace(
+                self.settings, dividend_withholding=rules.dividend_withholding
+            )
+        #: Last known liquidity and industry group of every name seen, so a
+        #: holding that left the universe is still costed and counted.
+        self._adv: dict[str, float] = {}
+        self._industry: dict[str, str] = {}
+        #: The benchmark after the same dividend tax as the book (equal to
+        #: the plain index when nothing is withheld), and the plain index.
+        self._net_level: float | None = None
+        self._net_last: float | None = None
+        self.gross_benchmark_curve: list[tuple[date, float]] = []
+        self.trims = 0
         #: The equal-weight eligible universe, as an index level per month.
         self.universe_curve: list[tuple[date, float]] = []
         self._universe_level = 1.0
         self._universe_last: dict[str, float] = {}
         self._universe_last_date: date | None = None
         self.eligible_counts: list[int] = []
+
+    def _cost_of(self, symbol: str) -> float:
+        tiers = self.rules.cost_tiers
+        if not tiers:
+            return self.settings.transaction_cost
+        adv = self._adv.get(symbol)
+        if adv is None:
+            return tiers[-1][1]  # unknown liquidity: the dearest tier
+        for floor, cost in tiers:
+            if adv >= floor:
+                return cost
+        return tiers[-1][1]
+
+    def _industry_ok(self, symbol: str, held: dict[str, int]) -> bool:
+        cap = self.rules.max_per_industry
+        group = self._industry.get(symbol)
+        return cap is None or group is None or held.get(group, 0) < cap
+
+    def _benchmark_level(self, as_of: date) -> float | None:
+        """The benchmark level to compare against: the index itself, or,
+        with dividend tax, a chained index losing the same share of its
+        dividends as the book does."""
+        level = self._price_on(self.settings.benchmark_symbol, as_of)
+        if level is None:
+            return None
+        self.gross_benchmark_curve.append((as_of, level))
+        if not self.settings.dividend_withholding:
+            return level
+        if self._net_level is None:
+            self._net_level = level
+            self._net_price_then = self._price_on(self.settings.price_index_symbol, as_of)
+        else:
+            price_now = self._price_on(self.settings.price_index_symbol, as_of)
+            growth = level / self._net_last
+            if price_now and self._net_price_then:
+                dividends = growth - price_now / self._net_price_then
+                growth -= self.settings.dividend_withholding * max(dividends, 0.0)
+            self._net_level *= growth
+            if price_now:
+                self._net_price_then = price_now
+        self._net_last = level
+        return self._net_level
 
     def _momentum(self, symbol: str, as_of: date) -> float | None:
         end = self._price_on(symbol, as_of - timedelta(days=self.rules.momentum_to_days))
@@ -243,6 +323,7 @@ class FactorBacktester(Backtester):
                         )
                     except Exception:
                         paid = 0.0
+                paid *= 1.0 - self.settings.dividend_withholding
                 returns.append((now + paid) / then - 1.0)
             if returns:
                 self._universe_level *= 1.0 + statistics.fmean(returns)
@@ -268,6 +349,11 @@ class FactorBacktester(Backtester):
         inputs: dict[str, FactorInputs] = {}
         tags: dict[str, Classification] = {}
         for member in eligible:
+            if member.adv_3m_usd is not None:
+                self._adv[member.symbol] = member.adv_3m_usd
+            code = getattr(member, "industry_code", None)
+            if code:
+                self._industry[member.symbol] = str(code)[:2]
             try:
                 data = adapter.load_company(
                     member.symbol, price_start=as_of - timedelta(days=400), price_end=as_of
@@ -316,11 +402,33 @@ class FactorBacktester(Backtester):
                 "left the eligible universe" if rank is None
                 else f"fell to rank {rank + 1}, outside the top {rules.buffer_rank}"
             )
-            book.sell(symbol, price * (1 - settings.transaction_cost), as_of, reason)
+            book.sell(symbol, price * (1 - self._cost_of(symbol)), as_of, reason)
             record.sells.append((symbol, reason))
 
-        # Fill the empty slots from the top of the ranking.
+        # Variant 4: trim any holding that has grown past the cap back to
+        # its equal weight, so no single winner can carry the portfolio.
         total_value = book.total_value(prices)
+        if rules.max_weight is not None and total_value > 0:
+            target = total_value / rules.holdings
+            for symbol, position in list(book.positions.items()):
+                price = prices.get(symbol)
+                if price is None:
+                    continue
+                value = position.market_value(price)
+                if value > rules.max_weight * total_value:
+                    book.sell(symbol, price * (1 - self._cost_of(symbol)), as_of,
+                              f"trimmed from {value / total_value:.1%} to "
+                              f"{1 / rules.holdings:.1%}",
+                              fraction=1 - target / value)
+                    self.trims += 1
+            total_value = book.total_value(prices)
+
+        # Fill the empty slots from the top of the ranking.
+        held_groups: dict[str, int] = {}
+        for symbol in book.positions:
+            group = self._industry.get(symbol)
+            if group is not None:
+                held_groups[group] = held_groups.get(group, 0) + 1
         for symbol in ranked:
             if len(book.positions) >= rules.holdings:
                 break
@@ -329,12 +437,14 @@ class FactorBacktester(Backtester):
             price = prices.get(symbol)
             if price is None:
                 continue
+            if not self._industry_ok(symbol, held_groups):
+                continue
             amount = min(total_value / rules.holdings, book.cash)
             if amount <= 0:
                 break
             fill = book.buy(
                 symbol, tags.get(symbol, Classification.CORE_STABLE), amount,
-                price * (1 + settings.transaction_cost), as_of,
+                price * (1 + self._cost_of(symbol)), as_of,
                 conviction=scores[symbol] * 100.0,
                 intended_weight=1.0 / rules.holdings,
                 anchor_mode="FACTOR",
@@ -343,6 +453,9 @@ class FactorBacktester(Backtester):
             )
             if fill is not None:
                 record.buys.append(symbol)
+                group = self._industry.get(symbol)
+                if group is not None:
+                    held_groups[group] = held_groups.get(group, 0) + 1
         record.passers = len(record.buys)
 
         self._advance_universe_index(as_of, prices)
@@ -351,7 +464,7 @@ class FactorBacktester(Backtester):
 
         prices = self._prices_on(list(book.positions), as_of)
         book.mark(prices)
-        benchmark = self._price_on(settings.benchmark_symbol, as_of)
+        benchmark = self._benchmark_level(as_of)
         book.snapshot(as_of, prices, benchmark)
         if benchmark is not None:
             result.benchmark_curve.append((as_of, benchmark))
@@ -401,8 +514,17 @@ def edge_statistics(curve, benchmark, universe_curve=()) -> list[str]:
             f"information ratio {mean * 12 / te:+.2f}" if te > 0 else
             f"  average excess: {mean * 12:+.2%}/yr",
             f"  t-statistic: {t:+.2f}  (below ~2: consistent with luck; "
-            "~2.4+: strong evidence allowing for 3 variants tried)",
+            "~2.4+: strong evidence allowing for the variants tried)",
         ]
+        from .attribution import deflated_sharpe
+
+        dsr = deflated_sharpe(excess, STRATEGIES_TRIED)
+        if dsr is not None:
+            lines.append(
+                f"  deflated Sharpe ratio of the excess: {dsr[1]:.0%} probability the "
+                f"edge beats the luck of the best of {STRATEGIES_TRIED} strategies "
+                "tried (95%+ is convincing)"
+            )
     years = sorted({d.year for d, _ in curve})
     if len(years) >= 2:
         def by_year(points):
@@ -461,8 +583,22 @@ GOAL_EXCESS = 0.05
 GOAL_CAGR = (0.15, 0.20)
 
 
-def judge(result: BacktestResult, universe_curve, split, variant: int = VARIANT) -> Verdict:
-    """The pre-registered pass criteria, applied once."""
+#: Factor variants registered in docs/FACTOR_STRATEGY.md, and strategies
+#: tested on this data in all (GCFP v4's configurations included), for the
+#: deflated Sharpe ratio.
+REGISTERED_VARIANTS = 4
+STRATEGIES_TRIED = 8
+#: Variant 4's fifth criterion: Fama-French 5 + momentum alpha's t-statistic.
+ALPHA_T_BAR = 2.0
+
+
+def judge(
+    result: BacktestResult, universe_curve, split, variant: int = VARIANT,
+    alpha: tuple[float, float] | None = None,
+) -> Verdict:
+    """The pre-registered pass criteria, applied once. ``alpha`` is the
+    (alpha per year, t-statistic) of the Fama-French 5 + momentum regression,
+    needed for variant 4's fifth criterion; None means it could not be run."""
     curve, bench = result.equity_curve, result.benchmark_curve
     full = (curve[0][0], curve[-1][0]) if curve else (None, None)
     rows = [
@@ -497,9 +633,20 @@ def judge(result: BacktestResult, universe_curve, split, variant: int = VARIANT)
         ("beats the equal-weight eligible universe over the full period",
          beats("full period", 0.0, against=2)),
     ]
+    if variant >= 4:
+        if alpha is None:
+            checks.append((
+                "Fama-French 5 + momentum alpha above 0 with t >= 2.0 "
+                "(not determined: the factor data could not be fetched)", False))
+        else:
+            per_year, t = alpha
+            checks.append((
+                f"Fama-French 5 + momentum alpha above 0 with t >= {ALPHA_T_BAR:.1f} "
+                f"(alpha {per_year:+.2%}/yr, t {t:+.2f})",
+                per_year > 0 and t >= ALPHA_T_BAR))
     lines.append("")
     lines.append("PRE-REGISTERED PASS CRITERIA (docs/FACTOR_STRATEGY.md, variant "
-                 f"{variant} of 3 registered):")
+                 f"{variant} of {REGISTERED_VARIANTS} registered):")
     for text, ok in checks:
         lines.append(f"  [{'PASS' if ok else 'FAIL'}] {text}")
     passed = all(ok for _, ok in checks)
@@ -527,10 +674,15 @@ def judge(result: BacktestResult, universe_curve, split, variant: int = VARIANT)
         f"  ({GOAL_EXCESS:.0%}/yr above the S&P 500 in both halves and overall: "
         + ("met)" if goal else "not met)")
     )
+    factor_only = variant >= 4 and all(ok for _, ok in checks[:4]) and not passed
     lines.append(
         "  VERDICT: " + (
             "PASSED — proceed to paper trading before any real money."
             if passed else
+            "FACTOR PREMIA, NOT ALPHA — passes criteria 1-4 but its return is "
+            "explained by known factors; a low-cost multi-factor fund does the "
+            "same job. Variant 2's paper trading continues as the pipeline test."
+            if factor_only else
             "FAILED — no demonstrated edge on this data. The rules may not be "
             "adjusted and re-tested as the same strategy; the honest default "
             "is an index fund."
@@ -540,8 +692,11 @@ def judge(result: BacktestResult, universe_curve, split, variant: int = VARIANT)
 
 
 __all__ = [
+    "ALPHA_T_BAR",
     "FactorBacktester",
     "FactorInputs",
+    "REGISTERED_VARIANTS",
+    "STRATEGIES_TRIED",
     "FactorRules",
     "VARIANT",
     "composite_scores",

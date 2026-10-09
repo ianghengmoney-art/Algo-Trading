@@ -84,3 +84,21 @@ class TestAttribute:
         assert "Fama-French 5 + momentum" in text
         assert "S&P 500 TR, for comparison" in text
         assert "alpha +0.00%/yr" in text
+
+
+class TestDeflatedSharpe:
+    def test_more_trials_lower_the_probability(self):
+        rnd = random.Random(5)
+        returns = [rnd.gauss(0.008, 0.04) for _ in range(128)]
+        _, one = attribution.deflated_sharpe(returns, 1)
+        _, eight = attribution.deflated_sharpe(returns, 8)
+        assert 0 < eight < one < 1
+
+    def test_noise_is_not_mistaken_for_skill(self):
+        rnd = random.Random(6)
+        returns = [rnd.gauss(0.0, 0.04) for _ in range(128)]
+        _, p = attribution.deflated_sharpe(returns, 8)
+        assert p < 0.5
+
+    def test_too_few_months_gives_nothing(self):
+        assert attribution.deflated_sharpe([0.01] * 10, 8) is None
