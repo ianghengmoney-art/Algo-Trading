@@ -255,3 +255,13 @@ Reading, stated plainly:
   maintenance) would have had a wide margin there.
 - In this data, return and crash safety trade off one for one. No tested
   rule has both 15%/yr and survivable crashes.
+
+## Operator decision — 2026-10-09, after the crash test
+
+The operator keeps **plain L2 (2.0x)** in paper trading, knowing its
+daily-data risk: worst day -40%, worst month -46%, deepest fall -75%. Paper
+trading continues unchanged. For real money the recommendation is **S&P
+500 futures** rather than a margin loan: about 7% maintenance instead of
+25%, so the 1929 low (equity 26% of exposure) would not have triggered a
+call. The alarm stays at 25%, the conservative setting, so warnings come
+earlier than a futures account strictly needs.
