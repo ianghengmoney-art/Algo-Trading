@@ -281,3 +281,23 @@ bigger, more representative universe. Reported plainly either way; if it does
 not beat the S&P 500 there, the expectation for paper trading is set
 accordingly (no demonstrated edge), and paper trading remains the deciding
 test.
+
+---
+
+# Robustness results for variant 2 — 2026-10-09
+
+| Test | Result vs S&P 500 TR | t | Top winners' share of gains | Without top 2 |
+|---|---|---|---|---|
+| Registered: 1,000 companies, 2015-2025 | +3.58%/yr | +1.27 | AppLovin 31%, FICO 16% | 12.9%/yr (index 14.0%) |
+| Check: 1,000 companies, from 2012 | **-2.03%/yr** | -0.69 | Meta 16% | 11.2%/yr |
+| Check: 4,000 companies, 2015-2025 | +7.46%/yr | +0.97 | AppLovin 36%, GameStop 22% (2021: +130% in one year) | 14.4%/yr (index 14.0%) |
+
+Reading, stated plainly: every result that beat the index depended on one or
+two extreme winners caught by the momentum rule (AppLovin, GameStop's 2021
+squeeze); with those removed each is roughly the index or below, the
+strategy is ahead of the index in only about half of months, and no t-statistic
+reaches 2. The rules may hold a genuine tendency to catch big winners, as the
+momentum literature suggests, but on this data that is **not distinguishable
+from luck**. Variant 2 stays selected for paper trading as registered; per
+stage 3, real money waits for paper trading, and even then is limited to
+10-20% of stock money with the rest in an index fund.
