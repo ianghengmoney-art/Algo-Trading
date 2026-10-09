@@ -1,4 +1,4 @@
-# Screened by GCFP v4 on 2026-09-15 — 134 names.
+# Screened by GCFP v4 on 2026-10-09 — 133 names.
 #
 # SURVIVORSHIP WARNING. Every ticker here exists today. A
 # backtest over this list cannot lose money in a company that
@@ -11,6 +11,7 @@ ACIW
 ACNB
 AGX
 ALMU
+AMCR
 AMR
 AMRC
 ARES-PB
@@ -30,7 +31,6 @@ CASS
 CCS
 CGEM
 CMCO
-CMPX
 CON
 COST
 CQP
@@ -43,10 +43,10 @@ DG
 DGII
 DIOD
 DPZ
-DRH
 DVN
 ECG
 ED
+EMAT
 EOSE
 ESE
 F
@@ -55,7 +55,6 @@ FISV
 FLR
 FLS
 FOUR-PA
-FVR
 FWRG
 GILD
 GME
@@ -84,23 +83,23 @@ MBC
 MGTX
 MITK
 MMED
+MS-PP
 MYRG
 NBIX
-NHI
 NOV
 NVCT
-OHI
 OLMA
 OSBC
 OTTR
 PBAM
 PBF
-PEB
+PCTY
 PEGA
 PNFP
 PPLI
 PRIM
 PRKS
+QFIN
 RDN
 REAL
 REZI
