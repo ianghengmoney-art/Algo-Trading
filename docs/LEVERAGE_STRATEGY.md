@@ -98,3 +98,38 @@ what the filter is for.
   one month would breach typical margin; the monthly data shows whether that
   ever happened while risk-on.
 - Counting these 2 variants, about 10 strategies have now been tested.
+
+---
+
+# Result — 2026-10-09 (run #29)
+
+| 1927-05 to 2026-08 | CAGR | Deepest fall | Since 1990 | Since 2008 |
+|---|---|---|---|---|
+| Market, buy and hold | +10.30% | -84% (1929-32) | +11.04% (-50%) | +11.42% (-48%) |
+| Trend, 1.0x | +9.25% | -43% | +9.41% (-19%) | +9.13% (-19%) |
+| **L1** trend 1.5x | +11.55% | **-60%** (1929-33) | +12.25% (-29%) | +12.61% (-28%) |
+| **L2** trend 2.0x | +13.38% | **-74%** (1929-35) | +14.79% (-38%) | +15.83% (-37%) |
+| Buy and hold 2.0x, no filter | +12.21% | -99% | +15.64% (-81%) | +17.64% (-76%) |
+
+Criteria 1-3 pass for both: each beats buy-and-hold by more than 1%/yr over
+the century, in both halves, and after publication. Criterion 4 fails for
+both: the Great Depression takes L1 to -60% and L2 to -74%, beyond the -55%
+limit. **By the registered rules neither passes, and none is selected.**
+
+Reading, stated plainly:
+
+- This is the first rule tested here that improved on the index over a
+  century *and* after it was published. The trend filter's edge is risk
+  reduction (trend 1.0x: -43% worst fall against the market's -84%), and
+  that is what makes leverage survivable. Both variants had a higher return
+  *and* a shallower worst fall than plain buy-and-hold.
+- The limit that failed is a risk preference, not a test of edge. It was
+  set at the S&P 500's 2007-09 fall, -55%. Over the century, buy-and-hold
+  itself fell -84%.
+- Changing that limit now, after seeing the result, would be a new decision
+  made with the result known. Only the operator can make it, and it is
+  recorded as such if made. It does not change this record: under the rules
+  as registered, both variants failed.
+- L2's worst single month was -46% (October 1987). Its post-1990 record
+  reached the 15% goal only in the strongest stock market period on record;
+  a lower-return decade lowers it roughly in proportion.
