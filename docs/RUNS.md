@@ -26,3 +26,11 @@ https://github.com/ianghengmoney-art/Algo-Trading/actions/workflows/gcfp.yml
 | [#13](https://github.com/ianghengmoney-art/Algo-Trading/actions/runs/37270880121) | GCFP v4, C2 peer options compared | all about +0.2%/yr |
 | [#12](https://github.com/ianghengmoney-art/Algo-Trading/actions/runs/37269809553) | GCFP v4 | cancelled |
 | [#9](https://github.com/ianghengmoney-art/Algo-Trading/actions/runs/37247583268) | weekly screen (schedule) | cancelled |
+
+## Daily checks
+
+The weekday margin check of the 2x leveraged trend paper book (docs/LEVERAGE_STRATEGY.md).
+
+| Date (close) | Run | Status | Paper value | Alert |
+|---|---|---|---|---|
+| 2026-10-09 | [#32](https://github.com/ianghengmoney-art/Algo-Trading/actions/runs/37994918332) | passed | 100,128 (S&P 500 TR +0.16% since start) | OK, no email |
