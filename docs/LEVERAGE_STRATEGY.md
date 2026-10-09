@@ -230,3 +230,28 @@ paper trading. If neither passes, L2 stays in paper trading under the
 operator's decision, and the daily-data L2 row shows its true crash risk.
 These are the 3rd and 4th leverage variants. Counting everything, about 12
 strategies have now been tested on this data.
+
+## Crash protection result — 2026-10-09 (run #31)
+
+| Daily data, 1927-2026 | CAGR | Since 1990 | Since 2008 | Worst day | Worst month | Deepest fall | 1987 crash | 1929 crash |
+|---|---|---|---|---|---|---|---|---|
+| L2 (as chosen) | +12.8% | +14.2% | +15.9% | -40% | -46% | -75% | -49% | -47% |
+| L2-V | +12.7% | +12.9% | +13.7% | -31% | -37% | -73% | -39% | -31% |
+| L2-VS | +12.5% | +11.6% | +11.7% | -15% | -29% | -73% | -25% | -22% |
+| Market | +9.8% | +11.0% | +11.6% | -17% | -29% | -84% | -33% | -44% |
+
+Neither L2-V nor L2-VS passes: both fall -73% in the 1937-42 bear market,
+beyond -55%. L2-VS passes the worst-month test that L2 and L2-V fail. **By the
+registered rule, L2 stays in paper trading** under the operator's decision.
+
+Reading, stated plainly:
+
+- The protections do what they are for. They roughly halve the damage of
+  sudden crashes (1987: -49% to -25%; 1929: -47% to -22%). They cost about
+  2.5%/yr since 1990, and they do not stop a long grinding bear market.
+- L2 on daily data is riskier than the monthly test showed: -40% on
+  1987-10-19 alone, and equity at 26% of exposure on 1929-10-29, one point
+  above a margin call at 25% maintenance. A futures account (about 7%
+  maintenance) would have had a wide margin there.
+- In this data, return and crash safety trade off one for one. No tested
+  rule has both 15%/yr and survivable crashes.
