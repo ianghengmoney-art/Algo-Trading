@@ -301,3 +301,87 @@ momentum literature suggests, but on this data that is **not distinguishable
 from luck**. Variant 2 stays selected for paper trading as registered; per
 stage 3, real money waits for paper trading, and even then is limited to
 10-20% of stock money with the rest in an index fund.
+
+---
+
+# Variant 4 — the review's risk fixes (registered 2026-10-09, before the factor attribution result)
+
+## Why a fourth variant, and why it is not data mining
+
+Variants 1-3 were registered as a closed family of three. Variant 4 is not
+added because of their returns. It answers a design review of variant 2
+(the "CIO review" in the session log). That review found nothing wrong
+with the *signals*. It found the *portfolio* wrong:
+
+- 30 names, never trimmed: one winner could grow to a quarter of the book
+  (AppLovin, GameStop), producing 48%/yr volatility and 45%/yr tracking
+  error, so no result could be told from luck.
+- No industry limit, flat 0.1% costs on small companies, and dividends
+  credited in full although a Singapore resident loses 30% of them.
+
+Variant 4 changes **only** those things. The signals, universe and test
+period are variant 2's, unchanged, and no number below was chosen by
+looking at any result. It was written down while the factor attribution
+(run #27) was still running, before its result was seen. It is the 4th
+factor variant tried. Counting GCFP v4's configurations too, about **8
+strategies** have been tested on this data, and the deflated Sharpe ratio
+in its report uses that count.
+
+## Rules (differences from variant 2 only)
+
+| | Variant 2 | Variant 4 |
+|---|---|---|
+| Holdings | 30 | **100** |
+| Sell buffer | kept while in the top 60 | kept while in the top **200** |
+| Position size | 1/30 at purchase, never trimmed | 1/100 at purchase; any holding above **2%** of the portfolio at a rebalance is **trimmed back to 1%** |
+| Industry limit | none | at most **15** holdings in one 2-digit SIC major group; a candidate that would breach it is skipped |
+| Cost per fill | 0.1% | by liquidity (3-month average daily dollar volume): **0.10%** at $50M+, **0.25%** at $10-50M, **0.50%** below $10M |
+| Dividends | credited in full | **70%** credited (30% US withholding, Singapore resident). The benchmark, and money parked in it, lose the same 30% of the index's dividend yield |
+
+The rebalance date stays month-end. The 4,000-company sample is variant 3's
+and the 2015-01-31 to 2025-09-30 period is unchanged.
+
+## Pass criteria: all must hold
+
+1-4. Variant 2's four: beats the S&P 500 total return in each half, by at
+     least 1%/yr over the full period, and beats the equal-weight eligible
+     universe. All are judged against the benchmark after the same 30%
+     dividend withholding, so both sides pay the same tax.
+5.   **Alpha:** the Fama-French 5-factor + momentum regression of its
+     monthly returns (gcfp/backtest/attribution.py) has an intercept above
+     zero with a **t-statistic of at least 2.0**.
+
+Criterion 5 is new and deliberately strict. It asks whether the strategy
+earns something a cheap factor ETF does not. A strategy that passes 1-4 but
+fails 5 earned factor premia. It passes as a *factor* strategy but not as
+*alpha*, and the honest recommendation is a low-cost multi-factor fund
+instead of maintaining this code.
+
+## What happens with each result
+
+- **Passes all five:** variant 4 replaces variant 2 in paper trading, and
+  the three months of stage 2 restart.
+- **Passes 1-4, fails 5:** variant 2's paper trading continues as the
+  pipeline test it is. The recommendation becomes an index fund core plus,
+  optionally, a multi-factor ETF in place of a self-run strategy.
+- **Fails any of 1-4:** as above, without the factor-fund option.
+
+## Reported, never used to choose (sensitivity)
+
+The same variant 4 rules are also run with the rebalance on the **7th, 14th
+and 21st** of each month instead of month-end, to show rebalance-timing
+luck, and with **50 and 200** holdings (buffers of 100 and 400). These
+results are reported as a range around variant 4. They are never used to
+pick a configuration. A wide range means the headline number is fragile.
+
+## Not fixed here, stated up front
+
+- **Survivorship:** only 4% of companies that died have free price
+  histories. Fixing it needs licensed data (Norgate, Sharadar or CRSP), a
+  cost the operator decides on. Results stay an upper bound until then.
+- **2000-02 and 2008:** the SEC's XBRL data starts in 2009. The long-history
+  check (Ken French data, 1963 on) covers those years for the premise only.
+- **Volatility targeting / beta overlay:** not added. It would add a
+  market-timing rule with its own parameters, which means more chances to
+  overfit. Diversifying to 100 names attacks the same 48% volatility
+  directly.
