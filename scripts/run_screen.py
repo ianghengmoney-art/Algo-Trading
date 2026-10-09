@@ -78,25 +78,58 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--paper", action=argparse.BooleanOptionalAction, default=None,
         help=(
-            "after the screen, run paper trading (scripts/run_paper.py): "
+            "before the screen, run paper trading (scripts/run_paper.py): "
             "mark the paper book to market, and rebalance it once a month. "
             "On by default for EDGAR runs of the whole sample."
         ),
     )
     parser.add_argument(
-        "--paper-deadline-min", type=float, default=300.0,
+        "--paper-deadline-min", type=float, default=180.0,
         help=(
             "minutes from the start of this run by which paper trading must "
-            "stop; the workflow kills the step at 330 and a killed step "
-            "commits nothing"
+            "stop, leaving the rest for the screen; the run as a whole ends "
+            "cleanly at 315 so the workflow (which kills the step at 330 and "
+            "then commits nothing) can save what was written"
         ),
     )
     return parser.parse_args()
 
 
+#: Minutes after which the whole run exits cleanly, whatever is still going.
+#: The workflow kills the step at 330 minutes, and a killed step commits
+#: nothing; exiting first lets the reports already on disk be committed.
+HARD_STOP_MIN = 315.0
+
+
+def start_hard_stop(minutes: float = HARD_STOP_MIN) -> None:
+    import os
+    import threading
+
+    def stop() -> None:
+        print(f"\n{minutes:.0f} minutes reached: ending the run so the reports "
+              "already written are committed.", file=sys.stderr, flush=True)
+        sys.stdout.flush()
+        os._exit(0)
+
+    timer = threading.Timer(minutes * 60, stop)
+    timer.daemon = True
+    timer.start()
+
+
 def main() -> int:
     started = time.monotonic()
     args = parse_args()
+
+    paper = args.paper if args.paper is not None else (
+        args.source == "edgar" and not args.symbols
+    )
+    if args.source == "edgar":
+        start_hard_stop()
+    if paper:
+        # Paper trading first: it is the live test now under way, while the
+        # GCFP screen below is the strategy the backtests rejected. Run
+        # first, it cannot be crowded out by a long screen.
+        run_paper_first(args, started)
 
     if args.source == "edgar":
         if not args.user_agent:
@@ -249,17 +282,12 @@ def main() -> int:
         if evaluation.signal is not None:
             store.record_alert(evaluation.signal, config.fingerprint)
 
-    paper = args.paper if args.paper is not None else (
-        args.source == "edgar" and not args.symbols
-    )
-    if paper:
-        run_paper_after_screen(args, started)
     return 0
 
 
-def run_paper_after_screen(args, started: float) -> None:
+def run_paper_first(args, started: float) -> None:
     """Paper trading rides on the weekly job. A failure here is reported and
-    never fails the screen, whose report is the job's main product."""
+    never stops the screen that follows."""
     remaining = args.paper_deadline_min - (time.monotonic() - started) / 60
     if remaining < 5:
         print("\npaper trading skipped: no time left in this run", file=sys.stderr)
