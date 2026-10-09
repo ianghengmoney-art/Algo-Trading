@@ -133,3 +133,42 @@ Reading, stated plainly:
 - L2's worst single month was -46% (October 1987). Its post-1990 record
   reached the 15% goal only in the strongest stock market period on record;
   a lower-return decade lowers it roughly in proportion.
+
+---
+
+# Operator decision — 2026-10-09, after the result
+
+The operator chose **L2 (2.0x) for paper trading**, accepting a worst
+historical fall deeper than the registered -55% limit (-74% in 1929-35;
+-38% since 1990; -46% in the single month of October 1987). The decision was
+made knowing the result, and is recorded here as such. It does not change
+the record above: under the rules as registered, both variants failed
+criterion 4.
+
+The operator added one condition: **an email before any margin call.**
+
+## Paper trading and the margin alarm
+
+- `scripts/run_leverage_paper.py` runs inside the screen job, now
+  dispatched **every weekday after the US close** as well as the Sunday
+  schedule. The GCFP screen itself still runs weekly. It keeps a 2.0x paper
+  book in `reports/paper/leverage-2x-book.json`, applies each month's signal
+  on the first run after the month closes, and writes the report and
+  `reports/paper/leverage-alert.txt`.
+- **The alarm** measures the index move since the last re-levering against
+  the move that would trigger a margin call. At 2x with a 25% maintenance
+  requirement, that is a 33% fall; with S&P 500 futures (about 7%), about
+  46%.
+  - **WARNING** at half that distance.
+  - **URGENT** at three quarters.
+  - **MARGIN CALL LEVEL** at all of it.
+  - **CHECK FAILED** if the data could not be had.
+- Every alert states two remedies per $10,000 of equity at the last
+  rebalance: cash to add, or position to sell, to get back to 2x. Selling is
+  usually the safer of the two.
+- **Email:** a daily routine on the operator's account triggers the job,
+  reads the alert file, and emails anything that is not OK. It also emails a
+  position change (risk-on or risk-off) at each month's signal. No address
+  or account detail is stored in this public repository.
+- Stage 2 passes after **3 monthly signals** with no failed check. Stage 3
+  then starts with a small share of the money, as registered.

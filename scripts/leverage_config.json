@@ -1,0 +1,6 @@
+{
+  "_comment": "The leveraged trend strategy's live settings (docs/LEVERAGE_STRATEGY.md). maintenance_margin: the share of your exposure your broker requires as equity before a margin call. 0.25 is the usual minimum for a margin loan on an index fund; S&P 500 futures need far less (about 0.06-0.08). Set it to your broker's actual figure. No account details belong here: this repository is public.",
+  "leverage": 2.0,
+  "maintenance_margin": 0.25,
+  "paper_capital": 100000
+}

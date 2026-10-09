@@ -126,10 +126,17 @@ def main() -> int:
     if args.source == "edgar":
         start_hard_stop()
     if paper:
+        # The leveraged trend strategy's paper book and margin alarm: a few
+        # seconds, and the reason the job now runs every weekday.
+        run_leverage_paper()
         # Paper trading first: it is the live test now under way, while the
         # GCFP screen below is the strategy the backtests rejected. Run
         # first, it cannot be crowded out by a long screen.
         run_paper_first(args, started)
+        if args.source == "edgar" and not full_screen_due(args.reports):
+            print("\nGCFP screen skipped: it ran within the last 6 days and this is "
+                  "a daily check, not the Sunday run.", file=sys.stderr)
+            return 0
 
     if args.source == "edgar":
         if not args.user_agent:
@@ -283,6 +290,44 @@ def main() -> int:
             store.record_alert(evaluation.signal, config.fingerprint)
 
     return 0
+
+
+def full_screen_due(reports: Path, today: date | None = None) -> bool:
+    """The GCFP screen runs weekly: on the Sunday schedule, or whenever no
+    screen report is under a week old. The daily runs that carry the margin
+    alarm skip it."""
+    import os
+
+    if os.environ.get("GITHUB_EVENT_NAME") == "schedule":
+        return True
+    today = today or date.today()
+    for path in Path(reports).glob("*-new-passers.txt"):
+        try:
+            written = date.fromisoformat(path.name[:10])
+        except ValueError:
+            continue
+        if (today - written).days < 6:
+            return False
+    return True
+
+
+def run_leverage_paper() -> None:
+    """A failure here is reported and never stops what follows."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    print("\nleveraged trend paper trading and margin check", file=sys.stderr)
+    try:
+        import run_leverage_paper
+
+        run_leverage_paper.main([])
+    except Exception as exc:  # pragma: no cover - reported, not raised
+        print(f"leverage paper trading failed: {type(exc).__name__}: {exc}",
+              file=sys.stderr)
+        # The daily check emails anything that is not OK, so a failed check
+        # is never mistaken for a quiet market.
+        alert = Path("reports/paper/leverage-alert.txt")
+        alert.parent.mkdir(parents=True, exist_ok=True)
+        alert.write_text(f"CHECK FAILED\n\n{date.today().isoformat()}: "
+                         f"{type(exc).__name__}: {exc}\n")
 
 
 def run_paper_first(args, started: float) -> None:
