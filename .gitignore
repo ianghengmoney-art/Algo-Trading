@@ -11,7 +11,7 @@ reports/
 .env
 
 # Cached SEC and price responses. Re-downloadable, and large: one
-# push carried 1,855 of them, about 1.7 GB. Files already tracked stay
-# tracked so nobody's local cache is deleted on the next pull; this
-# stops new ones being added.
+# push carried 1,855 of them, about 1.7 GB. None are tracked: when a run
+# refreshed a tracked one, the workflow could not pull before pushing its
+# report (run #25). The workflow keeps the cache in GitHub's own cache.
 .cache/
