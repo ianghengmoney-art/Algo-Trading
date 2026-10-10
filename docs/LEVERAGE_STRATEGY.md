@@ -378,3 +378,34 @@ Pedersen 2017 ("A Century of Evidence on Trend-Following Investing").
   Treasury note, micro gold). That is more to manage than one.
 - This is the 6th leverage variant. Counting everything, about 14
   strategies have now been tested.
+
+## MA result — 2026-10-10 (run #38)
+
+Monthly, 1991-05 to 2026-08, futures costs for both.
+
+| | CAGR | 1st half | 2nd half | Since 2008 | Deepest fall | Worst month | Volatility |
+|---|---|---|---|---|---|---|---|
+| L2, US stocks 2.0x | +17.3% | +16.8% | +17.8% | +16.9% | -36% | -32% | 22% |
+| **MA at 3.82x** (L2's volatility) | **+20.6%** | +19.6% | +21.6% | +20.1% | **-25%** | **-23%** | 22% |
+| MA at 2.0x | +12.4% | +12.6% | +12.3% | +11.5% | -13% | -12% | 11% |
+| US stocks, buy and hold | +11.2% | +7.4% | +15.0% | +11.4% | -50% | -17% | 15% |
+
+Crashes: dot-com 2000-02, L2 -31% and MA(3.82x) -9%; 2008, -9% and -4%;
+2020, -16% and -8%; 2022, -12% and -12%. Trend-sleeve correlations: US and
+international stocks 0.62; bonds and gold about 0 with everything.
+
+**MA passes all five registered criteria and replaces L2.**
+
+Reading, stated plainly:
+
+- The gain is diversification, as the design intended. Four sleeves that
+  trend at different times give the same volatility as L2 with about 3%/yr
+  more return and shallower falls.
+- 3.82x is one number fitted in-sample: the leverage that matches L2's
+  volatility. It is gross exposure across four markets, about 0.95x each
+  when all four are in trend. It is not 3.8x of any single market.
+- Monthly data understates falls inside a month, for both strategies alike.
+  The period starts in 1991, so 1929 and 1987 are not covered.
+- Running it needs four futures. The contract sizes (about $110,000 for a
+  10-year note future and $120,000 for MSCI EAFE) make it practical from
+  roughly $150,000-250,000 of capital, or with leveraged ETFs below that.
