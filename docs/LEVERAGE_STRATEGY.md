@@ -428,3 +428,47 @@ works as follows:
   `leverage-2x-alert.txt`.
 
 Stage 2 restarts with MA: 3 monthly signals with no failed check.
+
+---
+
+# MA validation and MA-RP: registered 2026-10-10, before any test
+
+## A. Out-of-sample check: MA-3 back to 1973 (validation, not a new rule)
+
+MA's test covered 1991-2026, because the international data starts in
+1990. Three of its four sleeves have older data: US stocks (French, 1926),
+10-year Treasuries (from ^TNX yields, 1962) and gold (free-floating since
+1971; datahub monthly). **MA-3** is MA's rule on those three, run from
+1973-01 to 2026-08. Like MA, it is levered to match L2's volatility over the
+period.
+
+The years **1973-1990 were never seen by MA's design.** They hold the 1973-74
+crash, 1970s inflation, the 1979-81 bond collapse and 1987.
+
+**Passes** if, at the volatility-matched leverage, MA-3 over 1973-1990:
+
+1. has a higher CAGR than L2 over the same months; and
+2. has a deepest fall no deeper than L2's.
+
+**If it fails,** MA stays in paper trading, but the evidence for it is
+recorded as weaker: the 1991-2026 result may owe something to its period.
+
+## B. MA-RP, risk-balanced sleeves (one new variant)
+
+As MA, but each sleeve's share is proportional to **1 / its volatility over
+the previous 12 months** (monthly returns) instead of 1/4. Out-of-trend
+sleeves keep their share in T-bills. The whole is levered to L2's
+volatility. This sizes each market to similar risk, as Hurst, Ooi & Pedersen
+(2017) do, so the two correlated stock sleeves stop dominating.
+
+**Replaces MA** only if, over MA's period (1991-2026) and at the same
+volatility, it has:
+
+1. a higher CAGR than MA over the full period and in both halves;
+2. a deepest fall no deeper than MA's; and
+3. a gross leverage when all sleeves are in trend no more than **6x**. Past
+   that the bond futures position becomes impractical, and the result rests
+   heavily on Treasuries.
+
+This is the 7th leverage variant. Counting everything, about 15 strategies
+have now been tested.
