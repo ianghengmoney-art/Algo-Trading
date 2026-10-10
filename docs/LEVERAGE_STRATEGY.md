@@ -280,3 +280,38 @@ because real crashes are larger than a normal distribution allows.
 three quarters of full Kelly's growth with half its volatility, and it is
 the highest leverage with no margin call in 100 years (calls start at
 2.25x). The chosen L2 stays at 2.0x.
+
+---
+
+# Improvements: registered 2026-10-10, before any test
+
+## 1. Futures implementation (a cost scenario, not a new rule)
+
+The same L2 rule, priced as S&P 500 futures rather than a margin loan:
+financing at T-bills + **0.3%/yr** (the typical implied rate in index
+futures, against 1.0% on a margin loan), **0.05%/yr** running cost
+(commissions), **0.05%** per switch. Dividends count in full: index futures
+prices carry them, so no 30% withholding applies. This is how the real
+money would be run, so it shows what L2 should earn in practice. Nothing
+about the signal changes.
+
+## 2. L2-E, ensemble signal (one new variant)
+
+Instead of one 10-month average, four: **3, 6, 9 and 12 months**, evenly
+spaced across the range the trend literature uses (Faber 2007: 10 months;
+Moskowitz, Ooi & Pedersen 2012: 12 months; Hurst, Ooi & Pedersen 2017: 1-12
+months). At each month-end, leverage = **2.0x x (share of the four
+averages the index is above)**: 2.0x, 1.5x, 1.0x, 0.5x or T-bills. Averaging
+lookbacks instead of choosing one is the standard way to cut whipsaw and
+the luck of one parameter. Nothing is fitted. Same costs as L2, re-levered
+monthly.
+
+## Pass criterion for L2-E (registered)
+
+L2-E replaces L2 only if, on daily data with L2's registered costs, it has:
+
+- a **higher CAGR than L2** over the full period **and** in both halves; and
+- a **deepest fall no deeper than L2's**.
+
+Otherwise L2 stays. This is the 5th leverage variant. Counting everything,
+about 13 strategies have now been tested on this data.
