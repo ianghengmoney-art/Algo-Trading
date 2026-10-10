@@ -83,6 +83,19 @@ def main(argv=None) -> int:
         daily_ma_text = f"MA daily crash check could not run: {type(exc).__name__}: {exc}\n"
     args.out.with_name("leverage-ma-daily.txt").write_text(daily_ma_text)
     print(daily_ma_text)
+
+    # The small-account ETF implementation check (registered 2026-10-10).
+    from gcfp.backtest import etf_version
+
+    try:
+        etf_text = etf_version.run(http_get, args.cache_dir)
+    except Exception as exc:
+        import traceback
+
+        traceback.print_exc()
+        etf_text = f"ETF version could not run: {type(exc).__name__}: {exc}\n"
+    args.out.with_name("leverage-etf.txt").write_text(etf_text)
+    print(etf_text)
     return 0
 
 

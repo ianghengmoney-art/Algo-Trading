@@ -475,7 +475,8 @@ def main() -> int:
                                 + "\n" + Path("reports/leverage-kelly.txt").read_text()
                                 + "\n" + Path("reports/leverage-improve.txt").read_text()
                                 + "\n" + Path("reports/leverage-multi-asset.txt").read_text()
-                                + "\n" + Path("reports/leverage-ma-daily.txt").read_text())
+                                + "\n" + Path("reports/leverage-ma-daily.txt").read_text()
+                                + "\n" + Path("reports/leverage-etf.txt").read_text())
         return code
     if _defaults().get("attribution_only"):
         # A diagnostic job: regress the saved runs on the French factors and
