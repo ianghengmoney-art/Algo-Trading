@@ -43,6 +43,13 @@ def main(argv=None) -> int:
     daily_out = args.out.with_name("leverage-daily.txt")
     daily_out.write_text(daily_text)
     print(daily_text)
+
+    # The growth-optimal (Kelly) leverage: a diagnostic, not a rule.
+    from gcfp.backtest import leverage_sweep
+
+    sweep_text = leverage_sweep.run(http_get, args.cache_dir)
+    args.out.with_name("leverage-kelly.txt").write_text(sweep_text)
+    print(sweep_text)
     return 0
 
 
