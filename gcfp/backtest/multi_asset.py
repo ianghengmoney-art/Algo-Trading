@@ -258,9 +258,29 @@ def signals(asset: Series) -> dict[int, bool]:
     return held
 
 
+VOL_MONTHS = 12  # MA-RP: the trailing window for each sleeve's volatility
+
+
+def sleeve_weights(assets: dict[str, Series], live: list[str], m: int,
+                   weighting: str) -> dict[str, float]:
+    """Each live sleeve's share (summing to 1): equal (MA), or proportional
+    to 1 / its volatility over the previous 12 months (MA-RP)."""
+    if weighting == "equal":
+        return {a: 1 / len(live) for a in live}
+    inv = {}
+    for a in live:
+        past = [r for k, r in sorted(assets[a].items()) if k < m][-VOL_MONTHS:]
+        vol = statistics.pstdev(past) if len(past) >= VOL_MONTHS else 0.0
+        inv[a] = 1 / vol if vol > 0 else 0.0
+    if not all(inv.values()):
+        return {a: 1 / len(live) for a in live}
+    total = sum(inv.values())
+    return {a: v / total for a, v in inv.items()}
+
+
 def portfolio(assets: dict[str, Series], rf: Series, leverage: float,
-              months: list[int]) -> Series:
-    """Monthly returns of the levered equal-sleeve trend portfolio."""
+              months: list[int], weighting: str = "equal") -> Series:
+    """Monthly returns of the levered trend portfolio."""
     held = {a: signals(s) for a, s in assets.items()}
     prev: dict[str, bool] = {}
     out: Series = {}
@@ -269,12 +289,12 @@ def portfolio(assets: dict[str, Series], rf: Series, leverage: float,
         if not live:
             out[m] = rf[m]
             continue
-        sleeve = leverage / len(live)
-        exposure = sum(sleeve for a in live if held[a][m])
-        excess = sum(sleeve * (assets[a][m] - rf[m]) for a in live if held[a][m])
+        w = sleeve_weights(assets, live, m, weighting)
+        size = {a: leverage * w[a] for a in live}
+        exposure = sum(size[a] for a in live if held[a][m])
+        excess = sum(size[a] * (assets[a][m] - rf[m]) for a in live if held[a][m])
         r = rf[m] + excess - max(exposure - 1, 0) * SPREAD / 12 - RUNNING / 12
-        switches = sum(1 for a in live if a in prev and prev[a] != held[a][m])
-        r -= switches * sleeve * SWITCH
+        r -= sum(size[a] * SWITCH for a in live if a in prev and prev[a] != held[a][m])
         out[m] = max(r, -1.0)
         prev = {a: held[a][m] for a in live}
     return out
@@ -308,11 +328,12 @@ def window(r: Series, a: int, b: int) -> float:
 
 
 def vol_matched_leverage(assets: dict[str, Series], rf: Series, months: list[int],
-                         target_vol: float) -> float:
-    lo, hi = 0.25, 8.0
+                         target_vol: float, weighting: str = "equal") -> float:
+    lo, hi = 0.25, 12.0
     for _ in range(40):
         mid = (lo + hi) / 2
-        if stats(portfolio(assets, rf, mid, months), months[0], months[-1])["vol"] < target_vol:
+        if stats(portfolio(assets, rf, mid, months, weighting),
+                 months[0], months[-1])["vol"] < target_vol:
             lo = mid
         else:
             hi = mid
@@ -411,6 +432,104 @@ def evaluate(assets: dict[str, Series], rf: Series, notes: list[str]) -> tuple[s
     return "\n".join(lines) + "\n", passed
 
 
+def _row(name: str, r: Series, periods) -> str:
+    cells = []
+    for _, a, b in periods:
+        s = stats(r, a, b)
+        cells.append(f"{_pct(s['cagr'])} ({s['dd']:.0%})".rjust(16))
+    return f"  {name[:42]:42s}" + "".join(cells)
+
+
+def evaluate_validation(assets: dict[str, Series], rf: Series) -> tuple[str, bool]:
+    """A. MA-3 (US stocks, Treasuries, gold) from 1973, judged on 1973-1990."""
+    three = {k: assets[k] for k in ("US stocks", "Treasuries", "Gold") if k in assets}
+    last = min(max(three[a]) for a in ("US stocks", "Treasuries"))
+    months = [m for m in sorted(rf) if 197301 <= m <= min(last, max(rf))]
+    l2 = portfolio({"US stocks": assets["US stocks"]}, rf, L2_LEVERAGE, months)
+    lev = vol_matched_leverage(three, rf, months, stats(l2, months[0], months[-1])["vol"])
+    ma3 = portfolio(three, rf, lev, months)
+    periods = [("1973-2026", months[0], months[-1]), ("1973-90 unseen", 197301, 199012),
+               ("1991-2026", 199101, months[-1]), ("1973-74 crash", 197301, 197412),
+               ("1979-81 bonds", 197901, 198112), ("1987", 198701, 198712)]
+    lines = ["=" * 78,
+             "A. OUT-OF-SAMPLE CHECK — MA-3 (US stocks, Treasuries, gold) from 1973",
+             "=" * 78,
+             f"Levered {lev:.2f}x to L2's volatility over 1973-2026. Returns per year "
+             "(deepest fall); short windows show the total change.",
+             f"  {'':42s}" + "".join(f"{p[0][:15]:>16s}" for p in periods)]
+    for name, r in ((f"L2: US stocks, {L2_LEVERAGE:.1f}x", l2), (f"MA-3 at {lev:.2f}x", ma3),
+                    ("US stocks, buy and hold", {m: assets["US stocks"][m] for m in months})):
+        cells = []
+        for label, a, b in periods:
+            if label in ("1973-74 crash", "1979-81 bonds", "1987"):
+                cells.append(f"{_pct(window(r, a, b))}".rjust(16))
+            else:
+                s = stats(r, a, b)
+                cells.append(f"{_pct(s['cagr'])} ({s['dd']:.0%})".rjust(16))
+        lines.append(f"  {name[:42]:42s}" + "".join(cells))
+    s_ma, s_l2 = stats(ma3, 197301, 199012), stats(l2, 197301, 199012)
+    checks = [(f"1973-1990: higher CAGR than L2 ({_pct(s_ma['cagr'])} vs {_pct(s_l2['cagr'])})",
+               s_ma["cagr"] > s_l2["cagr"]),
+              (f"1973-1990: deepest fall no deeper than L2's ({s_ma['dd']:.0%} vs "
+               f"{s_l2['dd']:.0%})", s_ma["dd"] >= s_l2["dd"])]
+    passed = all(ok for _, ok in checks)
+    lines += ["", "REGISTERED CHECK"] + [f"  [{'PASS' if ok else 'FAIL'}] {t}" for t, ok in checks]
+    lines += [f"  VERDICT: {'CONFIRMED out of sample' if passed else 'NOT CONFIRMED: MA stays, evidence weaker'}",
+              "=" * 78]
+    return "\n".join(lines) + "\n", passed
+
+
+def evaluate_rp(assets: dict[str, Series], rf: Series) -> tuple[str, bool]:
+    """B. MA-RP (risk-balanced sleeves) against MA, 1991-2026, same volatility."""
+    held = signals(assets["Intl stocks"])
+    last = min(max(assets[a]) for a in ("US stocks", "Intl stocks", "Treasuries"))
+    months = [m for m in sorted(rf) if min(held) <= m <= min(last, max(rf))]
+    mid = months[len(months) // 2]
+    l2 = portfolio({"US stocks": assets["US stocks"]}, rf, L2_LEVERAGE, months)
+    target = stats(l2, months[0], months[-1])["vol"]
+    lev_ma = vol_matched_leverage(assets, rf, months, target)
+    lev_rp = vol_matched_leverage(assets, rf, months, target, "inverse_vol")
+    ma_r = portfolio(assets, rf, lev_ma, months)
+    rp_r = portfolio(assets, rf, lev_rp, months, "inverse_vol")
+    periods = [("full", months[0], months[-1]), ("1st half", months[0], months[len(months) // 2 - 1]),
+               ("2nd half", mid, months[-1]), ("since 2008", POST_PUBLICATION, months[-1])]
+    lines = ["=" * 78, "B. MA-RP — risk-balanced sleeves vs MA, same volatility as L2", "=" * 78,
+             f"  {'':42s}" + "".join(f"{p[0]:>16s}" for p in periods),
+             _row(f"MA (equal sleeves) at {lev_ma:.2f}x", ma_r, periods),
+             _row(f"MA-RP (1/volatility sleeves) at {lev_rp:.2f}x", rp_r, periods)]
+    # Typical sleeve shares under MA-RP, averaged over the period.
+    held_all = {a: signals(s) for a, s in assets.items()}
+    shares: dict[str, list[float]] = {a: [] for a in assets}
+    for m in months:
+        live = [a for a in assets if m in held_all[a] and m in assets[a]]
+        if live:
+            for a, w in sleeve_weights(assets, live, m, "inverse_vol").items():
+                shares[a].append(w)
+    lines.append("  average MA-RP shares: " + " · ".join(
+        f"{a} {statistics.fmean(v):.0%}" for a, v in shares.items() if v))
+    lines += [f"  {'':42s}" + f"{'crash windows':>16s}"]
+    for name, a, b in CRASHES:
+        lines.append(f"  {name:20s} MA {_pct(window(ma_r, a, b)):>8s}   MA-RP {_pct(window(rp_r, a, b)):>8s}")
+    checks = []
+    for label, a, b in periods[:3]:
+        x, y = stats(rp_r, a, b)["cagr"], stats(ma_r, a, b)["cagr"]
+        checks.append((f"higher CAGR than MA, {label} ({_pct(x)} vs {_pct(y)})", x > y))
+    d_rp, d_ma = stats(rp_r, months[0], months[-1])["dd"], stats(ma_r, months[0], months[-1])["dd"]
+    checks.append((f"deepest fall no deeper than MA's ({d_rp:.0%} vs {d_ma:.0%})", d_rp >= d_ma))
+    checks.append((f"gross leverage with all sleeves in no more than 6x ({lev_rp:.2f}x)", lev_rp <= 6.0))
+    passed = all(ok for _, ok in checks)
+    lines += ["", "REGISTERED CRITERION"] + [f"  [{'PASS' if ok else 'FAIL'}] {t}" for t, ok in checks]
+    lines += [f"  VERDICT: {'MA-RP REPLACES MA' if passed else 'MA STAYS'}", "=" * 78]
+    return "\n".join(lines) + "\n", passed
+
+
 def run(get: Callable[[str], bytes], cache_dir: Path | None = None) -> tuple[str, bool]:
     assets, rf, notes = load_assets(get, cache_dir)
-    return evaluate(assets, rf, notes)
+    text, passed = evaluate(assets, rf, notes)
+    for extra in (evaluate_validation, evaluate_rp):
+        try:
+            more, _ = extra(assets, rf)
+        except Exception as exc:
+            more = f"{extra.__name__} could not run: {type(exc).__name__}: {exc}\n"
+        text += "\n" + more
+    return text, passed

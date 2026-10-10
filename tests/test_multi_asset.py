@@ -131,3 +131,31 @@ def test_daily_yahoo_tnx_is_used_first():
     r, source = ma.load_treasuries(get, daily)
     assert source == "Yahoo ^TNX daily" and len(r) > 150
     assert r[200006] == pytest.approx(0.05 / 12, rel=0.02)
+
+
+class TestRiskBalanced:
+    def test_calmer_sleeves_get_bigger_shares(self):
+        rnd = random.Random(5)
+        ms = months(40)
+        assets = {"Calm": {m: rnd.gauss(0.005, 0.01) for m in ms},
+                  "Wild": {m: rnd.gauss(0.005, 0.04) for m in ms}}
+        w = ma.sleeve_weights(assets, ["Calm", "Wild"], ms[30], "inverse_vol")
+        assert w["Calm"] > 0.7 and sum(w.values()) == pytest.approx(1.0)
+        assert ma.sleeve_weights(assets, ["Calm", "Wild"], ms[30], "equal") == {
+            "Calm": 0.5, "Wild": 0.5}
+
+
+def test_validation_and_rp_reports_run():
+    rnd = random.Random(11)
+    ms = months(660, 197001)
+    rf = {m: 0.004 for m in ms}
+    assets = {
+        "US stocks": {m: rnd.gauss(0.008, 0.045) for m in ms},
+        "Intl stocks": {m: rnd.gauss(0.007, 0.05) for m in ms if m >= 199007},
+        "Treasuries": {m: rnd.gauss(0.005, 0.02) for m in ms},
+        "Gold": {m: rnd.gauss(0.005, 0.05) for m in ms},
+    }
+    text, _ = ma.evaluate_validation(assets, rf)
+    assert "1973-1990" in text and "REGISTERED CHECK" in text
+    text, _ = ma.evaluate_rp(assets, rf)
+    assert "MA-RP" in text and "average MA-RP shares" in text
