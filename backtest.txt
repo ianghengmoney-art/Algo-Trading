@@ -223,3 +223,5 @@ FUTURES INSTEAD OF A MARGIN LOAN (same rule, L2)
   plus: no 30% US dividend withholding (futures prices carry dividends),
   and a margin call needs a ~46% fall instead of ~33%.
 ==============================================================================
+
+MA multi-asset test could not run: ReadTimeout: HTTPSConnectionPool(host='fred.stlouisfed.org', port=443): Read timed out. (read timeout=60)
