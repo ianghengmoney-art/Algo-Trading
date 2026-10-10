@@ -574,3 +574,17 @@ the account could actually earn, and selects nothing.
   Each order costs **US$1**, charged against an account starting at US$3,100.
 - **Reported, against MA via futures over the same days:** return, deepest
   fall, worst day and month, orders a year and their cost.
+
+## ETF version result — 2026-10-10 (run #42)
+
+| 2001-06 to 2026-08, daily | Per year | Deepest fall | Worst day | Worst month |
+|---|---|---|---|---|
+| MA via futures, 3.82x | +20.6% | -38% | -12.1% | -27.6% |
+| **MA via leveraged ETFs, US$3,100** | **+15.7%** | **-32%** | -9.8% | **-16.0%** |
+
+The ETF version earns about 5%/yr less, because it holds 2.07x on average
+(capital runs out when all four sleeves are in trend) and pays ETF fees. It
+also falls less. Commissions barely matter (12 orders a year, US$307 in 25
+years). US$3,100 grew to US$119,638 over 25 years. **This is the version
+the operator's SGD 4,000 can hold.** The daily report now carries its trade
+ticket.
