@@ -5,6 +5,7 @@ https://github.com/ianghengmoney-art/Algo-Trading/actions/workflows/gcfp.yml
 
 | Run | What | Outcome |
 |---|---|---|
+| [#39](https://github.com/ianghengmoney-art/Algo-Trading/actions/runs/38057955888) | Screen job: MA paper book opened at 3.82x (Friday 2026-10-09 close) | passed: US stocks IN (+6.3% over average), international IN (+2.1%), Treasuries OUT (-4.0%), gold OUT (-7.7%); gross 1.91x with two sleeves in; margin OK |
 | [#38](https://github.com/ianghengmoney-art/Algo-Trading/actions/runs/38056262735) | MA multi-asset trend (registered 2026-10-10): US + international stocks, 10-year Treasuries, gold, each on its own 10-month rule; vs L2 at futures costs, monthly 1991-2026 | **PASSED** all 5: at 3.82x (L2's volatility, fitted in-sample) +20.6%/yr vs L2 +17.3%, both halves ahead, deepest fall -25% vs -36%, worst month -23% vs -32%. At 2.0x: +12.4%/yr, deepest fall -13%. Sleeve correlations: stocks 0.62 with each other, about 0 with bonds and gold |
 | [#37](https://github.com/ianghengmoney-art/Algo-Trading/actions/runs/38055925311) | MA, third attempt | could not run: FRED timed out and Yahoo's monthly ^TNX came back empty; fixed by using the project's daily Yahoo path |
 | [#36](https://github.com/ianghengmoney-art/Algo-Trading/actions/runs/38055514307) | MA, second attempt | could not run: an empty Treasury series; fixed by treating an empty answer as a failure |

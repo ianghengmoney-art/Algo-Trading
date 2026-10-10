@@ -87,5 +87,5 @@ def test_report_and_alert():
     state, changes = mp.step(None, closes, 0.04, today, 3.82, 100_000)
     text, alert = mp.report(state, closes, 0.04, today, 0.08, changes)
     assert alert.splitlines()[0] == mp.OK
-    assert "POSITION CHANGE" in alert and "Treasuries: SELL to T-bills" in alert
+    assert "POSITION CHANGE" in alert and "Treasuries: stay out (T-bills)" in alert
     assert "MULTI-ASSET TREND" in text

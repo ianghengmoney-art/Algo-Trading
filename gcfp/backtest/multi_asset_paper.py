@@ -157,7 +157,10 @@ def step(state: MAState | None, closes: Closes, rf: float, today: date,
             if was is None or was != on:
                 if on or was:
                     equity -= sleeve * equity * SWITCH
-                changes.append(f"{name}: {'BUY (in trend)' if on else 'SELL to T-bills'}")
+                if was is None and not on:
+                    changes.append(f"{name}: stay out (T-bills)")
+                else:
+                    changes.append(f"{name}: {'BUY (in trend)' if on else 'SELL to T-bills'}")
         state.value, state.rebalanced_on, state.signal_month = equity, day, month
         state.in_trend = new_trend
         state.exposure = {n: (sleeve * equity if on else 0.0) for n, on in new_trend.items()}
