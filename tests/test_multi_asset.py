@@ -110,3 +110,24 @@ def test_an_empty_fred_answer_falls_back_too():
 
     r, source = ma.load_treasuries(get)
     assert "Yahoo" in source and "Service unavailable" in source
+
+
+def test_daily_yahoo_tnx_is_used_first():
+    from datetime import date, timedelta
+
+    pts, d, y = [], date(2000, 1, 1), 5.0
+    while d < date(2015, 1, 1):
+        if d.weekday() < 5:
+            pts.append((d, y))
+        d += timedelta(days=1)
+
+    def daily(symbol):
+        assert symbol == "^TNX"
+        return pts
+
+    def get(url):
+        raise AssertionError("FRED should not be asked")
+
+    r, source = ma.load_treasuries(get, daily)
+    assert source == "Yahoo ^TNX daily" and len(r) > 150
+    assert r[200006] == pytest.approx(0.05 / 12, rel=0.02)

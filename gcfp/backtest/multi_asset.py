@@ -94,8 +94,37 @@ def _yahoo_monthly(payload: bytes) -> dict[int, float]:
     return out
 
 
-def load_treasuries(get: Callable[[str], bytes]) -> tuple[Series, str]:
-    """FRED's DGS10 (twice), else Yahoo's ^TNX month-end yields."""
+def month_end(points) -> dict[int, float]:
+    """{YYYYMM: last value in that month} from (date, value) pairs."""
+    out: dict[int, float] = {}
+    for day, value in sorted(points):
+        out[day.year * 100 + day.month] = value
+    return out
+
+
+def returns_from_levels(levels: dict[int, float]) -> Series:
+    months = sorted(levels)
+    return {b: levels[b] / levels[a] - 1 for a, b in zip(months, months[1:])
+            if _next_month(a) == b and levels[a] > 0}
+
+
+def yields_to_returns(yields: dict[int, float]) -> Series:
+    months = sorted(yields)
+    return {b: bond_return(yields[a], yields[b])
+            for a, b in zip(months, months[1:]) if _next_month(a) == b}
+
+
+def load_treasuries(get: Callable[[str], bytes], daily=None) -> tuple[Series, str]:
+    """Yahoo's daily ^TNX (the project's tested price path) when ``daily``
+    is given, then FRED's DGS10, then Yahoo's monthly ^TNX."""
+    if daily is not None:
+        try:
+            ylds = {m: v / 100 for m, v in month_end(daily("^TNX")).items()}
+            out = yields_to_returns(ylds)
+            if len(out) >= 120:
+                return out, "Yahoo ^TNX daily"
+        except Exception:
+            pass
     last: Exception | str = "no attempt"
     for attempt in range(2):
         try:
@@ -106,10 +135,8 @@ def load_treasuries(get: Callable[[str], bytes]) -> tuple[Series, str]:
             last = f"only {len(out)} months; response began {text[:80]!r}"
         except Exception as exc:
             last = exc
-    yields = {m: y / 100 for m, y in _yahoo_monthly(get(YAHOO_TNX_URL)).items()}
-    months = sorted(yields)
-    out = {b: bond_return(yields[a], yields[b])
-           for a, b in zip(months, months[1:]) if _next_month(a) == b}
+    out = yields_to_returns(
+        {m: y / 100 for m, y in _yahoo_monthly(get(YAHOO_TNX_URL)).items()})
     why = last if isinstance(last, str) else f"{type(last).__name__}: {last}"
     if not out:
         raise ValueError(f"no Treasury data: FRED ({why}) and Yahoo ^TNX both empty")
@@ -120,11 +147,18 @@ def _next_month(m: int) -> int:
     return m + 89 if m % 100 == 12 else m + 1
 
 
-def gold_returns(get: Callable[[str], bytes]) -> tuple[Series, str]:
+def gold_returns(get: Callable[[str], bytes], daily=None) -> tuple[Series, str]:
     """Monthly gold returns: datahub's monthly price series, extended or
     replaced by Yahoo's COMEX gold future where datahub stops or fails."""
     prices: dict[int, float] = {}
     source = []
+    if daily is not None:
+        try:
+            futures = month_end(daily("GC=F"))
+            if futures:
+                get = _with_yahoo_gold(get, futures)
+        except Exception:
+            pass
     try:
         for row in csv.DictReader(io.StringIO(get(GOLD_URL).decode())):
             prices[int(row["Date"][:4] + row["Date"][5:7])] = float(row["Price"])
@@ -159,8 +193,32 @@ def gold_returns(get: Callable[[str], bytes]) -> tuple[Series, str]:
     return out, "; ".join(source)
 
 
-def load_assets(get: Callable[[str], bytes], cache_dir: Path | None = None
-                ) -> tuple[dict[str, Series], Series, list[str]]:
+def _with_yahoo_gold(get, futures: dict[int, float]):
+    """A ``get`` that answers the Yahoo gold URL from daily closes already
+    fetched, in the monthly-chart shape gold_returns reads."""
+    from datetime import datetime, timezone
+
+    stamps = [int(datetime(m // 100, m % 100, 1, tzinfo=timezone.utc).timestamp())
+              for m in sorted(futures)]
+    body = json.dumps({"chart": {"result": [{"timestamp": stamps, "indicators": {
+        "quote": [{"close": [futures[m] for m in sorted(futures)]}]}}]}}).encode()
+
+    def wrapped(url: str) -> bytes:
+        return body if url == YAHOO_GOLD_URL else get(url)
+    return wrapped
+
+
+def _yahoo_daily(symbol: str):
+    from datetime import date
+
+    from ..data.prices import YahooPriceSource
+
+    points = YahooPriceSource().get_prices(symbol, date(1960, 1, 1), date.today())
+    return [(p.price_date, p.close) for p in points]
+
+
+def load_assets(get: Callable[[str], bytes], cache_dir: Path | None = None,
+                daily=_yahoo_daily) -> tuple[dict[str, Series], Series, list[str]]:
     """({asset: monthly total return}, T-bill, notes on the sources)."""
     us, rf = load_market(get, cache_dir)
     notes = [f"US stocks: French, {min(us)}-{max(us)}"]
@@ -174,10 +232,10 @@ def load_assets(get: Callable[[str], bytes], cache_dir: Path | None = None
                          f"(columns found: {sorted(intl)[:6]})")
     notes.append(f"Intl stocks: French Developed ex US, {min(assets['Intl stocks'])}-"
                  f"{max(assets['Intl stocks'])}")
-    assets["Treasuries"], source = load_treasuries(get)
+    assets["Treasuries"], source = load_treasuries(get, daily)
     notes.append(f"Treasuries: built from {source} yields, {min(assets['Treasuries'])}-"
                  f"{max(assets['Treasuries'])}")
-    gold, gold_note = gold_returns(get)
+    gold, gold_note = gold_returns(get, daily)
     if gold:
         assets["Gold"] = gold
     notes.append(f"Gold: {gold_note}")
