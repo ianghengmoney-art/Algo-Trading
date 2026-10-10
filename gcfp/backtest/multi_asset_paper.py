@@ -266,3 +266,38 @@ def report(state: MAState, closes: Closes, rf: float, today: date, maintenance: 
     text = "\n".join(lines) + "\n"
     alert = [level] + ([f"POSITION CHANGE: {'; '.join(changes)}"] if changes else [])
     return text, "\n".join(alert + ["", *lines[1:]]) + "\n"
+
+
+# ------------------------------------------------------------- trade ticket
+
+
+def trade_ticket(in_trend: dict[str, bool], amount: float, currency: str,
+                 fx_per_usd: float, etf_prices: dict[str, float]) -> str:
+    """What to hold in a small account, via the leveraged-ETF version
+    (gcfp/backtest/etf_version.py): dollars and shares per ETF, the rest in
+    a T-bill ETF. ``fx_per_usd`` is units of ``currency`` per US dollar."""
+    from .etf_version import ETFS, targets
+
+    usd = amount / fx_per_usd
+    goal = targets(in_trend, usd)
+    lines = ["", f"YOUR TRADE TICKET — {currency} {amount:,.0f} (about US${usd:,.0f}), "
+                 "leveraged-ETF version",
+             f"  {'sleeve':12s} {'ETF':6s} {'in trend':>9s} {'US$':>9s} {'shares':>9s} "
+             f"{'whole':>6s}"]
+    held = 0.0
+    for name, (etf, k, _) in ETFS.items():
+        dollars = goal.get(name, 0.0)
+        price = etf_prices.get(etf)
+        shares = dollars / price if price else 0.0
+        held += dollars
+        lines.append(f"  {name:12s} {etf:6s} {('yes' if in_trend.get(name) else 'no'):>9s} "
+                     f"{dollars:>9,.0f} {shares:>9.2f} {int(shares):>6d}"
+                     + (f"   (price {price:,.2f})" if price else "   (price n/a)"))
+    gross = sum(goal.get(n, 0.0) * ETFS[n][1] for n in ETFS) / usd if usd else 0.0
+    lines += [f"  {'rest':12s} {'SGOV':6s} {'':>9s} {usd - held:>9,.0f}   (US T-bill ETF)",
+              f"  total exposure {gross:.2f}x of the account",
+              "  Fractional shares need a broker that offers them (e.g. Interactive "
+              "Brokers); otherwise use the whole-share column.",
+              "  Trade only the lines whose 'in trend' changed this month, or that "
+              "drifted more than 25% from the US$ amount: each order costs money."]
+    return "\n".join(lines) + "\n"

@@ -8,5 +8,10 @@
     "leverage": 3.82,
     "maintenance_margin": 0.08,
     "paper_capital": 100000
+  },
+  "real_account": {
+    "_comment": "The operator's planned account, for the trade ticket in the daily report (leveraged-ETF version). Amount only; no account details.",
+    "currency": "SGD",
+    "amount": 4000
   }
 }

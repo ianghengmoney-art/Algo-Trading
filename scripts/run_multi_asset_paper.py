@@ -51,6 +51,21 @@ def fetch(today: date):
     return closes, rf
 
 
+def make_ticket(state, real: dict, today: date) -> str:
+    from gcfp.backtest.etf_version import ETFS
+    from gcfp.data.prices import YahooPriceSource
+
+    source = YahooPriceSource()
+    prices = {}
+    for etf, _, _ in ETFS.values():
+        prices[etf] = source.get_prices(etf, today - timedelta(days=10), today)[0].close
+    currency = real.get("currency", "USD")
+    fx = 1.0
+    if currency != "USD":
+        fx = source.get_prices(f"{currency}=X", today - timedelta(days=10), today)[0].close
+    return map_.trade_ticket(state.in_trend, float(real["amount"]), currency, fx, prices)
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -65,6 +80,14 @@ def main(argv=None) -> int:
     map_.save(state, BOOK)
     text, alert = map_.report(state, closes, rf, today,
                               float(config["maintenance_margin"]), changes)
+    real = json.loads(CONFIG.read_text()).get("real_account")
+    if real:
+        try:
+            ticket = make_ticket(state, real, today)
+        except Exception as exc:
+            ticket = f"\nTRADE TICKET not available: {type(exc).__name__}: {exc}\n"
+        text += ticket
+        alert += ticket
     REPORT.write_text(text)
     ALERT.write_text(alert)
     print(text)

@@ -89,3 +89,12 @@ def test_report_and_alert():
     assert alert.splitlines()[0] == mp.OK
     assert "POSITION CHANGE" in alert and "Treasuries: stay out (T-bills)" in alert
     assert "MULTI-ASSET TREND" in text
+
+
+def test_trade_ticket_for_a_small_account():
+    in_trend = {"US stocks": True, "Intl stocks": True, "Treasuries": False, "Gold": False}
+    prices = {"UPRO": 100.0, "EFO": 50.0, "TYD": 40.0, "UGL": 80.0}
+    text = mp.trade_ticket(in_trend, 4000, "SGD", 1.29, prices)
+    usd = 4000 / 1.29
+    assert f"{usd * 0.955 / 3:,.0f}" in text  # UPRO dollars
+    assert "SGOV" in text and "1.91x" in text
