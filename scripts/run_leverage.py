@@ -70,6 +70,19 @@ def main(argv=None) -> int:
         ma_text = f"MA multi-asset test could not run: {type(exc).__name__}: {exc}\n"
     args.out.with_name("leverage-multi-asset.txt").write_text(ma_text)
     print(ma_text)
+
+    # MA's daily crash check (registered 2026-10-10).
+    from gcfp.backtest import multi_asset_daily
+
+    try:
+        daily_ma_text, _ = multi_asset_daily.run(http_get, args.cache_dir)
+    except Exception as exc:
+        import traceback
+
+        traceback.print_exc()
+        daily_ma_text = f"MA daily crash check could not run: {type(exc).__name__}: {exc}\n"
+    args.out.with_name("leverage-ma-daily.txt").write_text(daily_ma_text)
+    print(daily_ma_text)
     return 0
 
 
