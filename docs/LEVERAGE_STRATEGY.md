@@ -543,3 +543,34 @@ stated plainly:
   below the alarm's WARNING level (50%).
 - Crash windows: 2008 -2% (L2 -9%); 2011 -4% (-21%); 2020 -16% (-23%);
   2022 -19% (-12%); 2015 -19% (-24%); February 2018 -18% (-18%).
+
+---
+
+# The ETF version for a small account: registered 2026-10-10, before running
+
+The operator's account is about **SGD 4,000 (about US$3,100)**. Futures cannot
+be used: one micro S&P 500 contract is about US$33,000 of exposure. MA is
+implemented instead with daily-reset leveraged ETFs. This is an
+implementation check of the same rule, not a new strategy. It reports what
+the account could actually earn, and selects nothing.
+
+| Sleeve | ETF | Leverage | Expense ratio (approx.) |
+|---|---|---|---|
+| US stocks | UPRO | 3x S&P 500 | 0.91% |
+| Intl stocks | EFO | 2x MSCI EAFE | 0.95% |
+| Treasuries | TYD | 3x 7-10 year Treasury | 0.95% |
+| Gold | UGL | 2x gold | 0.95% |
+
+- **Rule:** MA's monthly signals, unchanged. Each in-trend sleeve wants 3.82/4
+  = 0.955x of the account. In a k-times ETF that takes 0.955/k of the
+  capital. If the wanted capital exceeds 100% (all four in trend needs 159%),
+  every sleeve is scaled down in proportion: leveraged ETFs cannot be
+  bought on margin. The rest sits in T-bills.
+- **ETF model, daily:** k x the underlying's daily return, minus (k-1) x
+  (T-bills + 0.5%) financing, minus the expense ratio, reset every day.
+  Underlyings are the daily series of the MA crash check.
+- **Trading:** at month-end only, and only for sleeves whose signal changed,
+  plus a resize if a held sleeve drifted more than 25% from its target.
+  Each order costs **US$1**, charged against an account starting at US$3,100.
+- **Reported, against MA via futures over the same days:** return, deepest
+  fall, worst day and month, orders a year and their cost.
