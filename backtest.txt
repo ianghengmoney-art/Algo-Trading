@@ -224,4 +224,47 @@ FUTURES INSTEAD OF A MARGIN LOAN (same rule, L2)
   and a margin call needs a ~46% fall instead of ~33%.
 ==============================================================================
 
-MA multi-asset test could not run: ValueError: no Treasury data: FRED (ReadTimeout: HTTPSConnectionPool(host='fred.stlouisfed.org', port=443): Read timed out. (read timeout=60)) and Yahoo ^TNX both empty
+==============================================================================
+MA — MULTI-ASSET TREND vs L2 (monthly, futures costs) — docs/LEVERAGE_STRATEGY.md
+==============================================================================
+Data: US stocks: French, 192607-202608
+Data: Intl stocks: French Developed ex US, 199007-202608
+Data: Treasuries: built from Yahoo ^TNX daily yields, 196202-202610
+Data: Gold: datahub 183301-202609; Yahoo GC=F to 202610
+Common period: 1991-05 to 2026-08 (424 months).
+
+COMPOUND RETURN PER YEAR (deepest fall); then full-period volatility and worst month
+                                                        full        1st half        2nd half      since 2008
+  L2: US stocks only, 2.0x                     +17.3% (-36%)   +16.8% (-35%)   +17.8% (-36%)   +16.9% (-36%)   vol 22% · worst month -32%
+  MA at 2.0x                                   +12.4% (-13%)   +12.6% (-13%)   +12.3% (-11%)   +11.5% (-11%)   vol 11% · worst month -12%
+  MA at 3.82x (same volatility as L2)          +20.6% (-25%)   +19.6% (-25%)   +21.6% (-22%)   +20.1% (-22%)   vol 22% · worst month -23%
+  MA unlevered (1.0x)                            +7.6% (-6%)     +8.3% (-6%)     +6.9% (-5%)     +6.5% (-5%)   vol 6% · worst month -6%
+  US stocks, buy and hold                      +11.2% (-50%)    +7.4% (-45%)   +15.0% (-25%)   +11.4% (-48%)   vol 15% · worst month -17%
+    sleeve: US stocks trend, 1.0x              +10.4% (-18%)   +10.8% (-17%)   +10.1% (-18%)    +9.6% (-18%)   vol 11% · worst month -16%
+    sleeve: Intl stocks trend, 1.0x             +6.3% (-25%)    +7.2% (-20%)    +5.4% (-25%)    +4.2% (-25%)   vol 11% · worst month -12%
+    sleeve: Treasuries trend, 1.0x              +4.3% (-15%)    +7.6% (-12%)    +1.1% (-15%)    +1.6% (-15%)   vol 6% · worst month -7%
+    sleeve: Gold trend, 1.0x                    +8.1% (-21%)    +6.4% (-13%)    +9.9% (-21%)    +9.6% (-21%)   vol 10% · worst month -12%
+
+THE CRASHES (return over each window)
+                      L2: US stocks only, 2.              MA at 2.0x  MA at 3.82x (same vola     MA unlevered (1.0x)
+  2000-02 dot-com                     -31.2%                   +0.9%                   -8.9%                   +5.6%
+  2008 crisis                          -9.4%                   -0.2%                   -3.5%                   +1.2%
+  2020 Covid                          -16.2%                   -3.7%                   -7.5%                   -1.7%
+  2022 bear                           -12.0%                   -5.8%                  -11.8%                   -2.6%
+
+CORRELATION OF THE TREND SLEEVES (monthly)
+                    US stocks  Intl stocks   Treasuries         Gold
+  US stocks              1.00         0.62        -0.06        -0.04
+  Intl stocks            0.62         1.00        -0.11         0.05
+  Treasuries            -0.06        -0.11         1.00         0.11
+  Gold                  -0.04         0.05         0.11         1.00
+
+REGISTERED CRITERION — MA at 3.82x (volatility-matched) vs L2
+  [PASS] higher CAGR than L2, full (+20.6% vs +17.3%)
+  [PASS] higher CAGR than L2, 1st half (+19.6% vs +16.8%)
+  [PASS] higher CAGR than L2, 2nd half (+21.6% vs +17.8%)
+  [PASS] deepest fall no deeper than L2's (-25% vs -36%)
+  [PASS] worst month no worse than L2's (-23% vs -32%)
+  VERDICT: MA REPLACES L2
+  (3.82x is fitted in-sample to match L2's volatility; stated, not hidden.)
+==============================================================================
