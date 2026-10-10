@@ -1,6 +1,4 @@
-OK
-POSITION CHANGE: US stocks: BUY (in trend); Intl stocks: BUY (in trend); Treasuries: SELL to T-bills; Gold: SELL to T-bills
-
+==============================================================================
 MULTI-ASSET TREND (MA) — PAPER TRADING · 2026-10-09 close
 ==============================================================================
 3.82x total across 4 sleeves, each in its market while above its 10-month average, else T-bills (docs/LEVERAGE_STRATEGY.md)

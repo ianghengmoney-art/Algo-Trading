@@ -1,0 +1,57 @@
+{
+  "started_on": "2026-10-10",
+  "leverage": 3.82,
+  "value": 99904.522800625,
+  "rebalanced_on": "2026-10-09",
+  "signal_month": "2026-09",
+  "exposure": {
+    "US stocks": 95408.81927459687,
+    "Intl stocks": 95408.81927459687,
+    "Treasuries": 0.0,
+    "Gold": 0.0
+  },
+  "price_at": {
+    "US stocks": 17525.23046875,
+    "Intl stocks": 103.4000015258789,
+    "Treasuries": 89.4000015258789,
+    "Gold": 384.5799865722656
+  },
+  "in_trend": {
+    "US stocks": true,
+    "Intl stocks": true,
+    "Treasuries": false,
+    "Gold": false
+  },
+  "log": [
+    {
+      "date": "2026-10-09",
+      "signal_month": "2026-09",
+      "value": 99904.52,
+      "in_trend": {
+        "US stocks": true,
+        "Intl stocks": true,
+        "Treasuries": false,
+        "Gold": false
+      },
+      "changes": [
+        "US stocks: BUY (in trend)",
+        "Intl stocks: BUY (in trend)",
+        "Treasuries: SELL to T-bills",
+        "Gold: SELL to T-bills"
+      ],
+      "gross_leverage": 1.91
+    }
+  ],
+  "marks": [
+    {
+      "date": "2026-10-09",
+      "value": 99904.52,
+      "prices": {
+        "US stocks": 17525.2305,
+        "Intl stocks": 103.4,
+        "Treasuries": 89.4,
+        "Gold": 384.58
+      }
+    }
+  ]
+}
