@@ -50,6 +50,13 @@ def main(argv=None) -> int:
     sweep_text = leverage_sweep.run(http_get, args.cache_dir)
     args.out.with_name("leverage-kelly.txt").write_text(sweep_text)
     print(sweep_text)
+
+    # Improvements to L2 (registered 2026-10-10): futures costs, ensemble signal.
+    from gcfp.backtest import leverage_improve
+
+    improve_text, _ = leverage_improve.run(http_get, args.cache_dir)
+    args.out.with_name("leverage-improve.txt").write_text(improve_text)
+    print(improve_text)
     return 0
 
 

@@ -110,10 +110,15 @@ class Run:
 
 def simulate(market: dict[int, float], rf: dict[int, float], name: str, *,
              trend: bool = True, max_leverage: float = MAX_LEVERAGE,
-             vol_scaled: bool = False, stop: bool = False, costs: bool = True) -> Run:
+             vol_scaled: bool = False, stop: bool = False, costs: bool = True,
+             lookbacks: tuple[int, ...] = (SMA_MONTHS,),
+             borrow_spread: float = BORROW_SPREAD, running_cost: float = RUNNING_COST,
+             switch_cost: float = SWITCH_COST) -> Run:
     """One strategy, day by day. ``trend=False`` is buy-and-hold at
     ``max_leverage`` re-levered monthly; ``costs=False`` is the plain index,
-    which pays no strategy costs."""
+    which pays no strategy costs. With several ``lookbacks`` (months), the
+    leverage at each month-end is ``max_leverage`` times the share of their
+    moving averages the index is above (L2-E)."""
     days = sorted(market)
     run = Run(name)
     equity, exposure, loan = 1.0, 0.0, 0.0
@@ -133,7 +138,7 @@ def simulate(market: dict[int, float], rf: dict[int, float], name: str, *,
     def set_exposure(new_lev: float, switch: bool) -> None:
         nonlocal equity, exposure, loan
         old_lev = exposure / equity if equity > 0 else 0.0
-        cost = SWITCH_COST if switch else LEVERAGE_CHANGE_COST * abs(new_lev - old_lev)
+        cost = switch_cost if switch else LEVERAGE_CHANGE_COST * abs(new_lev - old_lev)
         if not costs:
             cost = 0.0
         equity *= 1 - cost
@@ -148,11 +153,11 @@ def simulate(market: dict[int, float], rf: dict[int, float], name: str, *,
         # --- the day's move ---------------------------------------------
         if exposure > 0 or loan != 0:
             exposure *= 1 + r
-            rate = f + (BORROW_SPREAD / TRADING_DAYS if loan > 0 else 0.0)
+            rate = f + (borrow_spread / TRADING_DAYS if loan > 0 else 0.0)
             loan *= 1 + rate
             equity = exposure - loan
             if exposure > 0 and costs:
-                equity -= RUNNING_COST / TRADING_DAYS * (equity if equity > 0 else 0)
+                equity -= running_cost / TRADING_DAYS * (equity if equity > 0 else 0)
                 loan = exposure - equity
         else:
             equity *= 1 + f
@@ -189,13 +194,14 @@ def simulate(market: dict[int, float], rf: dict[int, float], name: str, *,
             if not trend:
                 set_exposure(max_leverage, switch=False)
                 continue
-            if len(month_levels) < SMA_MONTHS:
+            if len(month_levels) < max(lookbacks):
                 continue
-            on = level > sum(month_levels[-SMA_MONTHS:]) / SMA_MONTHS
+            share = sum(level > sum(month_levels[-n:]) / n for n in lookbacks) / len(lookbacks)
+            on = share > 0
             started = True
             was_in = exposure > 0
             if on:
-                set_exposure(target(), switch=not was_in)
+                set_exposure(target() * share, switch=not was_in)
                 if not was_in:
                     run.switches += 1
             elif was_in:
