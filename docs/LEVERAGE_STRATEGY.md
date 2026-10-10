@@ -472,3 +472,21 @@ volatility, it has:
 
 This is the 7th leverage variant. Counting everything, about 15 strategies
 have now been tested.
+
+## Validation and MA-RP results — 2026-10-10 (run #40)
+
+**A. Out of sample: confirmed.** MA-3 (US stocks, Treasuries, gold) at
+L2's volatility (3.46x), 1973-1990, a period MA's design never saw:
+**+22.6%/yr against L2's +8.3%**, deepest fall -42% against -51%. In the
+1973-74 crash it gained 98% while L2 lost 29%; in 1987 it was flat while L2
+lost 28%. Over 1973-2026: +21.2%/yr against +14.5%.
+
+The caveat: much of 1973-1990's gain is the 1970s gold boom (gold went from
+about $65 to $850 in nine years after the dollar left gold), a one-off of
+monetary history. Even so, the result is the same direction and size as
+1991-2026, which had no such boom.
+
+**B. MA-RP: fails by one criterion.** Risk-balanced sleeves earned more in
+every period (+22.2%/yr against +20.6% full period, at 4.37x), but its
+deepest fall was -27% against MA's -25%. **MA stays.** The registered rule
+is applied as written, even though this miss is narrow.
