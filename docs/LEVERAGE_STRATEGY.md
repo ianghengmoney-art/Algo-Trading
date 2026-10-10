@@ -409,3 +409,22 @@ Reading, stated plainly:
 - Running it needs four futures. The contract sizes (about $110,000 for a
   10-year note future and $120,000 for MSCI EAFE) make it practical from
   roughly $150,000-250,000 of capital, or with leveraged ETFs below that.
+
+## Operator decision — 2026-10-10: MA at 3.82x goes to paper trading
+
+The operator chose MA at **3.82x**, the leverage with L2's volatility. Paper
+trading (`scripts/run_multi_asset_paper.py`, inside the daily screen job)
+works as follows:
+
+- **Prices:** live closes of ^SP500TR, EFA, IEF and GLD, using
+  dividend-adjusted closes and re-reading each rebalance price on today's
+  scale, so payouts count.
+- **Signals:** each sleeve gets its own 10-month signal at every month-end.
+- **Book:** the account is valued as futures.
+- **Alarm:** `reports/paper/leverage-alert.txt` now belongs to MA. It grades
+  the distance to a futures margin call (8% of gross exposure assumed) and
+  states the cash to add or positions to cut. The daily email check reads it.
+- **L2:** its book keeps running for comparison, with its alert in
+  `leverage-2x-alert.txt`.
+
+Stage 2 restarts with MA: 3 monthly signals with no failed check.

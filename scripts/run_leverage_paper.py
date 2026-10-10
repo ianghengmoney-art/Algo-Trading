@@ -30,7 +30,7 @@ from gcfp.backtest import leverage_paper as lp
 CONFIG = Path(__file__).resolve().parent / "leverage_config.json"
 BOOK = Path("reports/paper/leverage-2x-book.json")
 REPORT = Path("reports/paper/leverage-2x-report.txt")
-ALERT = Path("reports/paper/leverage-alert.txt")
+ALERT = Path("reports/paper/leverage-2x-alert.txt")  # MA owns leverage-alert.txt now
 INDEX = "^SP500TR"
 TBILL = "^IRX"  # 13-week T-bill yield, in percent
 

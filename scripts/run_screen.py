@@ -320,13 +320,20 @@ def full_screen_due(reports: Path, today: date | None = None) -> bool:
 def run_leverage_paper() -> None:
     """A failure here is reported and never stops what follows."""
     sys.path.insert(0, str(Path(__file__).resolve().parent))
-    print("\nleveraged trend paper trading and margin check", file=sys.stderr)
+    print("\nleveraged trend paper trading (L2, kept for comparison)", file=sys.stderr)
     try:
         import run_leverage_paper
 
         run_leverage_paper.main([])
     except Exception as exc:  # pragma: no cover - reported, not raised
-        print(f"leverage paper trading failed: {type(exc).__name__}: {exc}",
+        print(f"L2 paper trading failed: {type(exc).__name__}: {exc}", file=sys.stderr)
+    print("\nmulti-asset trend paper trading and margin check", file=sys.stderr)
+    try:
+        import run_multi_asset_paper
+
+        run_multi_asset_paper.main([])
+    except Exception as exc:  # pragma: no cover - reported, not raised
+        print(f"multi-asset paper trading failed: {type(exc).__name__}: {exc}",
               file=sys.stderr)
         # The daily check emails anything that is not OK, so a failed check
         # is never mistaken for a quiet market.
