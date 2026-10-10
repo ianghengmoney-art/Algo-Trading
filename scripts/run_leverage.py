@@ -57,6 +57,16 @@ def main(argv=None) -> int:
     improve_text, _ = leverage_improve.run(http_get, args.cache_dir)
     args.out.with_name("leverage-improve.txt").write_text(improve_text)
     print(improve_text)
+
+    # MA, the multi-asset trend portfolio (registered 2026-10-10).
+    from gcfp.backtest import multi_asset
+
+    try:
+        ma_text, _ = multi_asset.run(http_get, args.cache_dir)
+    except Exception as exc:
+        ma_text = f"MA multi-asset test could not run: {type(exc).__name__}: {exc}\n"
+    args.out.with_name("leverage-multi-asset.txt").write_text(ma_text)
+    print(ma_text)
     return 0
 
 
