@@ -265,3 +265,18 @@ trading continues unchanged. For real money the recommendation is **S&P
 25%, so the 1929 low (equity 26% of exposure) would not have triggered a
 call. The alarm stays at 25%, the conservative setting, so warnings come
 earlier than a futures account strictly needs.
+
+## How much leverage? The Kelly calculation — 2026-10-10 (run #33)
+
+The growth-optimal (Kelly) leverage is L* = (expected return - borrowing
+cost) / variance. On the trend's risk-on days, 1927-2026: 8.3% / 14%² ≈
+**4.1x**, between 4.0x and 4.9x in every sub-period. The daily simulation,
+with fat tails, monthly re-levering and real crashes, puts the best CAGR at
+**3.0x** (+14.7%/yr; deepest fall -97%; worst day -89%; 19 margin calls).
+**3.5x and 4.0x went to zero.** The formula overstates the safe optimum
+because real crashes are larger than a normal distribution allows.
+
+**2.0x is half Kelly**, the standard practitioner's choice. It gets about
+three quarters of full Kelly's growth with half its volatility, and it is
+the highest leverage with no margin call in 100 years (calls start at
+2.25x). The chosen L2 stays at 2.0x.
