@@ -316,6 +316,15 @@ L2-E replaces L2 only if, on daily data with L2's registered costs, it has:
 Otherwise L2 stays. This is the 5th leverage variant. Counting everything,
 about 13 strategies have now been tested on this data.
 
+## Improvements result — 2026-10-10 (run #34)
+
+- **Futures:** the same L2 rule at futures costs earns **+1.0-1.1%/yr
+  more** in every period: +13.8%/yr over 1927-2026, +15.3% since 1990, +17.0%
+  since 2008. The real money should be run this way.
+- **L2-E fails:** lower CAGR than L2 in every period (+12.1% vs +12.7% full).
+  It softens sudden crashes (worst day -28% vs -40%) but does worse in slow
+  ones (2008: -22% vs -9%; 2022: -27% vs -12%). **L2 stays.**
+
 ---
 
 # MA, multi-asset trend: registered 2026-10-10, before any test
