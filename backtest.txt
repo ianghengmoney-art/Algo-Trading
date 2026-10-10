@@ -224,4 +224,4 @@ FUTURES INSTEAD OF A MARGIN LOAN (same rule, L2)
   and a margin call needs a ~46% fall instead of ~33%.
 ==============================================================================
 
-MA multi-asset test could not run: ReadTimeout: HTTPSConnectionPool(host='fred.stlouisfed.org', port=443): Read timed out. (read timeout=60)
+MA multi-asset test could not run: ValueError: min() arg is an empty sequence
