@@ -315,3 +315,57 @@ L2-E replaces L2 only if, on daily data with L2's registered costs, it has:
 
 Otherwise L2 stays. This is the 5th leverage variant. Counting everything,
 about 13 strategies have now been tested on this data.
+
+---
+
+# MA, multi-asset trend: registered 2026-10-10, before any test
+
+## Why
+
+Leverage is limited by how bumpy the thing being levered is. Kelly
+leverage is excess return / variance. Several markets that trend at
+different times, each under its own trend rule, are smoother than one, so
+the same risk buys more return. This is the best-documented improvement to
+trend following: Faber 2007's multi-asset version, and Hurst, Ooi &
+Pedersen 2017 ("A Century of Evidence on Trend-Following Investing").
+
+## Assets (monthly, total return in US dollars)
+
+| Sleeve | Data |
+|---|---|
+| US stocks | Kenneth French US market (as L2) |
+| International developed stocks | Kenneth French Developed ex US market, from July 1990 |
+| US 10-year Treasuries | built from the Federal Reserve's 10-year yield (FRED DGS10, month-end): coupon income plus the price change of a 10-year par bond repriced at the new yield |
+| Gold | monthly gold price (datahub.io gold-prices), with Yahoo's COMEX gold future (GC=F) if that source is unavailable or ends early |
+
+## Rules
+
+- **Sleeves:** each month-end, every asset with data is an equal sleeve
+  (1/N of the portfolio). A sleeve holds its asset while that asset's
+  total-return index is above its 10-month average, and T-bills otherwise.
+- **Leverage:** the whole portfolio is levered L times, re-levered monthly.
+- **Costs (futures, as each sleeve would be run):** financing at T-bills +
+  0.3%/yr on the borrowed part; 0.05%/yr running cost; 0.05% of the sleeve's
+  levered size per sleeve switch.
+- **The comparison:** L2 (US only, 2.0x, 10-month rule) at the same futures
+  costs, over the same months. MA is reported at 2.0x and at the leverage
+  that gives it the same volatility as L2 over the period. That leverage is
+  one number fitted in-sample, and is stated as such.
+
+## Pass criterion: MA replaces L2 only if, at the volatility-matched leverage
+
+1. its CAGR beats L2's over the full common period **and** in both halves;
+2. its deepest fall is no deeper than L2's; and
+3. its worst month is no worse than L2's.
+
+## Known limits, stated up front
+
+- The common period starts in 1991, once international data has 10 months.
+  That is 35 years, including 2000-02, 2008, 2020 and 2022, but not 1929 or
+  1987's daily detail. Monthly data understates falls inside a month.
+- The bond series is built from yields, not traded prices; it is a close but
+  not exact match for a Treasury future.
+- Real implementation needs four futures (micro S&P 500, MSCI EAFE, 10-year
+  Treasury note, micro gold). That is more to manage than one.
+- This is the 6th leverage variant. Counting everything, about 14
+  strategies have now been tested.
