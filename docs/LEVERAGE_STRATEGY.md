@@ -490,3 +490,30 @@ monetary history. Even so, the result is the same direction and size as
 every period (+22.2%/yr against +20.6% full period, at 4.37x), but its
 deepest fall was -27% against MA's -25%. **MA stays.** The registered rule
 is applied as written, even though this miss is narrow.
+
+---
+
+# MA daily crash check: registered 2026-10-10, before running
+
+A diagnostic of MA as chosen (3.82x, equal sleeves). It changes no rule.
+MA's tests used monthly data, which hides falls inside a month. This one
+replays it **day by day**:
+
+- **Data:** French daily US and Developed ex US markets; daily 10-year
+  Treasury returns from ^TNX yields; daily gold from Yahoo's GC=F. The
+  period starts once every sleeve has 10 month-ends of daily data, around
+  2001.
+- **Model:** the monthly signals and re-levering are unchanged. Between
+  month-ends each futures position moves with its market every day, and
+  margin is checked on every close at the 8% futures maintenance in
+  scripts/leverage_config.json.
+- **Reported:** worst day, worst month, deepest fall, the lowest equity as a
+  share of exposure, and each crash window (2000-02, 2008, 2011, 2015,
+  2018, 2020, 2022), all next to L2 (US stocks 2x) on the same days.
+
+**What would change the decision:**
+
+1. any margin call at 8% maintenance; or
+2. a deepest fall on daily closes deeper than L2's over the same days.
+
+Either one is reported to the operator before any real money is used.
