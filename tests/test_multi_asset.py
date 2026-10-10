@@ -81,3 +81,18 @@ class TestPortfolio:
         text, passed = ma.evaluate(assets, rf, ["synthetic"])
         assert "REGISTERED CRITERION" in text and "CORRELATION" in text
         assert isinstance(passed, bool)
+
+
+def test_treasuries_fall_back_to_yahoo_when_fred_fails():
+    stamps = [1704067200, 1706745600, 1709251200]  # Jan, Feb, Mar 2024
+    tnx = {"chart": {"result": [{"timestamp": stamps,
+                                  "indicators": {"quote": [{"close": [4.0, 4.0, 5.0]}]}}]}}
+
+    def get(url):
+        if "fred" in url:
+            raise TimeoutError("slow")
+        return json.dumps(tnx).encode()
+
+    r, source = ma.load_treasuries(get)
+    assert "Yahoo" in source and set(r) == {202402, 202403}
+    assert r[202402] == pytest.approx(0.04 / 12, rel=0.02)

@@ -31,6 +31,9 @@ FRED_URL = "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10"
 GOLD_URL = "https://datahub.io/core/gold-prices/r/monthly.csv"
 YAHOO_GOLD_URL = ("https://query1.finance.yahoo.com/v8/finance/chart/GC=F"
                   "?interval=1mo&range=max")
+#: The 10-year Treasury yield in percent, if FRED does not answer.
+YAHOO_TNX_URL = ("https://query1.finance.yahoo.com/v8/finance/chart/%5ETNX"
+                 "?interval=1mo&range=max")
 
 #: docs/LEVERAGE_STRATEGY.md, MA: futures costs.
 SPREAD = 0.003           # per year, on the borrowed part
@@ -76,6 +79,33 @@ def treasury_returns(csv_text: str) -> Series:
     months = sorted(month_end)
     return {b: bond_return(month_end[a], month_end[b])
             for a, b in zip(months, months[1:]) if _next_month(a) == b}
+
+
+def _yahoo_monthly(payload: bytes) -> dict[int, float]:
+    """{YYYYMM: close} from a Yahoo chart response with monthly bars."""
+    from datetime import datetime, timezone
+
+    result = json.loads(payload.decode())["chart"]["result"][0]
+    out = {}
+    for stamp, close in zip(result["timestamp"], result["indicators"]["quote"][0]["close"]):
+        if close:
+            d = datetime.fromtimestamp(stamp, tz=timezone.utc)
+            out[d.year * 100 + d.month] = float(close)
+    return out
+
+
+def load_treasuries(get: Callable[[str], bytes]) -> tuple[Series, str]:
+    """FRED's DGS10 (twice), else Yahoo's ^TNX month-end yields."""
+    for attempt in range(2):
+        try:
+            return treasury_returns(get(FRED_URL).decode()), "FRED DGS10"
+        except Exception as exc:
+            last = exc
+    yields = {m: y / 100 for m, y in _yahoo_monthly(get(YAHOO_TNX_URL)).items()}
+    months = sorted(yields)
+    out = {b: bond_return(yields[a], yields[b])
+           for a, b in zip(months, months[1:]) if _next_month(a) == b}
+    return out, f"Yahoo ^TNX (FRED failed: {type(last).__name__})"
 
 
 def _next_month(m: int) -> int:
@@ -133,8 +163,8 @@ def load_assets(get: Callable[[str], bytes], cache_dir: Path | None = None
                              for m in intl["Mkt-RF"] if m in intl["RF"]}
     notes.append(f"Intl stocks: French Developed ex US, {min(assets['Intl stocks'])}-"
                  f"{max(assets['Intl stocks'])}")
-    assets["Treasuries"] = treasury_returns(get(FRED_URL).decode())
-    notes.append(f"Treasuries: built from FRED DGS10, {min(assets['Treasuries'])}-"
+    assets["Treasuries"], source = load_treasuries(get)
+    notes.append(f"Treasuries: built from {source} yields, {min(assets['Treasuries'])}-"
                  f"{max(assets['Treasuries'])}")
     gold, gold_note = gold_returns(get)
     if gold:
