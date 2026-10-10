@@ -517,3 +517,29 @@ replays it **day by day**:
 2. a deepest fall on daily closes deeper than L2's over the same days.
 
 Either one is reported to the operator before any real money is used.
+
+## MA daily crash check result — 2026-10-10 (run #41)
+
+Day by day, 2001-06 to 2026-08 (gold's daily data starts in 2000):
+
+| | MA 3.82x | L2 2.0x |
+|---|---|---|
+| Per year | +20.6% | +16.1% |
+| Deepest fall (daily closes) | -38% | -42% |
+| Worst day | -12.1% | -15.2% |
+| Worst month | -27.6% | -19.0% |
+| Lowest equity / exposure | 19% (2026-03-27) | 41% |
+| Margin calls | 0 at 8% | 0 at 25% |
+
+**Neither registered concern applies: MA stays as chosen.** Reading,
+stated plainly:
+
+- Monthly data understated MA's falls: the deepest is **-38%, not -25%**.
+  It is still shallower than L2's -42% on the same days.
+- MA's worst month (-27.6%) is worse than L2's in this period. It is not
+  safer in every way, only overall.
+- The closest it came to a margin call was March 2026: equity at 19% of
+  exposure against the 8% call level. That is about 40% of the way, which is
+  below the alarm's WARNING level (50%).
+- Crash windows: 2008 -2% (L2 -9%); 2011 -4% (-21%); 2020 -16% (-23%);
+  2022 -19% (-12%); 2015 -19% (-24%); February 2018 -18% (-18%).
