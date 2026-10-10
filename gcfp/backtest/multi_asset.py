@@ -96,16 +96,24 @@ def _yahoo_monthly(payload: bytes) -> dict[int, float]:
 
 def load_treasuries(get: Callable[[str], bytes]) -> tuple[Series, str]:
     """FRED's DGS10 (twice), else Yahoo's ^TNX month-end yields."""
+    last: Exception | str = "no attempt"
     for attempt in range(2):
         try:
-            return treasury_returns(get(FRED_URL).decode()), "FRED DGS10"
+            text = get(FRED_URL).decode(errors="replace")
+            out = treasury_returns(text)
+            if len(out) >= 120:
+                return out, "FRED DGS10"
+            last = f"only {len(out)} months; response began {text[:80]!r}"
         except Exception as exc:
             last = exc
     yields = {m: y / 100 for m, y in _yahoo_monthly(get(YAHOO_TNX_URL)).items()}
     months = sorted(yields)
     out = {b: bond_return(yields[a], yields[b])
            for a, b in zip(months, months[1:]) if _next_month(a) == b}
-    return out, f"Yahoo ^TNX (FRED failed: {type(last).__name__})"
+    why = last if isinstance(last, str) else f"{type(last).__name__}: {last}"
+    if not out:
+        raise ValueError(f"no Treasury data: FRED ({why}) and Yahoo ^TNX both empty")
+    return out, f"Yahoo ^TNX (FRED failed: {why[:120]})"
 
 
 def _next_month(m: int) -> int:
@@ -160,7 +168,10 @@ def load_assets(get: Callable[[str], bytes], cache_dir: Path | None = None
     intl = parse_french_csv(fetch_french(INTL_FILE, get, cache_dir))
     intl = {k.strip(): v for k, v in intl.items()}
     assets["Intl stocks"] = {m: intl["Mkt-RF"][m] + intl["RF"][m]
-                             for m in intl["Mkt-RF"] if m in intl["RF"]}
+                             for m in intl.get("Mkt-RF", {}) if m in intl.get("RF", {})}
+    if not assets["Intl stocks"]:
+        raise ValueError(f"no international data parsed from {INTL_FILE} "
+                         f"(columns found: {sorted(intl)[:6]})")
     notes.append(f"Intl stocks: French Developed ex US, {min(assets['Intl stocks'])}-"
                  f"{max(assets['Intl stocks'])}")
     assets["Treasuries"], source = load_treasuries(get)

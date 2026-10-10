@@ -64,6 +64,9 @@ def main(argv=None) -> int:
     try:
         ma_text, _ = multi_asset.run(http_get, args.cache_dir)
     except Exception as exc:
+        import traceback
+
+        traceback.print_exc()
         ma_text = f"MA multi-asset test could not run: {type(exc).__name__}: {exc}\n"
     args.out.with_name("leverage-multi-asset.txt").write_text(ma_text)
     print(ma_text)

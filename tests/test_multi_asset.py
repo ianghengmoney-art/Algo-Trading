@@ -96,3 +96,17 @@ def test_treasuries_fall_back_to_yahoo_when_fred_fails():
     r, source = ma.load_treasuries(get)
     assert "Yahoo" in source and set(r) == {202402, 202403}
     assert r[202402] == pytest.approx(0.04 / 12, rel=0.02)
+
+
+def test_an_empty_fred_answer_falls_back_too():
+    stamps = [1704067200, 1706745600, 1709251200]
+    tnx = {"chart": {"result": [{"timestamp": stamps,
+                                  "indicators": {"quote": [{"close": [4.0, 4.0, 5.0]}]}}]}}
+
+    def get(url):
+        if "fred" in url:
+            return b"<html>Service unavailable</html>"
+        return json.dumps(tnx).encode()
+
+    r, source = ma.load_treasuries(get)
+    assert "Yahoo" in source and "Service unavailable" in source
