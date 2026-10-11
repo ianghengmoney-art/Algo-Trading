@@ -7,11 +7,12 @@
     "_comment": "MA, the multi-asset trend portfolio (docs/LEVERAGE_STRATEGY.md), chosen 2026-10-10 at L2's volatility. maintenance_margin: futures margin as a share of gross exposure; 0.08 is a conservative blend of equity, Treasury and gold futures. Set it to your broker's figure.",
     "leverage": 3.82,
     "maintenance_margin": 0.08,
-    "paper_capital": 100000
+    "paper_capital": 150000
   },
-  "real_account": {
-    "_comment": "The operator's planned account, for the trade ticket in the daily report (leveraged-ETF version). Amount only; no account details.",
+  "etf_book": {
+    "_comment": "The second paper account: MA's leveraged-ETF version in the operator's currency (docs/LEVERAGE_STRATEGY.md). Amount only; no account details.",
     "currency": "SGD",
-    "amount": 4000
+    "amount": 4000,
+    "order_cost_usd": 1.0
   }
 }

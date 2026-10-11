@@ -51,19 +51,43 @@ def fetch(today: date):
     return closes, rf
 
 
-def make_ticket(state, real: dict, today: date) -> str:
+ETF_BOOK = Path("reports/paper/etf-sgd-book.json")
+
+
+def run_etf_book(state, cfg: dict, today: date) -> tuple[str, list[str]]:
+    """The SGD account's ETF book on MA's signals, and the futures account's
+    whole-contract ticket. Returns the report text and any ETF trades."""
+    from gcfp.backtest import etf_paper
     from gcfp.backtest.etf_version import ETFS
     from gcfp.data.prices import YahooPriceSource
 
     source = YahooPriceSource()
+    still_open = datetime.utcnow().hour < 21
+    symbols = [etf for etf, _, _ in ETFS.values()] + [etf_paper.CASH_ETF]
+    closes = {}
+    for sym in symbols:
+        pts = source.get_prices(sym, today - timedelta(days=120), today)
+        closes[sym] = [(p.price_date, p.adjusted_close or p.close) for p in pts
+                       if not (still_open and p.price_date >= today)]
+    day = min(max(d for d, _ in c) for c in closes.values())
+    currency = cfg.get("currency", "SGD")
+    fx = source.get_prices(f"{currency}=X", today - timedelta(days=10), today)[0].close
+    book = etf_paper.load(ETF_BOOK)
+    book, trades = etf_paper.step(book, closes, state.in_trend, state.signal_month, day,
+                                  fx, currency, float(cfg["amount"]),
+                                  float(cfg.get("order_cost_usd", 1.0)))
+    etf_paper.save(book, ETF_BOOK)
+    text = etf_paper.report(book, closes, day, fx, trades)
+
     prices = {}
-    for etf, _, _ in ETFS.values():
-        prices[etf] = source.get_prices(etf, today - timedelta(days=10), today)[0].close
-    currency = real.get("currency", "USD")
-    fx = 1.0
-    if currency != "USD":
-        fx = source.get_prices(f"{currency}=X", today - timedelta(days=10), today)[0].close
-    return map_.trade_ticket(state.in_trend, float(real["amount"]), currency, fx, prices)
+    for sleeve, (symbol, _, _) in etf_paper.CONTRACTS.items():
+        try:
+            prices[symbol] = source.get_prices(symbol, today - timedelta(days=10), today)[0].close
+        except Exception:
+            pass
+    equity = state.value  # at the last rebalance, when contracts are sized
+    text += etf_paper.contract_ticket(state.in_trend, equity, state.leverage, prices)
+    return text, trades
 
 
 def main(argv=None) -> int:
@@ -80,14 +104,24 @@ def main(argv=None) -> int:
     map_.save(state, BOOK)
     text, alert = map_.report(state, closes, rf, today,
                               float(config["maintenance_margin"]), changes)
-    real = json.loads(CONFIG.read_text()).get("real_account")
-    if real:
+    etf_cfg = json.loads(CONFIG.read_text()).get("etf_book")
+    if etf_cfg:
+        failed = False
         try:
-            ticket = make_ticket(state, real, today)
+            extra, trades = run_etf_book(state, etf_cfg, today)
         except Exception as exc:
-            ticket = f"\nTRADE TICKET not available: {type(exc).__name__}: {exc}\n"
-        text += ticket
-        alert += ticket
+            extra, trades = (f"\nETF BOOK not updated: {type(exc).__name__}: {exc}\n", [])
+            failed = True
+        text += extra
+        alert += extra
+        lines = alert.splitlines()
+        if failed:
+            # The daily check emails anything not OK: a broken ETF book is seen.
+            lines[0] = "CHECK FAILED"
+        if trades and not changes:
+            # An ETF resize with no MA signal change still needs acting on.
+            lines.insert(1, "POSITION CHANGE: ETF account trades")
+        alert = "\n".join(lines) + "\n"
     REPORT.write_text(text)
     ALERT.write_text(alert)
     print(text)

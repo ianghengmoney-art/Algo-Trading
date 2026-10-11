@@ -1,12 +1,12 @@
 {
   "started_on": "2026-10-10",
   "leverage": 3.82,
-  "value": 99904.522800625,
+  "value": 149856.7842009375,
   "rebalanced_on": "2026-10-09",
   "signal_month": "2026-09",
   "exposure": {
-    "US stocks": 95408.81927459687,
-    "Intl stocks": 95408.81927459687,
+    "US stocks": 143113.2289118953,
+    "Intl stocks": 143113.2289118953,
     "Treasuries": 0.0,
     "Gold": 0.0
   },
@@ -26,7 +26,7 @@
     {
       "date": "2026-10-09",
       "signal_month": "2026-09",
-      "value": 99904.52,
+      "value": 149856.78,
       "in_trend": {
         "US stocks": true,
         "Intl stocks": true,
@@ -39,13 +39,14 @@
         "Treasuries: SELL to T-bills",
         "Gold: SELL to T-bills"
       ],
-      "gross_leverage": 1.91
+      "gross_leverage": 1.91,
+      "note": "rescaled from $100,000 to $150,000 on 2026-10-11 at the operator's request; start date kept"
     }
   ],
   "marks": [
     {
       "date": "2026-10-09",
-      "value": 99904.52,
+      "value": 149856.78,
       "prices": {
         "US stocks": 17525.2305,
         "Intl stocks": 103.4,

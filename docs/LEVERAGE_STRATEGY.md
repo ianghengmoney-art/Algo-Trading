@@ -588,3 +588,27 @@ also falls less. Commissions barely matter (12 orders a year, US$307 in 25
 years). US$3,100 grew to US$119,638 over 25 years. **This is the version
 the operator's SGD 4,000 can hold.** The daily report now carries its trade
 ticket.
+
+---
+
+# Stage 2: two paper accounts, 3 months — set up 2026-10-11
+
+At the operator's request, two paper accounts run side by side on MA's
+signals until the third monthly signal (December's, applied on the first
+trading day of January 2027):
+
+| Account | Size | Version | Book |
+|---|---|---|---|
+| Futures | **US$150,000** (rescaled from $100,000 on 2026-10-11; start date 2026-10-09 kept) | MA at 3.82x, as futures; whole-contract ticket in each report (MES, ZN, MGC; EFA shares for international) | reports/paper/multi-asset-book.json |
+| ETF | **SGD 4,000** | MA's leveraged-ETF version (UPRO, EFO, TYD, UGL, SGOV), US$1 orders, valued in SGD and US$ | reports/paper/etf-sgd-book.json |
+
+**Both pass stage 2** when, over the three monthly signals:
+
+1. every daily check ran, or a failed one was fixed within a day;
+2. no data error went unnoticed (no stale close, no CHECK FAILED left
+   unexplained); and
+3. each month's trades were emailed and match the rules.
+
+As before, three months cannot judge the edge, only that the machinery works.
+After stage 2 the operator decides on real money (stage 3), starting with
+the SGD account.
