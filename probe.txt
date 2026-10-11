@@ -1,0 +1,466 @@
+==============================================================================
+GCFP v4 — §18 DATA FEASIBILITY REPORT
+source: edgar+fallback · generated 2026-09-06
+==============================================================================
+
+ADAPTER CAPABILITIES
+  [OK ] profile — from XBRL company facts
+  [OK ] annual_financials — from XBRL company facts
+  [OK ] quarterly_financials — from XBRL company facts
+  [OK ] prices — from fallback
+  [OK ] historical_multiples — reconstructed from prices x per-share fundamentals, observed on filing dates so the series carries no lookahead
+  [NO ] corporate_actions — splits only, from the price source; spinoffs are not detected, so C1.1 cannot see a business changing in kind
+  [NO ] gics_sub_industry — SIC codes only; official but coarser than GICS, and logged as VENDOR-SUBSTITUTE wherever a grouping is used
+  [NO ] peer_group — built from the universe, not fetched
+  [OK ] share_count_history — from XBRL company facts
+  [OK ] cash_burn — from XBRL company facts
+  [NO ] reit_ffo_affo — FFO/AFFO are almost always custom XBRL extensions, not us-gaap tags; the REIT path cannot be valued from this source alone
+  [NO ] insurer_combined_ratio — combined ratio is not a us-gaap tag; the insurer path cannot be valued from this source alone
+  [OK ] bank_tangible_book — from XBRL company facts
+  [NO ] forward_estimates — no analyst estimates; C3 reports PEGY n/a and CORE-GROWTH uses a trailing anchor by explicit configuration
+  [OK ] risk_free_rate — 10-year Treasury yield via fallback
+  [NO ] fx_rates — EDGAR publishes no exchange rates
+  [OK ] point_in_time — as-filed with filing dates — natively point-in-time
+
+TAXONOMY
+  GICS NOT available. Finest rung offered is industry from provider-defined taxonomy (profiles from NYSE, Nasdaq). A2 and C2 run against a substitute grouping — every result is logged VENDOR-SUBSTITUTE and the peer-gameability break criterion (Module I) applies with more force, not less.
+  9/9 profiles carry a industry label
+
+PER-TARGET COVERAGE
+  CAT (mature industrial) — tests B1 two-stage DCF
+    coverage: 68% of attempted inputs
+    A6 routed to: CORE-STABLE (matches)
+    C1 usable history: 5.7 years
+    C2 genuine peers: 0
+    -> SINGLE-ANCHOR MODE
+    A1 solvency:
+      [OK ] current_ratio = 1.368
+      [MISSING] ttm_operating_cash_flow
+    A2 leverage:
+      [OK ] net_debt = 2.95e+10
+      [MISSING] ttm_ebitda
+      [OK ] industry_grouping = Construction Machinery & Equip — VENDOR SUBSTITUTE
+    A3 earnings quality:
+      [MISSING] ttm_net_income
+      [MISSING] ttm_operating_cash_flow
+      [MISSING] cash_runway_months — pre-profit branch cannot be enforced without this
+    A4 red flags:
+      [OK ] share_count_history = -0.05012
+      [OK ] filing_dates
+    A5 data integrity:
+      [OK ] latest_filing_date = 2026-08-05
+      [OK ] current_price = 813.9
+      [OK ] market_cap = 3.76e+11
+    A6 classification:
+      [OK ] annual_revenue_3y = 3
+      [OK ] annual_net_income_3y = 3
+      [OK ] free_cash_flow_5y = 5
+    B discount rate:
+      [OK ] beta = 1.265
+      [MISSING] interest_expense
+      [OK ] total_debt = 3.62e+10
+      [OK ] risk_free_rate = 0.04784
+    B path-specific:
+      [OK ] free_cash_flow = 8.92e+09 — B1/B2 cash-flow depth
+      [OK ] shares_diluted = 4.723e+08
+    C1 own history:
+      [OK ] multiple_history_7y (trailing_pe) = 5.706 — 25 observations
+      [OK ] corporate_actions = 0 — an empty list must not be read as 'no spinoffs occurred'
+    C2 peer set:
+      [MISSING] peer_candidates — DataUnavailable: peer_group: no vendor peer list; peers are built from the universe by grouping, size and growth (gcfp.universe.find_peers)
+      [OK ] peer_fundamentals_resolvable = 0
+      [MISSING] peer_multiples_computable — 0/0 candidates had a computable trailing_pe
+      [MISSING] peer_set — 0 survive C2's screen; 4 required
+
+  NVDA (profitable fast-grower) — tests B2 scenario DCF, Rule of 40
+    coverage: 71% of attempted inputs
+    A6 routed to: CORE-GROWTH (matches)
+    C1 usable history: 6.5 years
+    C2 genuine peers: 0
+    -> SINGLE-ANCHOR MODE
+    A1 solvency:
+      [OK ] current_ratio = 4.589
+      [MISSING] ttm_operating_cash_flow
+    A2 leverage:
+      [OK ] net_debt = 1.09e+10
+      [MISSING] ttm_ebitda
+      [OK ] industry_grouping = Semiconductors & Related Devices — VENDOR SUBSTITUTE
+    A3 earnings quality:
+      [OK ] ttm_net_income = 1.76e+11
+      [MISSING] ttm_operating_cash_flow
+      [MISSING] cash_runway_months — pre-profit branch cannot be enforced without this
+    A4 red flags:
+      [OK ] share_count_history = -0.01322
+      [OK ] filing_dates
+    A5 data integrity:
+      [OK ] latest_filing_date = 2026-08-26
+      [OK ] current_price = 230.4
+      [OK ] market_cap = 5.59e+12
+    A6 classification:
+      [OK ] annual_revenue_3y = 3
+      [OK ] annual_net_income_3y = 3
+      [OK ] free_cash_flow_5y = 5
+    B discount rate:
+      [OK ] beta = 1.787
+      [MISSING] interest_expense
+      [OK ] total_debt = 8.47e+09
+      [OK ] risk_free_rate = 0.04784
+    B path-specific:
+      [OK ] free_cash_flow = 9.67e+10 — B1/B2 cash-flow depth
+      [OK ] shares_diluted = 2.45e+10
+    C1 own history:
+      [OK ] multiple_history_7y (trailing_pe) = 6.513 — 28 observations
+      [OK ] corporate_actions = 2
+    C2 peer set:
+      [MISSING] peer_candidates — DataUnavailable: peer_group: no vendor peer list; peers are built from the universe by grouping, size and growth (gcfp.universe.find_peers)
+      [OK ] peer_fundamentals_resolvable = 0
+      [MISSING] peer_multiples_computable — 0/0 candidates had a computable trailing_pe
+      [MISSING] peer_set — 0 survive C2's screen; 4 required
+
+  RIVN (unprofitable grower) — tests A3 pre-profit branch, cash burn
+    coverage: 71% of attempted inputs
+    A6 routed to: SPEC-GROWTH (matches)
+    C1 usable history: 3.7 years
+    C2 genuine peers: 0
+    -> SINGLE-ANCHOR MODE
+    A1 solvency:
+      [OK ] current_ratio = 2.104
+      [MISSING] ttm_operating_cash_flow
+    A2 leverage:
+      [OK ] net_debt = 8.52e+08
+      [MISSING] ttm_ebitda
+      [OK ] industry_grouping = Motor Vehicles & Passenger Car Bodies — VENDOR SUBSTITUTE
+    A3 earnings quality:
+      [OK ] ttm_net_income = -3.54e+09
+      [MISSING] ttm_operating_cash_flow
+      [MISSING] cash_runway_months — pre-profit branch cannot be enforced without this
+    A4 red flags:
+      [OK ] share_count_history = 0.1797
+      [OK ] filing_dates
+    A5 data integrity:
+      [OK ] latest_filing_date = 2026-07-30
+      [OK ] current_price = 15.74
+      [OK ] market_cap = 2.09e+10
+    A6 classification:
+      [OK ] annual_revenue_3y = 3
+      [OK ] annual_net_income_3y = 3
+      [OK ] free_cash_flow_5y = 5
+    B discount rate:
+      [OK ] beta = 1.617
+      [MISSING] interest_expense
+      [OK ] total_debt = 4.44e+09
+      [OK ] risk_free_rate = 0.04784
+    B path-specific:
+      [OK ] free_cash_flow = -2.49e+09 — B1/B2 cash-flow depth
+      [OK ] shares_diluted = 1.19e+09
+    C1 own history:
+      [OK ] multiple_history_7y (ev_revenue) = 3.721 — 15 observations
+      [OK ] corporate_actions = 0 — an empty list must not be read as 'no spinoffs occurred'
+    C2 peer set:
+      [MISSING] peer_candidates — DataUnavailable: peer_group: no vendor peer list; peers are built from the universe by grouping, size and growth (gcfp.universe.find_peers)
+      [OK ] peer_fundamentals_resolvable = 0
+      [MISSING] peer_multiples_computable — 0/0 candidates had a computable ev_revenue
+      [MISSING] peer_set — 0 survive C2's screen; 4 required
+
+  JPM (bank) — tests B3 P/B and P/TBV, ROE history
+    coverage: 68% of attempted inputs
+    A6 routed to: FINANCIAL-BANK (matches)
+    C1 usable history: 6.8 years
+    C2 genuine peers: 0
+    -> SINGLE-ANCHOR MODE
+    A1 solvency:
+      [MISSING] current_ratio
+      [MISSING] ttm_operating_cash_flow
+    A2 leverage:
+      [OK ] net_debt = 3.25e+10
+      [MISSING] ttm_ebitda
+      [OK ] industry_grouping = National Commercial Banks — VENDOR SUBSTITUTE
+    A3 earnings quality:
+      [OK ] ttm_net_income = 6.7e+10
+      [MISSING] ttm_operating_cash_flow
+      [MISSING] cash_runway_months — pre-profit branch cannot be enforced without this
+    A4 red flags:
+      [OK ] share_count_history = -0.04143
+      [OK ] filing_dates
+    A5 data integrity:
+      [OK ] latest_filing_date = 2026-08-06
+      [OK ] current_price = 358.6
+      [OK ] market_cap = 9.66e+11
+    A6 classification:
+      [OK ] annual_revenue_3y = 3
+      [OK ] annual_net_income_3y = 3
+      [MISSING] free_cash_flow_5y
+    B discount rate:
+      [OK ] beta = 1.075
+      [OK ] interest_expense = 9.54e+10
+      [OK ] total_debt = 3.35e+11
+      [OK ] risk_free_rate = 0.04784
+    B path-specific:
+      [OK ] tangible_book_value = 3.08e+11
+      [OK ] total_equity = 3.62e+11
+    C1 own history:
+      [OK ] multiple_history_7y (p_b) = 6.754 — 24 observations
+      [OK ] corporate_actions = 0 — an empty list must not be read as 'no spinoffs occurred'
+    C2 peer set:
+      [MISSING] peer_candidates — DataUnavailable: peer_group: no vendor peer list; peers are built from the universe by grouping, size and growth (gcfp.universe.find_peers)
+      [OK ] peer_fundamentals_resolvable = 0
+      [MISSING] peer_multiples_computable — 0/0 candidates had a computable p_b
+      [MISSING] peer_set — 0 survive C2's screen; 4 required
+
+  O (REIT) — tests B4 P/AFFO, FFO/AFFO availability
+    coverage: 57% of attempted inputs
+    A6 routed to: REIT (matches)
+    C1 usable history: 0.0 years
+    C2 genuine peers: 0
+    A1 solvency:
+      [MISSING] current_ratio
+      [MISSING] ttm_operating_cash_flow
+    A2 leverage:
+      [OK ] net_debt = 5.52e+09
+      [MISSING] ttm_ebitda
+      [OK ] industry_grouping = Real Estate Investment Trusts — VENDOR SUBSTITUTE
+    A3 earnings quality:
+      [OK ] ttm_net_income = 1.17e+09
+      [MISSING] ttm_operating_cash_flow
+      [MISSING] cash_runway_months — pre-profit branch cannot be enforced without this
+    A4 red flags:
+      [OK ] share_count_history = 0.1477
+      [OK ] filing_dates
+    A5 data integrity:
+      [OK ] latest_filing_date = 2026-08-06
+      [OK ] current_price = 61.25
+      [OK ] market_cap = 5.72e+10
+    A6 classification:
+      [OK ] annual_revenue_3y = 3
+      [OK ] annual_net_income_3y = 3
+      [OK ] free_cash_flow_5y = 5
+    B discount rate:
+      [OK ] beta = 0.7383
+      [MISSING] interest_expense
+      [OK ] total_debt = 5.19e+09
+      [OK ] risk_free_rate = 0.04784
+    B path-specific:
+      [MISSING] adjusted_funds_from_operations — B4 primary measure; P/E is banned on this path
+      [MISSING] funds_from_operations
+    C1 own history:
+      [MISSING] multiple_history_7y (p_affo) — historical_multiples: could not reconstruct a p_affo series for O
+      [OK ] corporate_actions = 1
+    C2 peer set:
+      [MISSING] peer_candidates — DataUnavailable: peer_group: no vendor peer list; peers are built from the universe by grouping, size and growth (gcfp.universe.find_peers)
+      [OK ] peer_fundamentals_resolvable = 0
+      [MISSING] peer_multiples_computable — 0/0 candidates had a computable p_affo
+      [MISSING] peer_set — 0 survive C2's screen; 4 required
+    note: BOTH ANCHORS UNCOMPUTABLE — C5 makes this an automatic FAIL
+
+  PGR (insurer) — tests B5 combined ratio
+    coverage: 67% of attempted inputs
+    A6 routed to: INSURER (matches)
+    C1 usable history: 6.7 years
+    C2 genuine peers: 0
+    -> SINGLE-ANCHOR MODE
+    A1 solvency:
+      [MISSING] current_ratio
+      [MISSING] ttm_operating_cash_flow
+    A2 leverage:
+      [OK ] net_debt = 8.19e+09
+      [MISSING] ttm_ebitda
+      [OK ] industry_grouping = Fire, Marine & Casualty Insurance — VENDOR SUBSTITUTE
+    A3 earnings quality:
+      [OK ] ttm_net_income = 1.19e+10
+      [MISSING] ttm_operating_cash_flow
+      [MISSING] cash_runway_months — pre-profit branch cannot be enforced without this
+    A4 red flags:
+      [OK ] share_count_history = -0.002812
+      [OK ] filing_dates
+    A5 data integrity:
+      [OK ] latest_filing_date = 2026-08-03
+      [OK ] current_price = 218.9
+      [OK ] market_cap = 1.28e+11
+    A6 classification:
+      [OK ] annual_revenue_3y = 3
+      [OK ] annual_net_income_3y = 3
+      [OK ] free_cash_flow_5y = 5
+    B discount rate:
+      [OK ] beta = 0.3721
+      [OK ] interest_expense = 2.78e+08
+      [OK ] total_debt = 6.9e+09
+      [OK ] risk_free_rate = 0.04784
+    B path-specific:
+      [MISSING] combined_ratio — B5's primary underwriting read
+    C1 own history:
+      [OK ] multiple_history_7y (p_b) = 6.741 — 24 observations
+      [OK ] corporate_actions = 0 — an empty list must not be read as 'no spinoffs occurred'
+    C2 peer set:
+      [MISSING] peer_candidates — DataUnavailable: peer_group: no vendor peer list; peers are built from the universe by grouping, size and growth (gcfp.universe.find_peers)
+      [OK ] peer_fundamentals_resolvable = 0
+      [MISSING] peer_multiples_computable — 0/0 candidates had a computable p_b
+      [MISSING] peer_set — 0 survive C2's screen; 4 required
+
+  TSM (foreign ADR) — tests Module K — underlying currency exposure
+    coverage: 21% of attempted inputs
+    A6 routed to: NO TAG — the router could not classify it
+    C1 usable history: 0.0 years
+    C2 genuine peers: 0
+    A1 solvency:
+      [MISSING] current_ratio
+      [MISSING] ttm_operating_cash_flow
+    A2 leverage:
+      [MISSING] net_debt
+      [MISSING] ttm_ebitda
+      [OK ] industry_grouping = Semiconductors & Related Devices — VENDOR SUBSTITUTE
+    A3 earnings quality:
+      [MISSING] ttm_net_income
+      [MISSING] ttm_operating_cash_flow
+      [MISSING] cash_runway_months — pre-profit branch cannot be enforced without this
+    A4 red flags:
+      [MISSING] share_count_history — dilution flag cannot be enforced without this
+      [MISSING] filing_dates
+    A5 data integrity:
+      [MISSING] latest_filing_date
+      [OK ] current_price = 428.9
+      [MISSING] market_cap
+    A6 classification:
+      [MISSING] annual_revenue_3y
+      [MISSING] annual_net_income_3y
+      [MISSING] free_cash_flow_5y
+    B discount rate:
+      [OK ] beta = 1.158
+      [MISSING] interest_expense
+      [MISSING] total_debt
+      [OK ] risk_free_rate = 0.04784
+    B path-specific:
+      [MISSING] free_cash_flow — B1/B2 cash-flow depth
+      [MISSING] shares_diluted
+    C1 own history:
+      [MISSING] multiple_history_7y (trailing_pe) — financials: no revenue or net-income facts for TSM (quarterly)
+      [OK ] corporate_actions = 0 — an empty list must not be read as 'no spinoffs occurred'
+    C2 peer set:
+      [MISSING] peer_candidates — DataUnavailable: peer_group: no vendor peer list; peers are built from the universe by grouping, size and growth (gcfp.universe.find_peers)
+      [OK ] peer_fundamentals_resolvable = 0
+      [MISSING] peer_multiples_computable — 0/0 candidates had a computable trailing_pe
+      [MISSING] peer_set — 0 survive C2's screen; 4 required
+    note: annual unavailable: financials: no revenue or net-income facts for TSM (annual)
+    note: quarterly unavailable: financials: no revenue or net-income facts for TSM (quarterly)
+    note: BOTH ANCHORS UNCOMPUTABLE — C5 makes this an automatic FAIL
+
+  GE (spinoff in the last 7 years) — tests C1.1 series discontinuity
+    coverage: 71% of attempted inputs
+    A6 routed to: CORE-STABLE (EXPECTED n/a)
+    C1 usable history: 6.0 years
+    C2 genuine peers: 0
+    -> SINGLE-ANCHOR MODE
+    A1 solvency:
+      [OK ] current_ratio = 0.9819
+      [MISSING] ttm_operating_cash_flow
+    A2 leverage:
+      [OK ] net_debt = 9.81e+09
+      [MISSING] ttm_ebitda
+      [OK ] industry_grouping = Electronic & Other Electrical Equipment (No Computer Equip) — VENDOR SUBSTITUTE
+    A3 earnings quality:
+      [OK ] ttm_net_income = 8.46e+09
+      [MISSING] ttm_operating_cash_flow
+      [MISSING] cash_runway_months — pre-profit branch cannot be enforced without this
+    A4 red flags:
+      [OK ] share_count_history = -0.02394
+      [OK ] filing_dates
+    A5 data integrity:
+      [OK ] latest_filing_date = 2026-07-16
+      [OK ] current_price = 337.1
+      [OK ] market_cap = 3.53e+11
+    A6 classification:
+      [OK ] annual_revenue_3y = 3
+      [OK ] annual_net_income_3y = 3
+      [OK ] free_cash_flow_5y = 5
+    B discount rate:
+      [OK ] beta = 1.252
+      [MISSING] interest_expense
+      [OK ] total_debt = 2.05e+10
+      [OK ] risk_free_rate = 0.04784
+    B path-specific:
+      [OK ] free_cash_flow = 7.26e+09 — B1/B2 cash-flow depth
+      [OK ] shares_diluted = 1.07e+09
+    C1 own history:
+      [OK ] multiple_history_7y (trailing_pe) = 5.963 — 22 observations
+      [OK ] corporate_actions = 3
+    C2 peer set:
+      [MISSING] peer_candidates — DataUnavailable: peer_group: no vendor peer list; peers are built from the universe by grouping, size and growth (gcfp.universe.find_peers)
+      [OK ] peer_fundamentals_resolvable = 0
+      [MISSING] peer_multiples_computable — 0/0 candidates had a computable trailing_pe
+      [MISSING] peer_set — 0 survive C2's screen; 4 required
+
+  TPL (fewer than 4 obvious peers) — tests C5 SINGLE-ANCHOR MODE
+    coverage: 61% of attempted inputs
+    A6 routed to: NO TAG — the router could not classify it
+    C1 usable history: 5.4 years
+    C2 genuine peers: 0
+    -> SINGLE-ANCHOR MODE
+    A1 solvency:
+      [OK ] current_ratio = 4.552
+      [MISSING] ttm_operating_cash_flow
+    A2 leverage:
+      [MISSING] net_debt
+      [OK ] ttm_ebitda = 7.263e+08
+      [OK ] industry_grouping = Oil Royalty Traders — VENDOR SUBSTITUTE
+    A3 earnings quality:
+      [OK ] ttm_net_income = 5.342e+08
+      [MISSING] ttm_operating_cash_flow
+      [MISSING] cash_runway_months — pre-profit branch cannot be enforced without this
+    A4 red flags:
+      [OK ] share_count_history = 0.7308
+      [OK ] filing_dates
+    A5 data integrity:
+      [OK ] latest_filing_date = 2026-08-05
+      [OK ] current_price = 362.4
+      [OK ] market_cap = 2.5e+10
+    A6 classification:
+      [OK ] annual_revenue_3y = 3
+      [OK ] annual_net_income_3y = 3
+      [MISSING] free_cash_flow_5y
+    B discount rate:
+      [OK ] beta = 1.4
+      [MISSING] interest_expense
+      [MISSING] total_debt
+      [OK ] risk_free_rate = 0.04784
+    B path-specific:
+      [MISSING] free_cash_flow — B1/B2 cash-flow depth
+      [OK ] shares_diluted = 6.903e+07
+    C1 own history:
+      [OK ] multiple_history_7y (trailing_pe) = 5.44 — 25 observations
+      [OK ] corporate_actions = 2
+    C2 peer set:
+      [MISSING] peer_candidates — DataUnavailable: peer_group: no vendor peer list; peers are built from the universe by grouping, size and growth (gcfp.universe.find_peers)
+      [OK ] peer_fundamentals_resolvable = 0
+      [MISSING] peer_multiples_computable — 0/0 candidates had a computable trailing_pe
+      [MISSING] peer_set — 0 survive C2's screen; 4 required
+
+  SIVBQ (delisted name) — tests survivorship bias / point-in-time
+    UNREACHABLE: cik: SIVBQ not in the SEC ticker index
+
+STOP CONDITIONS
+  [TRIPPED] Stop condition 1: cash-burn and share-count history computable
+    finding: cash runway not computable for ['CAT', 'NVDA', 'RIVN', 'JPM', 'O', 'PGR', 'TSM', 'GE', 'TPL']; share count history not computable for ['TSM']
+    DIRECTIVE: DISABLE SPEC-GROWTH ENTIRELY rather than building around the gap. Without A3's pre-profit branch and A4's dilution flag, SPEC-GROWTH is not a strategy, it is a way to buy companies shortly before they run out of money.
+  [TRIPPED] Stop condition 2: seven years of historical multiples sourceable
+    finding: 8/9 targets: the source supplied under 6.75 years: ['CAT', 'NVDA', 'RIVN', 'O', 'PGR', 'TSM', 'GE', 'TPL']
+    DIRECTIVE: REPORT BEFORE BUILDING — do not silently shorten the C1 window. C1 cannot function at full strength and the system degrades toward single-anchor operation, which C5 penalises but does not make free.
+  [TRIPPED] Stop condition 3: GICS sub-industry codes available
+    finding: GICS NOT available. Finest rung offered is industry from provider-defined taxonomy (profiles from NYSE, Nasdaq). A2 and C2 run against a substitute grouping — every result is logged VENDOR-SUBSTITUTE and the peer-gameability break criterion (Module I) applies with more force, not less.
+    DIRECTIVE: REPORT WHICH FALLBACK LEVEL IS AVAILABLE BEFORE BUILDING. A2's sector-relative leverage and C2's peer matching both run at industry level against a vendor taxonomy, which is wider than the spec assumes. Every grouping is logged VENDOR-SUBSTITUTE, and Module I's peer-gameability break criterion applies with more force, not less.
+  [TRIPPED] Stop condition 4: SINGLE-ANCHOR MODE below 40% of test companies
+    finding: 78% of reached targets fall into SINGLE-ANCHOR MODE
+    DIRECTIVE: THIS IS A DESIGN-LEVEL FINDING, NOT A DATA GAP TO WORK AROUND. The dual-anchor premise does not hold for this data source and universe. Report it as such before proceeding.
+
+SUMMARY
+  targets reached: 9/10
+  SINGLE-ANCHOR MODE rate: 78%
+  point-in-time data: available
+
+BUILD DIRECTIVES — these change what gets built:
+  - DISABLE SPEC-GROWTH ENTIRELY rather than building around the gap. Without A3's pre-profit branch and A4's dilution flag, SPEC-GROWTH is not a strategy, it is a way to buy companies shortly before they run out of money.
+  - REPORT BEFORE BUILDING — do not silently shorten the C1 window. C1 cannot function at full strength and the system degrades toward single-anchor operation, which C5 penalises but does not make free.
+  - REPORT WHICH FALLBACK LEVEL IS AVAILABLE BEFORE BUILDING. A2's sector-relative leverage and C2's peer matching both run at industry level against a vendor taxonomy, which is wider than the spec assumes. Every grouping is logged VENDOR-SUBSTITUTE, and Module I's peer-gameability break criterion applies with more force, not less.
+  - THIS IS A DESIGN-LEVEL FINDING, NOT A DATA GAP TO WORK AROUND. The dual-anchor premise does not hold for this data source and universe. Report it as such before proceeding.
+
+NOTES
+  Targets the source could not return at all: ['SIVBQ']. A probe that cannot reach a target has not cleared it — treat these as unknown, not as passing.
+==============================================================================

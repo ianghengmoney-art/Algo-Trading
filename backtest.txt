@@ -1,0 +1,377 @@
+==============================================================================
+LEVERAGED TREND STRATEGY — docs/LEVERAGE_STRATEGY.md (2 variants registered)
+==============================================================================
+Data: Kenneth French US market (CRSP, dividends included), T-bills; 1927-05 to 2026-08 (1192 months).
+Rule: 10-month average; borrowing at T-bills + 1.0%; 0.3%/yr while risk-on; 0.2% per switch.
+
+COMPOUND RETURN PER YEAR (max drawdown in brackets)
+                                               full period      earlier half        later half        since 1990        since 2008
+  L1: trend, 1.5x while risk-on             +11.55% (-60%)    +10.99% (-60%)    +12.11% (-38%)    +12.25% (-29%)    +12.61% (-28%)
+  L2: trend, 2.0x while risk-on             +13.38% (-74%)    +12.86% (-74%)    +13.89% (-51%)    +14.79% (-38%)    +15.83% (-37%)
+  market, buy and hold (1x)                 +10.30% (-84%)     +8.57% (-84%)    +12.07% (-50%)    +11.04% (-50%)    +11.42% (-48%)
+  trend, 1.0x (no leverage)                  +9.25% (-43%)     +8.60% (-43%)     +9.91% (-25%)     +9.41% (-19%)     +9.13% (-19%)
+  buy and hold 1.5x, no filter              +11.61% (-95%)     +9.09% (-95%)    +14.20% (-67%)    +13.51% (-67%)    +14.73% (-64%)
+  buy and hold 2.0x, no filter              +12.21% (-99%)     +8.59% (-99%)    +15.94% (-81%)    +15.64% (-81%)    +17.64% (-76%)
+
+GROWTH OF $10,000 OVER THE FULL PERIOD
+  L1: trend, 1.5x while risk-on          $517,380,010 · volatility 19%/yr · worst month -34% · deepest fall -60% (1929-08 to 1933-03)
+  L2: trend, 2.0x while risk-on          $2,608,855,129 · volatility 25%/yr · worst month -46% · deepest fall -74% (1929-08 to 1935-03)
+  market, buy and hold (1x)              $169,901,112 · volatility 18%/yr · worst month -29% · deepest fall -84% (1929-08 to 1932-06)
+  trend, 1.0x (no leverage)              $65,738,165 · volatility 13%/yr · worst month -23% · deepest fall -43% (1929-08 to 1933-03)
+  buy and hold 1.5x, no filter           $549,838,492 · volatility 28%/yr · worst month -43% · deepest fall -95% (1929-08 to 1932-06)
+  buy and hold 2.0x, no filter           $929,161,789 · volatility 37%/yr · worst month -58% · deepest fall -99% (1929-08 to 1932-06)
+
+PRE-REGISTERED CRITERIA — L1: trend, 1.5x while risk-on
+  [PASS] beats buy-and-hold by 1%/yr over the full period (+11.55% vs +10.30%)
+  [PASS] beats it in the earlier half (+10.99% vs +8.57%)
+  [PASS] beats it in the later half (+12.11% vs +12.07%)
+  [PASS] beats it since 2008, after publication (+12.61% vs +11.42%)
+  [FAIL] max drawdown no deeper than -55% (-60%, 1929-08 to 1933-03)
+  risk-on 73% of months · 147 switches · about 1.5 a year
+  margin check (not a rule): a 56% market fall in one month would breach 25% maintenance margin; risk-on months that fell that far: 0
+  GOAL 15%-20%/yr — full period: +11.55% not met · since 1990: +12.25% not met · since 2008: +12.61% not met
+  VERDICT: FAILED
+
+PRE-REGISTERED CRITERIA — L2: trend, 2.0x while risk-on
+  [PASS] beats buy-and-hold by 1%/yr over the full period (+13.38% vs +10.30%)
+  [PASS] beats it in the earlier half (+12.86% vs +8.57%)
+  [PASS] beats it in the later half (+13.89% vs +12.07%)
+  [PASS] beats it since 2008, after publication (+15.83% vs +11.42%)
+  [FAIL] max drawdown no deeper than -55% (-74%, 1929-08 to 1935-03)
+  risk-on 73% of months · 147 switches · about 1.5 a year
+  margin check (not a rule): a 33% market fall in one month would breach 25% maintenance margin; risk-on months that fell that far: 0
+  GOAL 15%-20%/yr — full period: +13.38% not met · since 1990: +14.79% not met · since 2008: +15.83% MET
+  VERDICT: FAILED
+
+SELECTION (registered: the higher leverage among those passing all four)
+  none passes — an unleveraged index fund remains the recommendation
+
+NOTES
+  Monthly data: falls inside a month (Oct 1987, Mar 2020) hit a risk-on
+  holder in full, and are counted. Taxes are not modelled.
+==============================================================================
+
+==============================================================================
+CRASH PROTECTION — leveraged trend on DAILY data (docs/LEVERAGE_STRATEGY.md)
+==============================================================================
+Data: Kenneth French daily US market and T-bills, 1927-05-02 to 2026-08-31 (26,068 trading days).
+L2-V: leverage min(2.0, 30% / 20-day volatility), reset every 5 days. L2-VS adds: out to T-bills after a 10% fall from the last re-levering, until month-end.
+
+COMPOUND RETURN PER YEAR (deepest fall on daily closes)
+                                                   full         1st half         2nd half       since 1990       since 2008
+  L2: trend, 2.0x (daily data)            +12.8% (-75%)    +11.2% (-75%)    +14.4% (-63%)    +14.2% (-48%)    +15.9% (-42%)
+  L2-V: trend, volatility-scaled          +12.7% (-73%)    +11.6% (-73%)    +13.7% (-49%)    +12.9% (-44%)    +13.7% (-37%)
+  L2-VS: L2-V + 10% crash stop            +12.5% (-73%)    +11.6% (-73%)    +13.3% (-45%)    +11.6% (-45%)    +11.7% (-41%)
+  market, buy and hold                     +9.8% (-84%)     +6.8% (-84%)    +12.8% (-55%)    +11.0% (-55%)    +11.6% (-51%)
+  buy and hold 2.0x, no filter            +11.5% (-99%)     +5.8% (-99%)    +17.4% (-85%)    +15.5% (-85%)    +17.9% (-79%)
+
+THE CRASHES, ONE BY ONE (return over each window)
+                                       L2           L2-V          L2-VS market, buy an buy and hold 2
+  1929 crash                       -46.5%         -31.3%         -22.2%         -43.5%         -74.2%
+  1929-32 Depression               -44.2%         -28.4%         -18.9%         -84.0%         -98.7%
+  1987 Black Monday                -49.2%         -38.9%         -24.8%         -32.6%         -59.8%
+  2000-02 dot-com                  -43.6%         -37.8%         -42.6%         -49.2%         -79.8%
+  2008 financial crisis             -9.5%          -9.5%          -9.5%         -54.2%         -82.1%
+  2020 Covid crash                 -23.5%         -21.4%         -21.4%         -33.8%         -61.3%
+  2022 bear market                 -12.1%         -11.3%         -19.0%         -24.9%         -46.9%
+
+WORST MOMENTS, FULL PERIOD
+  L2: trend, 2.0x (daily data)         worst day -40% (1987-10-19) · worst month -46% (1987-10) · deepest fall -75% (1929-09-03 to 1933-02-27)
+                                       lowest equity/exposure 26% on 1929-10-29 · margin calls at 25%: 0 · invested 72% of days
+  L2-V: trend, volatility-scaled       worst day -31% (1987-10-19) · worst month -37% (1940-05) · deepest fall -73% (1937-03-10 to 1942-08-06)
+                                       lowest equity/exposure 41% on 1940-05-17 · margin calls at 25%: 0 · invested 72% of days
+  L2-VS: L2-V + 10% crash stop         worst day -15% (1940-05-14) · worst month -29% (1940-05) · deepest fall -73% (1937-03-10 to 1942-08-06)
+                                       lowest equity/exposure 43% on 1940-05-14 · margin calls at 25%: 0 · invested 71% of days · stops 20
+  market, buy and hold                 worst day -17% (1987-10-19) · worst month -29% (1931-09) · deepest fall -84% (1929-09-03 to 1932-07-08)
+  buy and hold 2.0x, no filter         worst day -40% (1987-10-19) · worst month -58% (1931-09) · deepest fall -99% (1929-09-03 to 1932-07-08)
+
+CRITERIA — L2: trend, 2.0x (daily data)
+  [PASS] beats buy-and-hold by 1%/yr, full period (+12.8% vs +9.8%)
+  [PASS] beats it in the 1st half (+11.2% vs +6.8%)
+  [PASS] beats it in the 2nd half (+14.4% vs +12.8%)
+  [PASS] beats it since 2008 (+15.9% vs +11.6%)
+  [FAIL] deepest fall no deeper than -55% (-75%)
+  [FAIL] worst month no worse than -30% (-46%)
+  [PASS] no margin call at 25% maintenance (0)
+  GOAL 15%+/yr — full: +12.8% · since 1990: +14.2% · since 2008: +15.9% MET
+  (reference: L2 as chosen, measured on daily data)
+
+CRITERIA — L2-V: trend, volatility-scaled
+  [PASS] beats buy-and-hold by 1%/yr, full period (+12.7% vs +9.8%)
+  [PASS] beats it in the 1st half (+11.6% vs +6.8%)
+  [PASS] beats it in the 2nd half (+13.7% vs +12.8%)
+  [PASS] beats it since 2008 (+13.7% vs +11.6%)
+  [FAIL] deepest fall no deeper than -55% (-73%)
+  [FAIL] worst month no worse than -30% (-37%)
+  [PASS] no margin call at 25% maintenance (0)
+  GOAL 15%+/yr — full: +12.7% · since 1990: +12.9% · since 2008: +13.7%
+  VERDICT: FAILED
+
+CRITERIA — L2-VS: L2-V + 10% crash stop
+  [PASS] beats buy-and-hold by 1%/yr, full period (+12.5% vs +9.8%)
+  [PASS] beats it in the 1st half (+11.6% vs +6.8%)
+  [PASS] beats it in the 2nd half (+13.3% vs +12.8%)
+  [PASS] beats it since 2008 (+11.7% vs +11.6%)
+  [FAIL] deepest fall no deeper than -55% (-73%)
+  [PASS] worst month no worse than -30% (-29%)
+  [PASS] no margin call at 25% maintenance (0)
+  GOAL 15%+/yr — full: +12.5% · since 1990: +11.6% · since 2008: +11.7%
+  VERDICT: FAILED
+
+SELECTION (registered: the higher full-period CAGR among L2-V and L2-VS if both pass)
+  neither passes — L2 stays in paper trading (operator's decision); its daily-data row above is its true crash risk
+==============================================================================
+
+==============================================================================
+WHAT LEVERAGE GROWS MONEY FASTEST? (Kelly criterion, daily data)
+==============================================================================
+Kenneth French daily US market, 1927-05-02 to 2026-08-31. Borrowing at T-bills + 1.0%.
+
+1. THE FORMULA: L* = (expected return - borrowing cost) / variance
+                                Kelly L*  growth at L*  excess/yr   vol/yr
+  full, trend, risk-on days        4.11x        +20.0%      +8.3%     14%
+  full, buy and hold               2.31x        +10.9%      +6.8%     17%
+  1st half, trend, risk-on days     4.27x        +20.3%      +8.7%     14%
+  1st half, buy and hold           1.75x         +6.4%      +5.2%     17%
+  2nd half, trend, risk-on days     3.97x        +19.8%      +7.9%     14%
+  2nd half, buy and hold           2.89x        +16.2%      +8.4%     17%
+  since 1990, trend, risk-on days     4.29x        +21.1%      +8.6%     14%
+  since 1990, buy and hold         2.58x        +13.6%      +8.4%     18%
+  since 2008, trend, risk-on days     4.89x        +26.7%     +10.3%     15%
+  since 2008, buy and hold         2.60x        +15.1%     +10.5%     20%
+
+2. THE SIMULATION: CAGR by leverage (deepest fall on daily closes)
+
+  TREND (10-month average, T-bills when below)
+       L             full         1st half         2nd half       since 1990       since 2008  worst day  worst month  margin calls
+   1.00x     +8.8% (-45%)     +7.5% (-45%)    +10.2% (-32%)     +9.1% (-26%)     +9.2% (-22%)       -17%         -23%             0
+   1.25x    +10.0% (-54%)     +8.6% (-54%)    +11.4% (-40%)    +10.5% (-32%)    +11.0% (-27%)       -23%         -28%             0
+   1.50x    +11.0% (-62%)     +9.6% (-62%)    +12.5% (-48%)    +11.8% (-38%)    +12.7% (-32%)       -28%         -34%             0
+   1.75x    +12.0% (-69%)    +10.4% (-69%)    +13.5% (-56%)    +13.0% (-43%)    +14.3% (-37%)       -34%         -40%             0
+   2.00x    +12.8% (-75%)    +11.2% (-75%)    +14.4% (-63%)    +14.2% (-48%)    +15.9% (-42%)       -40%         -46%             0
+   2.25x    +13.5% (-80%)    +11.8% (-80%)    +15.2% (-70%)    +15.2% (-52%)    +17.4% (-47%)       -47%         -52%             2
+   2.50x    +14.0% (-85%)    +12.3% (-85%)    +15.8% (-78%)    +16.2% (-57%)    +18.8% (-51%)       -54%         -58%             3
+   2.75x    +14.4% (-90%)    +12.6% (-90%)    +16.3% (-85%)    +17.1% (-61%)    +20.2% (-55%)       -68%         -63%             8
+   3.00x    +14.7% (-97%)    +12.7% (-97%)    +16.6% (-91%)    +17.9% (-65%)    +21.5% (-59%)       -89%         -69%            19
+   3.50x  -100.0% (-100%)  -100.0% (-100%)         n/a (0%)         n/a (0%)         n/a (0%)      -100%        -100%             8
+   4.00x  -100.0% (-100%)  -100.0% (-100%)         n/a (0%)         n/a (0%)         n/a (0%)      -100%        -100%            22
+  best CAGR: full 3.00x (+14.7%) · 1st half 3.00x (+12.7%) · 2nd half 3.00x (+16.6%) · since 1990 3.00x (+17.9%) · since 2008 3.00x (+21.5%)
+
+  BUY AND HOLD, re-levered monthly
+       L             full         1st half         2nd half       since 1990       since 2008  worst day  worst month  margin calls
+   1.00x     +9.5% (-84%)     +6.5% (-84%)    +12.5% (-55%)    +10.7% (-55%)    +11.3% (-51%)       -17%         -29%             0
+   1.25x    +10.3% (-91%)     +6.8% (-91%)    +13.9% (-64%)    +12.1% (-64%)    +13.2% (-60%)       -23%         -36%             0
+   1.50x    +11.0% (-95%)     +6.8% (-95%)    +15.3% (-72%)    +13.4% (-72%)    +14.9% (-68%)       -28%         -44%             0
+   1.75x    +11.4% (-97%)     +6.5% (-97%)    +16.4% (-79%)    +14.6% (-79%)    +16.5% (-74%)       -34%         -51%             0
+   2.00x    +11.5% (-99%)     +5.8% (-99%)    +17.4% (-85%)    +15.5% (-85%)    +17.9% (-79%)       -40%         -58%             0
+   2.25x    +11.3% (-99%)     +4.8% (-99%)    +18.1% (-90%)    +16.3% (-90%)    +19.0% (-84%)       -47%         -66%             4
+   2.50x   +10.8% (-100%)    +3.4% (-100%)    +18.6% (-93%)    +16.8% (-93%)    +20.0% (-87%)       -54%         -73%            11
+   2.75x    +9.9% (-100%)    +1.5% (-100%)    +18.9% (-95%)    +17.2% (-95%)    +20.7% (-90%)       -68%         -80%            25
+   3.00x    +8.5% (-100%)    -1.0% (-100%)    +18.9% (-97%)    +17.3% (-97%)    +21.1% (-93%)       -89%         -88%            51
+   3.50x  -100.0% (-100%)  -100.0% (-100%)         n/a (0%)         n/a (0%)         n/a (0%)      -100%        -100%             9
+   4.00x  -100.0% (-100%)  -100.0% (-100%)         n/a (0%)         n/a (0%)         n/a (0%)      -100%        -100%            29
+  best CAGR: full 2.00x (+11.5%) · 1st half 1.25x (+6.8%) · 2nd half 2.75x (+18.9%) · since 1990 3.00x (+17.3%) · since 2008 3.00x (+21.1%)
+
+READING IT
+  Kelly maximises long-run growth and nothing else. At full Kelly, halving
+  your money along the way is expected, not a tail risk; past 2x Kelly,
+  more leverage means LESS growth. Estimates of the inputs are noisy, so
+  practitioners use half Kelly: about 3/4 of the growth for 1/2 the swings.
+  Margin calls are counted at 25% maintenance (a margin loan);
+  futures need far less. A margin loan cannot open more than 2x at all.
+==============================================================================
+
+==============================================================================
+IMPROVING L2 — futures costs and the ensemble signal (daily data)
+==============================================================================
+Kenneth French daily US market, 1927-07-01 to 2026-08-31: every run from the same day.
+
+COMPOUND RETURN PER YEAR (deepest fall on daily closes)
+                                                     full         1st half         2nd half       since 1990       since 2008
+  L2 (10-month, margin-loan costs)          +12.7% (-75%)    +11.1% (-75%)    +14.4% (-63%)    +14.2% (-48%)    +15.9% (-42%)
+  L2-E (3/6/9/12 ensemble, loan costs)      +12.1% (-73%)    +10.4% (-73%)    +13.7% (-49%)    +13.9% (-41%)    +15.7% (-41%)
+  L2 at futures costs                       +13.8% (-75%)    +12.0% (-75%)    +15.5% (-63%)    +15.3% (-47%)    +17.0% (-42%)
+  L2-E at futures costs                     +13.1% (-72%)    +11.4% (-72%)    +14.8% (-49%)    +14.9% (-40%)    +16.8% (-40%)
+  market, buy and hold                       +9.8% (-84%)     +6.9% (-84%)    +12.6% (-55%)    +11.0% (-55%)    +11.6% (-51%)
+
+THE CRASHES (return over each window)
+                                   L2       L2-E     L2-fut   L2-E-fut     market
+  1929 crash                   -46.5%     -37.5%     -46.3%     -37.3%     -43.5%
+  1929-32 Depression           -44.2%     -56.8%     -44.0%     -55.9%     -84.0%
+  1987 Black Monday            -49.2%     -38.3%     -49.0%     -38.1%     -32.6%
+  2000-02 dot-com              -43.6%     -35.5%     -42.5%     -34.4%     -49.2%
+  2008 financial crisis         -9.5%     -22.5%      -9.2%     -21.7%     -54.2%
+  2020 Covid crash             -23.5%     -23.5%     -23.3%     -23.3%     -33.8%
+  2022 bear market             -12.1%     -27.1%     -11.9%     -26.4%     -24.9%
+
+WORST MOMENTS
+  L2        worst day -40% · worst month -46% · lowest equity/exposure 26% · margin calls at 25%: 0 · switches 151
+  L2-E      worst day -28% · worst month -44% · lowest equity/exposure 34% · margin calls at 25%: 0 · switches 181
+  L2-fut    worst day -40% · worst month -46% · lowest equity/exposure 26% · margin calls at 25%: 0 · switches 151
+  L2-E-fut  worst day -28% · worst month -44% · lowest equity/exposure 34% · margin calls at 25%: 0 · switches 181
+  market    worst day -17% · worst month -29%
+
+REGISTERED CRITERION — does L2-E replace L2?
+  [FAIL] higher CAGR than L2, full (+12.1% vs +12.7%)
+  [FAIL] higher CAGR than L2, 1st half (+10.4% vs +11.1%)
+  [FAIL] higher CAGR than L2, 2nd half (+13.7% vs +14.4%)
+  [PASS] deepest fall no deeper than L2's (-73% vs -75%)
+  VERDICT: L2 STAYS
+
+FUTURES INSTEAD OF A MARGIN LOAN (same rule, L2)
+  extra return per year: full +1.02% · 1st half +0.93% · 2nd half +1.10% · since 1990 +1.10% · since 2008 +1.12%
+  plus: no 30% US dividend withholding (futures prices carry dividends),
+  and a margin call needs a ~46% fall instead of ~33%.
+==============================================================================
+
+==============================================================================
+MA — MULTI-ASSET TREND vs L2 (monthly, futures costs) — docs/LEVERAGE_STRATEGY.md
+==============================================================================
+Data: US stocks: French, 192607-202608
+Data: Intl stocks: French Developed ex US, 199007-202608
+Data: Treasuries: built from Yahoo ^TNX daily yields, 196202-202610
+Data: Gold: datahub 183301-202609; Yahoo GC=F to 202610
+Common period: 1991-05 to 2026-08 (424 months).
+
+COMPOUND RETURN PER YEAR (deepest fall); then full-period volatility and worst month
+                                                        full        1st half        2nd half      since 2008
+  L2: US stocks only, 2.0x                     +17.3% (-36%)   +16.8% (-35%)   +17.8% (-36%)   +16.9% (-36%)   vol 22% · worst month -32%
+  MA at 2.0x                                   +12.4% (-13%)   +12.6% (-13%)   +12.3% (-11%)   +11.5% (-11%)   vol 11% · worst month -12%
+  MA at 3.82x (same volatility as L2)          +20.6% (-25%)   +19.6% (-25%)   +21.6% (-22%)   +20.1% (-22%)   vol 22% · worst month -23%
+  MA unlevered (1.0x)                            +7.6% (-6%)     +8.3% (-6%)     +6.9% (-5%)     +6.5% (-5%)   vol 6% · worst month -6%
+  US stocks, buy and hold                      +11.2% (-50%)    +7.4% (-45%)   +15.0% (-25%)   +11.4% (-48%)   vol 15% · worst month -17%
+    sleeve: US stocks trend, 1.0x              +10.4% (-18%)   +10.8% (-17%)   +10.1% (-18%)    +9.6% (-18%)   vol 11% · worst month -16%
+    sleeve: Intl stocks trend, 1.0x             +6.3% (-25%)    +7.2% (-20%)    +5.4% (-25%)    +4.2% (-25%)   vol 11% · worst month -12%
+    sleeve: Treasuries trend, 1.0x              +4.3% (-15%)    +7.6% (-12%)    +1.1% (-15%)    +1.6% (-15%)   vol 6% · worst month -7%
+    sleeve: Gold trend, 1.0x                    +8.1% (-21%)    +6.4% (-13%)    +9.9% (-21%)    +9.6% (-21%)   vol 10% · worst month -12%
+
+THE CRASHES (return over each window)
+                      L2: US stocks only, 2.              MA at 2.0x  MA at 3.82x (same vola     MA unlevered (1.0x)
+  2000-02 dot-com                     -31.2%                   +0.9%                   -8.9%                   +5.6%
+  2008 crisis                          -9.4%                   -0.2%                   -3.5%                   +1.2%
+  2020 Covid                          -16.2%                   -3.7%                   -7.5%                   -1.7%
+  2022 bear                           -12.0%                   -5.8%                  -11.8%                   -2.6%
+
+CORRELATION OF THE TREND SLEEVES (monthly)
+                    US stocks  Intl stocks   Treasuries         Gold
+  US stocks              1.00         0.62        -0.06        -0.04
+  Intl stocks            0.62         1.00        -0.11         0.05
+  Treasuries            -0.06        -0.11         1.00         0.11
+  Gold                  -0.04         0.05         0.11         1.00
+
+REGISTERED CRITERION — MA at 3.82x (volatility-matched) vs L2
+  [PASS] higher CAGR than L2, full (+20.6% vs +17.3%)
+  [PASS] higher CAGR than L2, 1st half (+19.6% vs +16.8%)
+  [PASS] higher CAGR than L2, 2nd half (+21.6% vs +17.8%)
+  [PASS] deepest fall no deeper than L2's (-25% vs -36%)
+  [PASS] worst month no worse than L2's (-23% vs -32%)
+  VERDICT: MA REPLACES L2
+  (3.82x is fitted in-sample to match L2's volatility; stated, not hidden.)
+==============================================================================
+
+==============================================================================
+A. OUT-OF-SAMPLE CHECK — MA-3 (US stocks, Treasuries, gold) from 1973
+==============================================================================
+Levered 3.46x to L2's volatility over 1973-2026. Returns per year (deepest fall); short windows show the total change.
+                                                   1973-2026  1973-90 unseen       1991-2026   1973-74 crash   1979-81 bonds            1987
+  L2: US stocks, 2.0x                          +14.5% (-51%)    +8.3% (-51%)   +17.8% (-36%)          -28.8%          +50.4%          -28.2%
+  MA-3 at 3.46x                                +21.2% (-42%)   +22.6% (-42%)   +20.4% (-24%)          +98.2%         +154.0%           +0.5%
+  US stocks, buy and hold                      +11.2% (-50%)   +10.4% (-47%)   +11.6% (-50%)          -41.7%          +59.2%           +1.6%
+
+REGISTERED CHECK
+  [PASS] 1973-1990: higher CAGR than L2 (+22.6% vs +8.3%)
+  [PASS] 1973-1990: deepest fall no deeper than L2's (-42% vs -51%)
+  VERDICT: CONFIRMED out of sample
+==============================================================================
+
+==============================================================================
+B. MA-RP — risk-balanced sleeves vs MA, same volatility as L2
+==============================================================================
+                                                        full        1st half        2nd half      since 2008
+  MA (equal sleeves) at 3.82x                  +20.6% (-25%)   +19.6% (-25%)   +21.6% (-22%)   +20.1% (-22%)
+  MA-RP (1/volatility sleeves) at 4.37x        +22.2% (-27%)   +21.6% (-27%)   +22.9% (-24%)   +21.7% (-24%)
+  average MA-RP shares: US stocks 20% · Intl stocks 18% · Treasuries 37% · Gold 25%
+                                               crash windows
+  2000-02 dot-com      MA    -8.9%   MA-RP   +21.0%
+  2008 crisis          MA    -3.5%   MA-RP    -1.4%
+  2020 Covid           MA    -7.5%   MA-RP    -3.7%
+  2022 bear            MA   -11.8%   MA-RP   -14.2%
+
+REGISTERED CRITERION
+  [PASS] higher CAGR than MA, full (+22.2% vs +20.6%)
+  [PASS] higher CAGR than MA, 1st half (+21.6% vs +19.6%)
+  [PASS] higher CAGR than MA, 2nd half (+22.9% vs +21.6%)
+  [FAIL] deepest fall no deeper than MA's (-27% vs -25%)
+  [PASS] gross leverage with all sleeves in no more than 6x (4.37x)
+  VERDICT: MA STAYS
+==============================================================================
+
+==============================================================================
+MA DAILY CRASH CHECK — 3.82x, day by day (docs/LEVERAGE_STRATEGY.md)
+==============================================================================
+Data: US stocks: French daily
+Data: Intl stocks: French Developed ex US daily from 19900702
+Data: Treasuries: from Yahoo ^TNX daily yields, from 19900103
+Data: Gold: Yahoo GC=F daily from 20000831
+Period: 2001-06-29 to 2026-08-31. Monthly signals, daily marks, margin checked every close at 8% of gross exposure.
+
+                                    MA 3.82x       L2 2.0x
+  per year                            +20.6%        +16.1%
+  deepest fall (daily)                  -38%          -42%
+  worst day                           -12.1%        -15.2%
+  worst month                         -27.6%        -19.0%
+  lowest equity / exposure               19%           41%
+    on                            2026-03-27    2018-12-24
+  margin calls                             0             0   (MA at 8%, L2 at 25%)
+
+CRASH WINDOWS (total change)
+  2000-02 dot-com                     +10.0%        -10.5%
+  2008 crisis                          -1.8%         -9.3%
+  Oct 2008 alone                       -0.9%         -0.0%
+  2011 euro crisis                     -4.1%        -20.8%
+  2015 China scare                    -19.4%        -23.9%
+  Feb 2018 vol spike                  -18.3%        -17.6%
+  2020 Covid                          -16.1%        -23.4%
+  2022 bear                           -18.5%        -12.0%
+
+WHAT WOULD CHANGE THE DECISION (registered)
+  [OK] no margin call at 8% maintenance (0)
+  [OK] deepest daily fall no deeper than L2's (-38% vs -42%)
+  VERDICT: no concern: MA stays as chosen
+==============================================================================
+
+==============================================================================
+MA AS LEVERAGED ETFs — what a small account could actually earn
+==============================================================================
+Data: US stocks: French daily
+Data: Intl stocks: French Developed ex US daily from 19900702
+Data: Treasuries: from Yahoo ^TNX daily yields, from 19900103
+Data: Gold: Yahoo GC=F daily from 20000831
+Period: 2001-06-29 to 2026-08-31. ETFs: US stocks UPRO (3x), Intl stocks EFO (2x), Treasuries TYD (3x), Gold UGL (2x)
+
+                                            per year   deepest  worst day  worst mo
+  MA via futures, 3.82x                       +20.6%      -38%     -12.1%    -27.6%
+  ETF version, US$3,100, $1 orders            +15.7%      -32%      -9.8%    -16.0%
+  ETF version, no commissions                 +15.8%      -32%      -9.8%    -16.0%
+
+  US$3,100 grew to US$119,638 in 25 years (futures version, same start: US$340,695)
+  orders: 307 (12.2 a year), commissions US$307 in all
+  gross exposure after each month-end: average 2.07x, highest 2.86x (futures MA reaches 3.82x)
+
+CRASH WINDOWS (total change)
+                                   futures        ETFs
+  2000-02 dot-com                   +10.0%       +9.9%
+  2008 crisis                        -1.8%       -6.9%
+  Oct 2008 alone                     -0.9%       -1.2%
+  2011 euro crisis                   -4.1%       -2.6%
+  2015 China scare                  -19.4%      -17.0%
+  Feb 2018 vol spike                -18.3%      -13.6%
+  2020 Covid                        -16.1%      -10.0%
+  2022 bear                         -18.5%      -13.5%
+
+READING IT
+  The ETF version holds less when all four sleeves are in trend (capital
+  runs out), pays ETF fees, and resets leverage daily, which helps in
+  steady trends and hurts in choppy markets. It is what an account this
+  size can hold; the futures version needs about US$150,000 or more.
+==============================================================================
