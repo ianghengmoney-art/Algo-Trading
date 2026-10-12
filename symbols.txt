@@ -1,4 +1,4 @@
-# Screened by GCFP v4 on 2026-10-09 — 133 names.
+# Screened by GCFP v4 on 2026-10-12 — 133 names.
 #
 # SURVIVORSHIP WARNING. Every ticker here exists today. A
 # backtest over this list cannot lose money in a company that
