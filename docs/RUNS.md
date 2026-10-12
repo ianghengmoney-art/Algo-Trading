@@ -47,3 +47,4 @@ The weekday margin check of the 2x leveraged trend paper book (docs/LEVERAGE_STR
 | Date (close) | Run | Status | Paper value | Alert |
 |---|---|---|---|---|
 | 2026-10-09 | [#32](https://github.com/ianghengmoney-art/Algo-Trading/actions/runs/37994918332) | passed | 100,128 (S&P 500 TR +0.16% since start) | OK, no email |
+| 2026-10-12 | [#46](https://github.com/ianghengmoney-art/Algo-Trading/actions/runs/38312200014) | passed | futures US$149,244 · SGD account SGD 3,984 | OK, no email |
