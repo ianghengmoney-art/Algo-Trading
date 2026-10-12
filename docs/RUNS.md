@@ -5,6 +5,7 @@ https://github.com/ianghengmoney-art/Algo-Trading/actions/workflows/gcfp.yml
 
 | Run | What | Outcome |
 |---|---|---|
+| [#45](https://github.com/ianghengmoney-art/Algo-Trading/actions/runs/38190260437) | Sunday scheduled weekly run (GCFP screen + paper books) | passed; no new closes over the weekend, both paper accounts unchanged, alert OK |
 | [#44](https://github.com/ianghengmoney-art/Algo-Trading/actions/runs/38115900113) | Screen job: stage 2 starts with two paper accounts | passed: futures account US$149,857 (rescaled to US$150k), 1.91x, margin OK, ticket 4 MES (+10% off target) and 1,384 EFA shares; SGD account opened at SGD 3,997: UPRO US$994 (6.39 sh), EFO US$1,492 (21.14 sh), SGOV US$636 |
 | [#43](https://github.com/ianghengmoney-art/Algo-Trading/actions/runs/38059986501) | Screen job: first SGD 4,000 trade ticket | passed: UPRO US$994 (6.39 shares), EFO US$1,492 (21.14), TYD and UGL none, SGOV US$638; 1.91x; MA margin OK |
 | [#42](https://github.com/ianghengmoney-art/Algo-Trading/actions/runs/38059759292) | Small-account ETF implementation check (registered 2026-10-10): MA via UPRO/EFO/TYD/UGL, capped at 100% of capital, US$1 orders on US$3,100, 2001-2026 | ETF version +15.7%/yr (deepest fall -32%, worst month -16%) vs MA via futures +20.6% (-38%, -28%). US$3,100 -> US$119,638 in 25 years. 12 orders a year, US$307 commissions in all; average exposure 2.07x |
