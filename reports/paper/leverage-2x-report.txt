@@ -1,8 +1,8 @@
 ==============================================================================
-LEVERAGED TREND — PAPER TRADING · 2026-10-12 close
+LEVERAGED TREND — PAPER TRADING · 2026-10-13 close
 ==============================================================================
 2.0x the S&P 500 (total return) while above its 10-month average, T-bills otherwise (docs/LEVERAGE_STRATEGY.md)
-started 2026-10-09 · paper value 99,974 (+0.17% since the first signal) · S&P 500 TR +0.11% since the start
+started 2026-10-09 · paper value 99,918 (+0.12% since the first signal) · S&P 500 TR +0.09% since the start
 
 POSITION
   now: RISK-ON: 2.0x the S&P 500 (signal of 2026-09, set 2026-10-09)
