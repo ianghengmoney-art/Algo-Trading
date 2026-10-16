@@ -1,0 +1,58 @@
+==============================================================================
+WHAT LEVERAGE GROWS MONEY FASTEST? (Kelly criterion, daily data)
+==============================================================================
+Kenneth French daily US market, 1927-05-02 to 2026-08-31. Borrowing at T-bills + 1.0%.
+
+1. THE FORMULA: L* = (expected return - borrowing cost) / variance
+                                Kelly L*  growth at L*  excess/yr   vol/yr
+  full, trend, risk-on days        4.11x        +20.0%      +8.3%     14%
+  full, buy and hold               2.31x        +10.9%      +6.8%     17%
+  1st half, trend, risk-on days     4.27x        +20.3%      +8.7%     14%
+  1st half, buy and hold           1.75x         +6.4%      +5.2%     17%
+  2nd half, trend, risk-on days     3.97x        +19.8%      +7.9%     14%
+  2nd half, buy and hold           2.89x        +16.2%      +8.4%     17%
+  since 1990, trend, risk-on days     4.29x        +21.1%      +8.6%     14%
+  since 1990, buy and hold         2.58x        +13.6%      +8.4%     18%
+  since 2008, trend, risk-on days     4.89x        +26.7%     +10.3%     15%
+  since 2008, buy and hold         2.60x        +15.1%     +10.5%     20%
+
+2. THE SIMULATION: CAGR by leverage (deepest fall on daily closes)
+
+  TREND (10-month average, T-bills when below)
+       L             full         1st half         2nd half       since 1990       since 2008  worst day  worst month  margin calls
+   1.00x     +8.8% (-45%)     +7.5% (-45%)    +10.2% (-32%)     +9.1% (-26%)     +9.2% (-22%)       -17%         -23%             0
+   1.25x    +10.0% (-54%)     +8.6% (-54%)    +11.4% (-40%)    +10.5% (-32%)    +11.0% (-27%)       -23%         -28%             0
+   1.50x    +11.0% (-62%)     +9.6% (-62%)    +12.5% (-48%)    +11.8% (-38%)    +12.7% (-32%)       -28%         -34%             0
+   1.75x    +12.0% (-69%)    +10.4% (-69%)    +13.5% (-56%)    +13.0% (-43%)    +14.3% (-37%)       -34%         -40%             0
+   2.00x    +12.8% (-75%)    +11.2% (-75%)    +14.4% (-63%)    +14.2% (-48%)    +15.9% (-42%)       -40%         -46%             0
+   2.25x    +13.5% (-80%)    +11.8% (-80%)    +15.2% (-70%)    +15.2% (-52%)    +17.4% (-47%)       -47%         -52%             2
+   2.50x    +14.0% (-85%)    +12.3% (-85%)    +15.8% (-78%)    +16.2% (-57%)    +18.8% (-51%)       -54%         -58%             3
+   2.75x    +14.4% (-90%)    +12.6% (-90%)    +16.3% (-85%)    +17.1% (-61%)    +20.2% (-55%)       -68%         -63%             8
+   3.00x    +14.7% (-97%)    +12.7% (-97%)    +16.6% (-91%)    +17.9% (-65%)    +21.5% (-59%)       -89%         -69%            19
+   3.50x  -100.0% (-100%)  -100.0% (-100%)         n/a (0%)         n/a (0%)         n/a (0%)      -100%        -100%             8
+   4.00x  -100.0% (-100%)  -100.0% (-100%)         n/a (0%)         n/a (0%)         n/a (0%)      -100%        -100%            22
+  best CAGR: full 3.00x (+14.7%) · 1st half 3.00x (+12.7%) · 2nd half 3.00x (+16.6%) · since 1990 3.00x (+17.9%) · since 2008 3.00x (+21.5%)
+
+  BUY AND HOLD, re-levered monthly
+       L             full         1st half         2nd half       since 1990       since 2008  worst day  worst month  margin calls
+   1.00x     +9.5% (-84%)     +6.5% (-84%)    +12.5% (-55%)    +10.7% (-55%)    +11.3% (-51%)       -17%         -29%             0
+   1.25x    +10.3% (-91%)     +6.8% (-91%)    +13.9% (-64%)    +12.1% (-64%)    +13.2% (-60%)       -23%         -36%             0
+   1.50x    +11.0% (-95%)     +6.8% (-95%)    +15.3% (-72%)    +13.4% (-72%)    +14.9% (-68%)       -28%         -44%             0
+   1.75x    +11.4% (-97%)     +6.5% (-97%)    +16.4% (-79%)    +14.6% (-79%)    +16.5% (-74%)       -34%         -51%             0
+   2.00x    +11.5% (-99%)     +5.8% (-99%)    +17.4% (-85%)    +15.5% (-85%)    +17.9% (-79%)       -40%         -58%             0
+   2.25x    +11.3% (-99%)     +4.8% (-99%)    +18.1% (-90%)    +16.3% (-90%)    +19.0% (-84%)       -47%         -66%             4
+   2.50x   +10.8% (-100%)    +3.4% (-100%)    +18.6% (-93%)    +16.8% (-93%)    +20.0% (-87%)       -54%         -73%            11
+   2.75x    +9.9% (-100%)    +1.5% (-100%)    +18.9% (-95%)    +17.2% (-95%)    +20.7% (-90%)       -68%         -80%            25
+   3.00x    +8.5% (-100%)    -1.0% (-100%)    +18.9% (-97%)    +17.3% (-97%)    +21.1% (-93%)       -89%         -88%            51
+   3.50x  -100.0% (-100%)  -100.0% (-100%)         n/a (0%)         n/a (0%)         n/a (0%)      -100%        -100%             9
+   4.00x  -100.0% (-100%)  -100.0% (-100%)         n/a (0%)         n/a (0%)         n/a (0%)      -100%        -100%            29
+  best CAGR: full 2.00x (+11.5%) · 1st half 1.25x (+6.8%) · 2nd half 2.75x (+18.9%) · since 1990 3.00x (+17.3%) · since 2008 3.00x (+21.1%)
+
+READING IT
+  Kelly maximises long-run growth and nothing else. At full Kelly, halving
+  your money along the way is expected, not a tail risk; past 2x Kelly,
+  more leverage means LESS growth. Estimates of the inputs are noisy, so
+  practitioners use half Kelly: about 3/4 of the growth for 1/2 the swings.
+  Margin calls are counted at 25% maintenance (a margin loan);
+  futures need far less. A margin loan cannot open more than 2x at all.
+==============================================================================

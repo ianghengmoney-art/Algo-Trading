@@ -1,0 +1,72 @@
+{
+  "started_on": "2026-10-09",
+  "currency": "SGD",
+  "start_amount": 4000.0,
+  "fx_start": 1.280400037765503,
+  "lots": {
+    "UPRO": [
+      994.4808620558134,
+      "2026-10-09"
+    ],
+    "EFO": [
+      1491.7212930837202,
+      "2026-10-09"
+    ],
+    "SGOV": [
+      635.821495297577,
+      "2026-10-09"
+    ]
+  },
+  "in_trend": {
+    "US stocks": true,
+    "Intl stocks": true,
+    "Treasuries": false,
+    "Gold": false
+  },
+  "signal_month": "2026-09",
+  "orders": 2,
+  "commissions": 2.0,
+  "log": [
+    {
+      "date": "2026-10-09",
+      "signal_month": "2026-09",
+      "equity_usd": 3124.02,
+      "trades": [
+        "BUY UPRO to US$994 (was US$0)",
+        "BUY EFO to US$1,492 (was US$0)"
+      ]
+    }
+  ],
+  "marks": [
+    {
+      "date": "2026-10-09",
+      "usd": 3122.02,
+      "local": 3993.94
+    },
+    {
+      "date": "2026-10-12",
+      "usd": 3111.31,
+      "local": 3983.69
+    },
+    {
+      "date": "2026-10-13",
+      "usd": 3122.37,
+      "local": 3994.38
+    },
+    {
+      "date": "2026-10-14",
+      "usd": 3069.79,
+      "local": 3944.5
+    },
+    {
+      "date": "2026-10-15",
+      "usd": 3103.46,
+      "local": 3976.5
+    },
+    {
+      "date": "2026-10-16",
+      "usd": 3066.7,
+      "local": 3924.15
+    }
+  ]
+}
