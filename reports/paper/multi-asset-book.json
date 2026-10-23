@@ -1,0 +1,158 @@
+{
+  "started_on": "2026-10-10",
+  "leverage": 3.82,
+  "value": 149856.7842009375,
+  "rebalanced_on": "2026-10-09",
+  "signal_month": "2026-09",
+  "exposure": {
+    "US stocks": 143113.2289118953,
+    "Intl stocks": 143113.2289118953,
+    "Treasuries": 0.0,
+    "Gold": 0.0
+  },
+  "price_at": {
+    "US stocks": 17525.23046875,
+    "Intl stocks": 103.4000015258789,
+    "Treasuries": 89.4000015258789,
+    "Gold": 384.5799865722656
+  },
+  "in_trend": {
+    "US stocks": true,
+    "Intl stocks": true,
+    "Treasuries": false,
+    "Gold": false
+  },
+  "log": [
+    {
+      "date": "2026-10-09",
+      "signal_month": "2026-09",
+      "value": 149856.78,
+      "in_trend": {
+        "US stocks": true,
+        "Intl stocks": true,
+        "Treasuries": false,
+        "Gold": false
+      },
+      "changes": [
+        "US stocks: BUY (in trend)",
+        "Intl stocks: BUY (in trend)",
+        "Treasuries: SELL to T-bills",
+        "Gold: SELL to T-bills"
+      ],
+      "gross_leverage": 1.91,
+      "note": "rescaled from $100,000 to $150,000 on 2026-10-11 at the operator's request; start date kept"
+    }
+  ],
+  "marks": [
+    {
+      "date": "2026-10-09",
+      "value": 149856.78,
+      "prices": {
+        "US stocks": 17525.2305,
+        "Intl stocks": 103.4,
+        "Treasuries": 89.4,
+        "Gold": 384.58
+      }
+    },
+    {
+      "date": "2026-10-12",
+      "value": 149244.18,
+      "prices": {
+        "US stocks": 17515.5801,
+        "Intl stocks": 103.05,
+        "Treasuries": 89.43,
+        "Gold": 382.15
+      }
+    },
+    {
+      "date": "2026-10-13",
+      "value": 149779.53,
+      "prices": {
+        "US stocks": 17511.9805,
+        "Intl stocks": 103.47,
+        "Treasuries": 89.54,
+        "Gold": 381.67
+      }
+    },
+    {
+      "date": "2026-10-14",
+      "value": 147183.07,
+      "prices": {
+        "US stocks": 17318.1406,
+        "Intl stocks": 102.75,
+        "Treasuries": 89.71,
+        "Gold": 375.99
+      }
+    },
+    {
+      "date": "2026-10-15",
+      "value": 148909.97,
+      "prices": {
+        "US stocks": 17375.7207,
+        "Intl stocks": 103.67,
+        "Treasuries": 90.35,
+        "Gold": 382.71
+      }
+    },
+    {
+      "date": "2026-10-16",
+      "value": 147178.63,
+      "prices": {
+        "US stocks": 17186.0195,
+        "Intl stocks": 103.55,
+        "Treasuries": 90.42,
+        "Gold": 382.01
+      }
+    },
+    {
+      "date": "2026-10-19",
+      "value": 146761.11,
+      "prices": {
+        "US stocks": 17256.2402,
+        "Intl stocks": 102.87,
+        "Treasuries": 90.08,
+        "Gold": 379.69
+      }
+    },
+    {
+      "date": "2026-10-20",
+      "value": 148280.82,
+      "prices": {
+        "US stocks": 17305.4102,
+        "Intl stocks": 103.69,
+        "Treasuries": 90.25,
+        "Gold": 377.65
+      }
+    },
+    {
+      "date": "2026-10-21",
+      "value": 149595.93,
+      "prices": {
+        "US stocks": 17405.6797,
+        "Intl stocks": 104.06,
+        "Treasuries": 90.23,
+        "Gold": 378.95
+      }
+    },
+    {
+      "date": "2026-10-22",
+      "value": 146606.13,
+      "prices": {
+        "US stocks": 17195.5703,
+        "Intl stocks": 103.15,
+        "Treasuries": 91.2,
+        "Gold": 369.0
+      }
+    },
+    {
+      "date": "2026-10-23",
+      "value": 145146.75,
+      "prices": {
+        "US stocks": 17107.0605,
+        "Intl stocks": 102.63,
+        "Treasuries": 91.05,
+        "Gold": 366.61
+      }
+    }
+  ]
+}

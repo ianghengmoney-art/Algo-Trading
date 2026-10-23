@@ -1,0 +1,18 @@
+{
+  "_comment": "The leveraged trend strategy's live settings (docs/LEVERAGE_STRATEGY.md). maintenance_margin: the share of your exposure your broker requires as equity before a margin call. 0.25 is the usual minimum for a margin loan on an index fund; S&P 500 futures need far less (about 0.06-0.08). Set it to your broker's actual figure. No account details belong here: this repository is public.",
+  "leverage": 2.0,
+  "maintenance_margin": 0.25,
+  "paper_capital": 100000,
+  "multi_asset": {
+    "_comment": "MA, the multi-asset trend portfolio (docs/LEVERAGE_STRATEGY.md), chosen 2026-10-10 at L2's volatility. maintenance_margin: futures margin as a share of gross exposure; 0.08 is a conservative blend of equity, Treasury and gold futures. Set it to your broker's figure.",
+    "leverage": 3.82,
+    "maintenance_margin": 0.08,
+    "paper_capital": 150000
+  },
+  "etf_book": {
+    "_comment": "The second paper account: MA's leveraged-ETF version in the operator's currency (docs/LEVERAGE_STRATEGY.md). Amount only; no account details.",
+    "currency": "SGD",
+    "amount": 4000,
+    "order_cost_usd": 1.0
+  }
+}
