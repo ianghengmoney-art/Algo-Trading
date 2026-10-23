@@ -1,50 +1,50 @@
 ==============================================================================
-FACTOR STRATEGY v2 — PAPER TRADING (§13.11) · 2026-10-22
+FACTOR STRATEGY v2 — PAPER TRADING (§13.11) · 2026-10-23
 ==============================================================================
-started 2026-10-09 · 0.4 months of the 2-3 required
+started 2026-10-09 · 0.5 months of the 2-3 required
 companies screened each month: 1000 (fixed at the start)
 this run: marked to market only · last rebalance 2026-10-09
 
-value: 99,900 -> 104,453 (+4.56%)
-S&P 500 (dividends reinvested) over the same dates: -1.29%
-in stock picks: 104,453 (100.0%); following the index: 0
+value: 99,900 -> 102,929 (+3.03%)
+S&P 500 (dividends reinvested) over the same dates: -1.79%
+in stock picks: 102,929 (100.0%); following the index: 0
 
 OPEN PAPER POSITIONS
-  ATRO (CIK0000008063): CORE-STABLE · bought 2026-10-09 at 64.51 · last 59.20 (-8.2%) · conviction 72 · FACTOR
-  EBF (CIK0000033002): CORE-STABLE · bought 2026-10-09 at 22.77 · last 22.92 (+0.6%) · conviction 74 · FACTOR
-  HOV (CIK0000357294): CORE-STABLE · bought 2026-10-09 at 110.11 · last 101.29 (-8.0%) · conviction 71 · FACTOR
-  IT (CIK0000749251): CORE-STABLE · bought 2026-10-09 at 195.61 · last 234.44 (+19.9%) · conviction 70 · FACTOR
-  FICO (CIK0000814547): CORE-STABLE · bought 2026-10-09 at 708.14 · last 823.27 (+16.3%) · conviction 77 · FACTOR
-  CALY (CIK0000837465): CORE-STABLE · bought 2026-10-09 at 13.88 · last 14.36 (+3.4%) · conviction 83 · FACTOR
-  HCA (CIK0000860730): CORE-STABLE · bought 2026-10-09 at 445.46 · last 467.31 (+4.9%) · conviction 78 · FACTOR
-  GPOR (CIK0000874499): CORE-STABLE · bought 2026-10-09 at 164.80 · last 160.50 (-2.6%) · conviction 73 · FACTOR
-  BWA (CIK0000908255): CORE-STABLE · bought 2026-10-09 at 61.78 · last 55.46 (-10.2%) · conviction 70 · FACTOR
-  TNET (CIK0000937098): CORE-STABLE · bought 2026-10-09 at 66.56 · last 74.62 (+12.1%) · conviction 72 · FACTOR
-  ANF (CIK0001018840): CORE-STABLE · bought 2026-10-09 at 141.55 · last 161.49 (+14.1%) · conviction 81 · FACTOR
-  VLO (CIK0001035002): CORE-STABLE · bought 2026-10-09 at 444.24 · last 426.28 (-4.0%) · conviction 77 · FACTOR
-  DXCM (CIK0001093557): CORE-STABLE · bought 2026-10-09 at 84.49 · last 78.32 (-7.3%) · conviction 76 · FACTOR
-  CRM (CIK0001108524): CORE-STABLE · bought 2026-10-09 at 228.03 · last 250.29 (+9.8%) · conviction 70 · FACTOR
-  TPR (CIK0001116132): CORE-STABLE · bought 2026-10-09 at 115.94 · last 113.92 (-1.7%) · conviction 79 · FACTOR
-  HALO (CIK0001159036): CORE-GROWTH · bought 2026-10-09 at 109.95 · last 124.54 (+13.3%) · conviction 70 · FACTOR
-  TMUS (CIK0001283699): CORE-STABLE · bought 2026-10-09 at 171.48 · last 158.79 (-7.4%) · conviction 70 · FACTOR
-  LZ (CIK0001286139): CORE-STABLE · bought 2026-10-09 at 5.93 · last 7.12 (+20.0%) · conviction 70 · FACTOR
-  YELP (CIK0001345016): CORE-STABLE · bought 2026-10-09 at 19.39 · last 20.70 (+6.8%) · conviction 78 · FACTOR
-  NX (CIK0001423221): CORE-GROWTH · bought 2026-10-09 at 18.56 · last 20.65 (+11.3%) · conviction 70 · FACTOR
-  CARG (CIK0001494259): CORE-STABLE · bought 2026-10-09 at 29.27 · last 32.73 (+11.8%) · conviction 87 · FACTOR
-  MQ (CIK0001522540): CORE-STABLE · bought 2026-10-09 at 17.46 · last 19.35 (+10.8%) · conviction 70 · FACTOR
-  EVER (CIK0001640428): CORE-GROWTH · bought 2026-10-09 at 20.76 · last 23.59 (+13.6%) · conviction 78 · FACTOR
-  TTD (CIK0001671933): CORE-STABLE · bought 2026-10-09 at 12.35 · last 13.16 (+6.5%) · conviction 72 · FACTOR
-  FTI (CIK0001681459): CORE-STABLE · bought 2026-10-09 at 69.70 · last 66.82 (-4.1%) · conviction 75 · FACTOR
-  CRCT (CIK0001828962): CORE-STABLE · bought 2026-10-09 at 6.41 · last 6.41 (+0.1%) · conviction 78 · FACTOR
-  DAVE (CIK0001841408): CORE-GROWTH · bought 2026-10-09 at 353.75 · last 382.39 (+8.1%) · conviction 87 · FACTOR
-  CCSI (CIK0001866633): CORE-STABLE · bought 2026-10-09 at 36.66 · last 37.02 (+1.0%) · conviction 77 · FACTOR
-  DKNG (CIK0001883685): SPEC-GROWTH · bought 2026-10-09 at 19.89 · last 20.94 (+5.3%) · conviction 76 · FACTOR
-  PHIN (CIK0001968915): CORE-STABLE · bought 2026-10-09 at 58.52 · last 57.14 (-2.4%) · conviction 71 · FACTOR
+  ATRO (CIK0000008063): CORE-STABLE · bought 2026-10-09 at 64.51 · last 57.89 (-10.3%) · conviction 72 · FACTOR
+  EBF (CIK0000033002): CORE-STABLE · bought 2026-10-09 at 22.77 · last 22.64 (-0.6%) · conviction 74 · FACTOR
+  HOV (CIK0000357294): CORE-STABLE · bought 2026-10-09 at 110.11 · last 101.27 (-8.0%) · conviction 71 · FACTOR
+  IT (CIK0000749251): CORE-STABLE · bought 2026-10-09 at 195.61 · last 230.28 (+17.7%) · conviction 70 · FACTOR
+  FICO (CIK0000814547): CORE-STABLE · bought 2026-10-09 at 708.14 · last 815.31 (+15.1%) · conviction 77 · FACTOR
+  CALY (CIK0000837465): CORE-STABLE · bought 2026-10-09 at 13.88 · last 14.13 (+1.8%) · conviction 83 · FACTOR
+  HCA (CIK0000860730): CORE-STABLE · bought 2026-10-09 at 445.46 · last 469.03 (+5.3%) · conviction 78 · FACTOR
+  GPOR (CIK0000874499): CORE-STABLE · bought 2026-10-09 at 164.80 · last 166.18 (+0.8%) · conviction 73 · FACTOR
+  BWA (CIK0000908255): CORE-STABLE · bought 2026-10-09 at 61.78 · last 54.96 (-11.0%) · conviction 70 · FACTOR
+  TNET (CIK0000937098): CORE-STABLE · bought 2026-10-09 at 66.56 · last 75.78 (+13.9%) · conviction 72 · FACTOR
+  ANF (CIK0001018840): CORE-STABLE · bought 2026-10-09 at 141.55 · last 155.82 (+10.1%) · conviction 81 · FACTOR
+  VLO (CIK0001035002): CORE-STABLE · bought 2026-10-09 at 444.24 · last 419.28 (-5.6%) · conviction 77 · FACTOR
+  DXCM (CIK0001093557): CORE-STABLE · bought 2026-10-09 at 84.49 · last 77.94 (-7.8%) · conviction 76 · FACTOR
+  CRM (CIK0001108524): CORE-STABLE · bought 2026-10-09 at 228.03 · last 248.57 (+9.0%) · conviction 70 · FACTOR
+  TPR (CIK0001116132): CORE-STABLE · bought 2026-10-09 at 115.94 · last 110.37 (-4.8%) · conviction 79 · FACTOR
+  HALO (CIK0001159036): CORE-GROWTH · bought 2026-10-09 at 109.95 · last 125.63 (+14.3%) · conviction 70 · FACTOR
+  TMUS (CIK0001283699): CORE-STABLE · bought 2026-10-09 at 171.48 · last 146.54 (-14.5%) · conviction 70 · FACTOR
+  LZ (CIK0001286139): CORE-STABLE · bought 2026-10-09 at 5.93 · last 6.99 (+17.9%) · conviction 70 · FACTOR
+  YELP (CIK0001345016): CORE-STABLE · bought 2026-10-09 at 19.39 · last 19.99 (+3.1%) · conviction 78 · FACTOR
+  NX (CIK0001423221): CORE-GROWTH · bought 2026-10-09 at 18.56 · last 20.00 (+7.8%) · conviction 70 · FACTOR
+  CARG (CIK0001494259): CORE-STABLE · bought 2026-10-09 at 29.27 · last 31.52 (+7.7%) · conviction 87 · FACTOR
+  MQ (CIK0001522540): CORE-STABLE · bought 2026-10-09 at 17.46 · last 18.85 (+8.0%) · conviction 70 · FACTOR
+  EVER (CIK0001640428): CORE-GROWTH · bought 2026-10-09 at 20.76 · last 22.74 (+9.5%) · conviction 78 · FACTOR
+  TTD (CIK0001671933): CORE-STABLE · bought 2026-10-09 at 12.35 · last 13.00 (+5.2%) · conviction 72 · FACTOR
+  FTI (CIK0001681459): CORE-STABLE · bought 2026-10-09 at 69.70 · last 69.89 (+0.3%) · conviction 75 · FACTOR
+  CRCT (CIK0001828962): CORE-STABLE · bought 2026-10-09 at 6.41 · last 6.25 (-2.4%) · conviction 78 · FACTOR
+  DAVE (CIK0001841408): CORE-GROWTH · bought 2026-10-09 at 353.75 · last 354.60 (+0.2%) · conviction 87 · FACTOR
+  CCSI (CIK0001866633): CORE-STABLE · bought 2026-10-09 at 36.66 · last 37.47 (+2.2%) · conviction 77 · FACTOR
+  DKNG (CIK0001883685): SPEC-GROWTH · bought 2026-10-09 at 19.89 · last 20.91 (+5.1%) · conviction 76 · FACTOR
+  PHIN (CIK0001968915): CORE-STABLE · bought 2026-10-09 at 58.52 · last 57.32 (-2.0%) · conviction 71 · FACTOR
 
 STAGE 2 STATUS (docs/FACTOR_STRATEGY.md)
   monthly rebalances completed: 1 of 3
   evaluation errors: 0 · holdings unpriced for over a month: 0
-  behind the S&P 500 since the start: -5.8% (limit 15%)
+  behind the S&P 500 since the start: -4.8% (limit 15%)
   status: in progress
 
 MONTHLY REBALANCES
