@@ -1,5 +1,5 @@
 ==============================================================================
-FACTOR STRATEGY v2 — PAPER TRADING (§13.11) · 2026-10-23
+FACTOR STRATEGY v2 — PAPER TRADING (§13.11) · 2026-10-25
 ==============================================================================
 started 2026-10-09 · 0.5 months of the 2-3 required
 companies screened each month: 1000 (fixed at the start)

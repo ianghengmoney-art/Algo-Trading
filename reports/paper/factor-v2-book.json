@@ -2216,6 +2216,17 @@
     "core_picks": 85031.06631598837,
     "growth_picks": 17897.672193066708,
     "benchmark_level": 17107.060546875
+   },
+   {
+    "as_of": "2026-10-25",
+    "total_value": 102928.73850905511,
+    "cash": 2.7688428803843315e-11,
+    "invested": 102928.73850905508,
+    "position_count": 30,
+    "ballast": 2.7688428803843315e-11,
+    "core_picks": 85031.06631598837,
+    "growth_picks": 17897.672193066708,
+    "benchmark_level": 17107.060546875
    }
   ],
   "drawdowns": {
