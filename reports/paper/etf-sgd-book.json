@@ -13,8 +13,8 @@
       "2026-10-09"
     ],
     "SGOV": [
-      635.821495297577,
-      "2026-10-09"
+      637.2132125609511,
+      "2026-10-30"
     ]
   },
   "in_trend": {
@@ -23,7 +23,7 @@
     "Treasuries": false,
     "Gold": false
   },
-  "signal_month": "2026-09",
+  "signal_month": "2026-10",
   "orders": 2,
   "commissions": 2.0,
   "log": [
@@ -35,6 +35,12 @@
         "BUY UPRO to US$994 (was US$0)",
         "BUY EFO to US$1,492 (was US$0)"
       ]
+    },
+    {
+      "date": "2026-10-30",
+      "signal_month": "2026-10",
+      "equity_usd": 3028.64,
+      "trades": []
     }
   ],
   "marks": [
@@ -116,7 +122,7 @@
     {
       "date": "2026-10-30",
       "usd": 3028.64,
-      "local": 3869.38
+      "local": 3872.78
     }
   ]
 }

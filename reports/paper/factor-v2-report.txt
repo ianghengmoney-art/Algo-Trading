@@ -1,9 +1,9 @@
 ==============================================================================
-FACTOR STRATEGY v2 — PAPER TRADING (§13.11) · 2026-10-30
+FACTOR STRATEGY v2 — PAPER TRADING (§13.11) · 2026-11-02
 ==============================================================================
-started 2026-10-09 · 0.7 months of the 2-3 required
+started 2026-10-09 · 0.8 months of the 2-3 required
 companies screened each month: 1000 (fixed at the start)
-this run: marked to market only · last rebalance 2026-10-09
+this run: monthly rebalance · last rebalance 2026-11-02
 
 value: 99,900 -> 101,733 (+1.84%)
 S&P 500 (dividends reinvested) over the same dates: -2.34%
@@ -42,13 +42,14 @@ OPEN PAPER POSITIONS
   PHIN (CIK0001968915): CORE-STABLE · bought 2026-10-09 at 58.52 · last 62.92 (+7.5%) · conviction 71 · FACTOR
 
 STAGE 2 STATUS (docs/FACTOR_STRATEGY.md)
-  monthly rebalances completed: 1 of 3
+  monthly rebalances completed: 2 of 3
   evaluation errors: 0 · holdings unpriced for over a month: 0
   behind the S&P 500 since the start: -4.2% (limit 15%)
   status: in progress
 
 MONTHLY REBALANCES
   2026-10-09: 350 screened · 30 BUY signal(s) · bought CIK0001494259, CIK0001841408, CIK0000837465, CIK0001018840, CIK0001116132, CIK0001828962, CIK0001345016, CIK0000860730, CIK0001640428, CIK0000814547, CIK0001866633, CIK0001035002, CIK0001883685, CIK0001093557, CIK0001681459, CIK0000033002, CIK0000874499, CIK0000008063, CIK0000937098, CIK0001671933, CIK0001968915, CIK0000357294, CIK0001522540, CIK0001159036, CIK0001286139, CIK0000749251, CIK0001283699, CIK0001423221, CIK0000908255, CIK0001108524
+  2026-11-02: 341 screened · 0 BUY signal(s) · bought nothing
 
 Simulated only. Fills assume the latest close; money not in picks
 follows the S&P 500 and holdings are credited their dividends, as in

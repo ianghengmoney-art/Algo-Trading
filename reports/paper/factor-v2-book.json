@@ -1003,7 +1003,7 @@
   "CIK0002116105",
   "CIK0002137679"
  ],
- "last_rebalance": "2026-10-09",
+ "last_rebalance": "2026-11-02",
  "ballast_level": 17011.140625,
  "benchmark_symbol": "^SP500TR",
  "log": [
@@ -1286,6 +1286,17 @@
     "CIK0000908255",
     "CIK0001108524"
    ],
+   "sells": [],
+   "single_anchor": 0,
+   "dual_anchor": 0
+  },
+  {
+   "crashes": {},
+   "trades": [],
+   "date": "2026-11-02",
+   "evaluated": 341,
+   "buy_signals": 0,
+   "buys": [],
    "sells": [],
    "single_anchor": 0,
    "dual_anchor": 0
@@ -2274,6 +2285,17 @@
    },
    {
     "as_of": "2026-10-30",
+    "total_value": 101733.3185470438,
+    "cash": 2.753317875837649e-11,
+    "invested": 101733.31854704377,
+    "position_count": 30,
+    "ballast": 2.753317875837649e-11,
+    "core_picks": 83787.87689623488,
+    "growth_picks": 17945.441650808883,
+    "benchmark_level": 17011.140625
+   },
+   {
+    "as_of": "2026-11-02",
     "total_value": 101733.3185470438,
     "cash": 2.753317875837649e-11,
     "invested": 101733.31854704377,
