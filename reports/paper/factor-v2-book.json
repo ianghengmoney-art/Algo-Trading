@@ -1004,7 +1004,7 @@
   "CIK0002137679"
  ],
  "last_rebalance": "2026-11-02",
- "ballast_level": 17011.140625,
+ "ballast_level": 16987.150390625,
  "benchmark_symbol": "^SP500TR",
  "log": [
   {
@@ -1303,7 +1303,7 @@
   }
  ],
  "book": {
-  "cash": 2.753317875837649e-11,
+  "cash": 2.7494349650672125e-11,
   "positions": {
    "CIK0001494259": {
     "symbol": "CIK0001494259",
@@ -1315,9 +1315,9 @@
     "intended_weight": 0.03333333333333333,
     "anchor_mode": "FACTOR",
     "thesis_invalidation": "falls outside the top 60",
-    "peak_price": 32.72999954223633,
+    "peak_price": 33.77000045776367,
     "reclassified_to": null,
-    "last_price": 32.18000030517578,
+    "last_price": 33.77000045776367,
     "missed_marks": 0,
     "dividends": 0.0
    },
@@ -1333,7 +1333,7 @@
     "thesis_invalidation": "falls outside the top 60",
     "peak_price": 382.3900146484375,
     "reclassified_to": null,
-    "last_price": 316.7900085449219,
+    "last_price": 314.7200012207031,
     "missed_marks": 0,
     "dividends": 0.0
    },
@@ -1347,9 +1347,9 @@
     "intended_weight": 0.03333333333333333,
     "anchor_mode": "FACTOR",
     "thesis_invalidation": "falls outside the top 60",
-    "peak_price": 15.1899995803833,
+    "peak_price": 15.880000114440918,
     "reclassified_to": null,
-    "last_price": 15.15999984741211,
+    "last_price": 15.880000114440918,
     "missed_marks": 0,
     "dividends": 0.0
    },
@@ -1365,7 +1365,7 @@
     "thesis_invalidation": "falls outside the top 60",
     "peak_price": 165.77000427246094,
     "reclassified_to": null,
-    "last_price": 164.44000244140625,
+    "last_price": 157.50999450683594,
     "missed_marks": 0,
     "dividends": 0.0
    },
@@ -1379,9 +1379,9 @@
     "intended_weight": 0.03333333333333333,
     "anchor_mode": "FACTOR",
     "thesis_invalidation": "falls outside the top 60",
-    "peak_price": 120.18000030517578,
+    "peak_price": 121.0199966430664,
     "reclassified_to": null,
-    "last_price": 116.29000091552734,
+    "last_price": 121.0199966430664,
     "missed_marks": 0,
     "dividends": 0.0
    },
@@ -1397,7 +1397,7 @@
     "thesis_invalidation": "falls outside the top 60",
     "peak_price": 6.699999809265137,
     "reclassified_to": null,
-    "last_price": 6.079999923706055,
+    "last_price": 5.96999979019165,
     "missed_marks": 0,
     "dividends": 0.0
    },
@@ -1413,7 +1413,7 @@
     "thesis_invalidation": "falls outside the top 60",
     "peak_price": 20.700000762939453,
     "reclassified_to": null,
-    "last_price": 19.09000015258789,
+    "last_price": 19.829999923706055,
     "missed_marks": 0,
     "dividends": 0.0
    },
@@ -1429,7 +1429,7 @@
     "thesis_invalidation": "falls outside the top 60",
     "peak_price": 478.0799865722656,
     "reclassified_to": null,
-    "last_price": 473.19000244140625,
+    "last_price": 462.8599853515625,
     "missed_marks": 0,
     "dividends": 0.0
    },
@@ -1443,9 +1443,9 @@
     "intended_weight": 0.03333333333333333,
     "anchor_mode": "FACTOR",
     "thesis_invalidation": "falls outside the top 60",
-    "peak_price": 23.59000015258789,
+    "peak_price": 29.110000610351562,
     "reclassified_to": null,
-    "last_price": 23.510000228881836,
+    "last_price": 29.110000610351562,
     "missed_marks": 0,
     "dividends": 0.0
    },
@@ -1461,7 +1461,7 @@
     "thesis_invalidation": "falls outside the top 60",
     "peak_price": 823.27001953125,
     "reclassified_to": null,
-    "last_price": 711.22998046875,
+    "last_price": 724.3800048828125,
     "missed_marks": 0,
     "dividends": 0.0
    },
@@ -1477,7 +1477,7 @@
     "thesis_invalidation": "falls outside the top 60",
     "peak_price": 37.689998626708984,
     "reclassified_to": null,
-    "last_price": 37.34000015258789,
+    "last_price": 36.099998474121094,
     "missed_marks": 0,
     "dividends": 0.0
    },
@@ -1493,7 +1493,7 @@
     "thesis_invalidation": "falls outside the top 60",
     "peak_price": 459.7799987792969,
     "reclassified_to": null,
-    "last_price": 399.6600036621094,
+    "last_price": 387.6499938964844,
     "missed_marks": 0,
     "dividends": 0.0
    },
@@ -1507,9 +1507,9 @@
     "intended_weight": 0.03333333333333333,
     "anchor_mode": "FACTOR",
     "thesis_invalidation": "falls outside the top 60",
-    "peak_price": 21.219999313354492,
+    "peak_price": 21.93000030517578,
     "reclassified_to": null,
-    "last_price": 20.90999984741211,
+    "last_price": 21.93000030517578,
     "missed_marks": 0,
     "dividends": 0.0
    },
@@ -1525,7 +1525,7 @@
     "thesis_invalidation": "falls outside the top 60",
     "peak_price": 87.70999908447266,
     "reclassified_to": null,
-    "last_price": 82.29000091552734,
+    "last_price": 82.97000122070312,
     "missed_marks": 0,
     "dividends": 0.0
    },
@@ -1541,7 +1541,7 @@
     "thesis_invalidation": "falls outside the top 60",
     "peak_price": 71.4000015258789,
     "reclassified_to": null,
-    "last_price": 68.7699966430664,
+    "last_price": 66.73999786376953,
     "missed_marks": 0,
     "dividends": 0.0
    },
@@ -1557,7 +1557,7 @@
     "thesis_invalidation": "falls outside the top 60",
     "peak_price": 22.920000076293945,
     "reclassified_to": null,
-    "last_price": 21.3799991607666,
+    "last_price": 20.75,
     "missed_marks": 0,
     "dividends": 0.0
    },
@@ -1573,7 +1573,7 @@
     "thesis_invalidation": "falls outside the top 60",
     "peak_price": 169.50999450683594,
     "reclassified_to": null,
-    "last_price": 166.52999877929688,
+    "last_price": 166.55999755859375,
     "missed_marks": 0,
     "dividends": 0.0
    },
@@ -1589,7 +1589,7 @@
     "thesis_invalidation": "falls outside the top 60",
     "peak_price": 64.51444694519043,
     "reclassified_to": null,
-    "last_price": 59.38999938964844,
+    "last_price": 60.90999984741211,
     "missed_marks": 0,
     "dividends": 0.0
    },
@@ -1605,7 +1605,7 @@
     "thesis_invalidation": "falls outside the top 60",
     "peak_price": 75.77999877929688,
     "reclassified_to": null,
-    "last_price": 64.27999877929688,
+    "last_price": 64.08000183105469,
     "missed_marks": 0,
     "dividends": 0.0
    },
@@ -1621,7 +1621,7 @@
     "thesis_invalidation": "falls outside the top 60",
     "peak_price": 13.15999984741211,
     "reclassified_to": null,
-    "last_price": 12.289999961853027,
+    "last_price": 12.859999656677246,
     "missed_marks": 0,
     "dividends": 0.0
    },
@@ -1635,9 +1635,9 @@
     "intended_weight": 0.03333333333333333,
     "anchor_mode": "FACTOR",
     "thesis_invalidation": "falls outside the top 60",
-    "peak_price": 62.91999816894531,
+    "peak_price": 68.91999816894531,
     "reclassified_to": null,
-    "last_price": 62.91999816894531,
+    "last_price": 68.91999816894531,
     "missed_marks": 0,
     "dividends": 0.0
    },
@@ -1653,7 +1653,7 @@
     "thesis_invalidation": "falls outside the top 60",
     "peak_price": 110.10999999999999,
     "reclassified_to": null,
-    "last_price": 99.41000366210938,
+    "last_price": 101.37000274658203,
     "missed_marks": 0,
     "dividends": 0.0
    },
@@ -1669,7 +1669,7 @@
     "thesis_invalidation": "falls outside the top 60",
     "peak_price": 19.350000381469727,
     "reclassified_to": null,
-    "last_price": 18.100000381469727,
+    "last_price": 17.799999237060547,
     "missed_marks": 0,
     "dividends": 0.0
    },
@@ -1685,7 +1685,7 @@
     "thesis_invalidation": "falls outside the top 60",
     "peak_price": 131.17999267578125,
     "reclassified_to": null,
-    "last_price": 130.91000366210938,
+    "last_price": 128.6199951171875,
     "missed_marks": 0,
     "dividends": 0.0
    },
@@ -1701,7 +1701,7 @@
     "thesis_invalidation": "falls outside the top 60",
     "peak_price": 7.119999885559082,
     "reclassified_to": null,
-    "last_price": 6.71999979019165,
+    "last_price": 6.690000057220459,
     "missed_marks": 0,
     "dividends": 0.0
    },
@@ -1717,7 +1717,7 @@
     "thesis_invalidation": "falls outside the top 60",
     "peak_price": 234.44000244140625,
     "reclassified_to": null,
-    "last_price": 228.7899932861328,
+    "last_price": 204.22000122070312,
     "missed_marks": 0,
     "dividends": 0.0
    },
@@ -1733,7 +1733,7 @@
     "thesis_invalidation": "falls outside the top 60",
     "peak_price": 171.48130755615233,
     "reclassified_to": null,
-    "last_price": 156.44000244140625,
+    "last_price": 154.41000366210938,
     "missed_marks": 0,
     "dividends": 0.0
    },
@@ -1747,9 +1747,9 @@
     "intended_weight": 0.03333333333333333,
     "anchor_mode": "FACTOR",
     "thesis_invalidation": "falls outside the top 60",
-    "peak_price": 20.760000228881836,
+    "peak_price": 21.040000915527344,
     "reclassified_to": null,
-    "last_price": 20.670000076293945,
+    "last_price": 21.040000915527344,
     "missed_marks": 0,
     "dividends": 0.0
    },
@@ -1765,7 +1765,7 @@
     "thesis_invalidation": "falls outside the top 60",
     "peak_price": 61.781721221923824,
     "reclassified_to": null,
-    "last_price": 51.630001068115234,
+    "last_price": 51.709999084472656,
     "missed_marks": 0,
     "dividends": 0.0
    },
@@ -1781,7 +1781,7 @@
     "thesis_invalidation": "falls outside the top 60",
     "peak_price": 250.2899932861328,
     "reclassified_to": null,
-    "last_price": 229.1699981689453,
+    "last_price": 222.1999969482422,
     "missed_marks": 0,
     "dividends": 0.0
    }
@@ -2315,15 +2315,26 @@
     "core_picks": 83787.87689623488,
     "growth_picks": 17945.441650808883,
     "benchmark_level": 17011.140625
+   },
+   {
+    "as_of": "2026-11-03",
+    "total_value": 102791.07288176278,
+    "cash": 2.7494349650672125e-11,
+    "invested": 102791.07288176275,
+    "position_count": 30,
+    "ballast": 2.7494349650672125e-11,
+    "core_picks": 83798.03130756921,
+    "growth_picks": 18993.041574193558,
+    "benchmark_level": 16987.150390625
    }
   ],
   "drawdowns": {
    "CIK0001494259": -0.054078841506843944,
-   "CIK0001841408": -0.1715526127527861,
+   "CIK0001841408": -0.17696595317727892,
    "CIK0000837465": -0.024767584717292235,
-   "CIK0001018840": -0.03820744023515166,
+   "CIK0001018840": -0.049828132670183045,
    "CIK0001116132": -0.08162753814014811,
-   "CIK0001828962": -0.0940297993341076,
+   "CIK0001828962": -0.10895522982911154,
    "CIK0001345016": -0.11014495664790214,
    "CIK0000860730": -0.04353373624701251,
    "CIK0001640428": -0.0898686233794207,
@@ -2332,22 +2343,22 @@
    "CIK0001035002": -0.16357821491747915,
    "CIK0001883685": -0.04976760429977434,
    "CIK0001093557": -0.11138977020917551,
-   "CIK0001681459": -0.06232499275260961,
-   "CIK0000033002": -0.06719026659690808,
+   "CIK0001681459": -0.06526615633783084,
+   "CIK0000033002": -0.09467714088440893,
    "CIK0000874499": -0.06019157843378564,
    "CIK0000008063": -0.10268161426184008,
    "CIK0000937098": -0.1594087913822675,
    "CIK0001671933": -0.06854535905256631,
    "CIK0001968915": -0.04577118011847725,
    "CIK0000357294": -0.17582417582417575,
-   "CIK0001522540": -0.06770022946340026,
-   "CIK0001159036": -0.007245022963496828,
+   "CIK0001522540": -0.08010341673654531,
+   "CIK0001159036": -0.019515152473906006,
    "CIK0001286139": -0.07584269249052455,
-   "CIK0000749251": -0.06517658513979852,
+   "CIK0000749251": -0.12890292145537763,
    "CIK0001283699": -0.14544625665308952,
    "CIK0001423221": -0.06246968678009712,
    "CIK0000908255": -0.16431591663403122,
-   "CIK0001108524": -0.08438209949945152
+   "CIK0001108524": -0.11222980179546371
   }
  }
 }
