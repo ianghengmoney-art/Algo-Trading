@@ -65,3 +65,4 @@ The weekday margin check of the 2x leveraged trend paper book (docs/LEVERAGE_STR
 | 2026-11-02 | [#64](https://github.com/ianghengmoney-art/Algo-Trading/actions/runs/41530628497) | passed | futures US$144,973 · SGD account SGD 3,861 | OK, no email (October signal applied: no sleeve changes, futures re-levered, no ETF trades) |
 | 2026-11-03 | [#65](https://github.com/ianghengmoney-art/Algo-Trading/actions/runs/41724009153) | passed | futures US$144,629 · SGD account SGD 3,856 | OK, no email |
 | 2026-11-04 | [#66](https://github.com/ianghengmoney-art/Algo-Trading/actions/runs/41918359833) | passed | futures US$150,348 · SGD account SGD 4,000 | OK, no email |
+| 2026-11-05 | [#67](https://github.com/ianghengmoney-art/Algo-Trading/actions/runs/42114865100) | passed | futures US$140,150 · SGD account SGD 3,723 | OK, no email (sharp stock fall) |
