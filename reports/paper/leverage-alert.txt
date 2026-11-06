@@ -1,0 +1,42 @@
+OK
+
+MULTI-ASSET TREND (MA) — PAPER TRADING · 2026-11-06 close
+==============================================================================
+3.82x total across 4 sleeves, each in its market while above its 10-month average, else T-bills (docs/LEVERAGE_STRATEGY.md)
+started 2026-10-10 · paper value 139,481 (-6.92% since the first signal)
+
+SLEEVES (signal of 2026-10, set 2026-10-30)
+  US stocks    (^SP500TR) IN  · month-end 17,011.14 vs average 16,327.86 (+4.2%) · exposure 138,740 · since rebalance -2.7%
+  Intl stocks  (EFA     ) IN  · month-end 103.37 vs average 102.66 (+0.7%) · exposure 138,740 · since rebalance -1.4%
+  Treasuries   (IEF     ) OUT · month-end 91.76 vs average 92.88 (-1.2%) · exposure 0 · since rebalance +0.1%
+  Gold         (GLD     ) OUT · month-end 355.78 vs average 408.47 (-12.9%) · exposure 0 · since rebalance +4.7%
+  gross exposure 271,794 = 1.95x of equity
+  next signals: the last trading day of this month
+
+MARGIN (futures; a call below 8% of gross exposure; set in scripts/leverage_config.json)
+  equity is 51% of exposure (started at 52%); 2% of the distance to a call used
+  status: OK
+
+Simulated only. Nothing here places an order.
+==============================================================================
+
+==============================================================================
+ETF VERSION — PAPER ACCOUNT, SGD 4,000 (started 2026-10-09)
+==============================================================================
+value SGD 3,719 (-7.03%) · US$2,898 (-7.24% in US$) · exposure 1.85x
+orders 2 · commissions US$2
+
+  ETF    sleeve             US$   share    shares     price
+  EFO    Intl stocks      1,439     50%     21.14     68.05
+  UPRO   US stocks          823     28%      6.39    128.94
+  SGOV   T-bills            636     22%      6.33    100.49
+  Simulated only. Nothing here places an order.
+==============================================================================
+
+FUTURES CONTRACT TICKET — US$145,278 account at 3.82x
+  sleeve       instrument                               target    qty     actual  off by
+  US stocks    Micro E-mini S&P 500 (MES)              138,740      4    147,980     +7%
+  Treasuries   10-year T-note (ZN)                           0      0          0     +0%
+  Gold         Micro gold (MGC)                              0      0          0     +0%
+  Intl stocks  EFA shares (EAFE futures too large)     138,740   1362    138,774     +0%
+  Rounding to whole contracts moves each sleeve off its target; smaller accounts drift further.

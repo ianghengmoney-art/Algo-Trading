@@ -1,0 +1,79 @@
+==============================================================================
+FACTOR STRATEGY — variant 1 of 3 in docs/FACTOR_STRATEGY.md (sample of 1000 companies)
+==============================================================================
+period: 2015-01-01..2025-09-30 · earlier half to 2021-06-13, later half from 2021-06-14
+spare money and benchmark: the S&P 500 total-return index (dividends reinvested)
+long-history premise check (1963 onward): SUPPORTS the premise (full report: reports/long-history.txt)
+
+RETURNS (per year)
+                   strategy  S&P 500 TR  difference  eq-wt universe
+  full period       +15.63%     +14.03%      +1.60%          +9.37%
+  earlier half      +16.88%     +14.76%      +2.12%         +14.43%
+  later half        +14.26%     +12.63%      +1.64%          +1.65%
+  
+  PRE-REGISTERED PASS CRITERIA (docs/FACTOR_STRATEGY.md, variant 1 of 3 registered):
+    [PASS] beats the S&P 500 in the earlier half
+    [PASS] beats the S&P 500 in the later half
+    [PASS] beats the S&P 500 by at least 1%/yr over the full period
+    [PASS] beats the equal-weight eligible universe over the full period
+    GOAL 15%-20%/yr compound return: MET (+15.63%/yr)
+      of which the S&P 500 itself returned +14.03%/yr and the strategy added +1.60%/yr. A future decade with lower market returns lowers the first part, not the second.
+    (5%/yr above the S&P 500 in both halves and overall: not met)
+    VERDICT: PASSED — proceed to paper trading before any real money.
+
+HOW LIKELY IS THE EDGE REAL? (monthly returns against the S&P 500)
+  months: 128 · ahead in 51% of them
+  average excess: +2.39%/yr · tracking error 10.5%/yr · information ratio +0.23
+  t-statistic: +0.74  (below ~2: consistent with luck; ~2.4+: strong evidence allowing for 3 variants tried)
+
+YEAR BY YEAR (calendar years, from each December's value)
+  year    strategy   S&P 500  eq-wt univ
+  2016      +21.8%    +12.0%      +17.4%
+  2017      +34.4%    +21.8%      +21.8%
+  2018      -13.1%     -4.4%      -12.2%
+  2019      +37.5%    +31.5%      +33.8%
+  2020      +16.7%    +18.4%      +20.8%
+  2021      +26.5%    +28.7%      +22.0%
+  2022      -13.2%    -18.1%      -20.8%
+  2023      +38.3%    +26.3%      +12.5%
+  2024       +9.8%    +25.0%       +7.9%
+  2025      +21.1%    +14.8%      +14.3%
+
+Factor strategy
+  99,900 -> 469,981 · +15.63%/yr
+  benchmark +14.03%/yr · excess +1.60%/yr
+  volatility 20.6%/yr
+  portfolio max drawdown: -29.6% from 2019-12-31 to 2020-03-31 (91 days), recovered in 335 days
+  positions closed: 143
+  median outcome: +7.1%   (mean +55.0% — reported second, deliberately)
+  quartiles: p25 -13.3% · p75 +45.9%
+  best +844.9% · worst -78.4%
+  loss rate: 39.9% · total losses (<= -90%): 0.0%
+  largest single-position drawdown: -80.9%
+  median holding period: 518 days
+
+  Stock picks vs the index over each pick's own holding period:
+    picks compared: 143
+    median pick vs index: -11.5%   (mean +11.9%)
+    picks that beat the index: 31%
+    average share of the money in stock picks: 98.7% (the rest followed the index)
+
+S&P 500 max drawdown over the same months: -23.9% from 2021-12-31 to 2022-09-30 (273 days), recovered in 730 days
+holdings per month: median 30 · eligible companies ranked per month: median 113
+positions sold over the period: 113 · about 35% of the portfolio replaced per year
+
+NOTES
+  Fills at the month-end close, 0.1% cost per fill; dividends credited on ex-dates.
+  The equal-weight universe benchmark excludes trading costs, which flatters it.
+  No evaluation raised an error.
+  Holdings closed as delisted at -30%: 0.
+  SURVIVORSHIP COVERAGE
+    sampled from the SEC filing index (incl. dead companies): 1000
+    stopped filing during the period (died/acquired/delisted): 538
+      of which a price history was found: 24
+    still filing at the end: 462 (priced: 372)
+    WARNING: only 4% of the companies that died could be priced. The unpriced ones could never be bought in this backtest, so the result still leans toward survivors. Treat the CAGR as an upper bound.
+  full data: reports/factor-v1-curves.csv
+  full data: reports/factor-v1-trades.csv
+  run time: 20 min
+==============================================================================
