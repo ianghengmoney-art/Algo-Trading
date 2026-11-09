@@ -8,7 +8,7 @@ started 2026-10-10 · paper value 139,481 (-6.92% since the first signal)
 SLEEVES (signal of 2026-10, set 2026-10-30)
   US stocks    (^SP500TR) IN  · month-end 17,011.14 vs average 16,327.86 (+4.2%) · exposure 138,740 · since rebalance -2.7%
   Intl stocks  (EFA     ) IN  · month-end 103.37 vs average 102.66 (+0.7%) · exposure 138,740 · since rebalance -1.4%
-  Treasuries   (IEF     ) OUT · month-end 91.76 vs average 92.88 (-1.2%) · exposure 0 · since rebalance +0.1%
+  Treasuries   (IEF     ) OUT · month-end 91.76 vs average 92.60 (-0.9%) · exposure 0 · since rebalance +0.1%
   Gold         (GLD     ) OUT · month-end 355.78 vs average 408.47 (-12.9%) · exposure 0 · since rebalance +4.7%
   gross exposure 271,794 = 1.95x of equity
   next signals: the last trading day of this month
@@ -23,7 +23,7 @@ Simulated only. Nothing here places an order.
 ==============================================================================
 ETF VERSION — PAPER ACCOUNT, SGD 4,000 (started 2026-10-09)
 ==============================================================================
-value SGD 3,719 (-7.03%) · US$2,898 (-7.24% in US$) · exposure 1.85x
+value SGD 3,715 (-7.14%) · US$2,898 (-7.24% in US$) · exposure 1.85x
 orders 2 · commissions US$2
 
   ETF    sleeve             US$   share    shares     price
@@ -35,7 +35,7 @@ orders 2 · commissions US$2
 
 FUTURES CONTRACT TICKET — US$145,278 account at 3.82x
   sleeve       instrument                               target    qty     actual  off by
-  US stocks    Micro E-mini S&P 500 (MES)              138,740      4    147,980     +7%
+  US stocks    Micro E-mini S&P 500 (MES)              138,740      4    148,015     +7%
   Treasuries   10-year T-note (ZN)                           0      0          0     +0%
   Gold         Micro gold (MGC)                              0      0          0     +0%
   Intl stocks  EFA shares (EAFE futures too large)     138,740   1362    138,774     +0%
