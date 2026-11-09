@@ -1,8 +1,8 @@
 ==============================================================================
-LEVERAGED TREND — PAPER TRADING · 2026-11-06 close
+LEVERAGED TREND — PAPER TRADING · 2026-11-09 close
 ==============================================================================
 2.0x the S&P 500 (total return) while above its 10-month average, T-bills otherwise (docs/LEVERAGE_STRATEGY.md)
-started 2026-10-09 · paper value 88,853 (-10.97% since the first signal) · S&P 500 TR -5.37% since the start
+started 2026-10-09 · paper value 93,104 (-6.71% since the first signal) · S&P 500 TR -3.15% since the start
 
 POSITION
   now: RISK-ON: 2.0x the S&P 500 (signal of 2026-10, set 2026-10-30)
@@ -10,8 +10,8 @@ POSITION
   next signal: the last trading day of this month
 
 MARGIN (maintenance 25% of exposure assumed; set yours in scripts/leverage_config.json)
-  index since the rebalance: -2.7% · a margin call comes at -33.3% · 8% of that distance used
-  equity is 49% of exposure (call below 25%)
+  index since the rebalance: -0.4% · a margin call comes at -33.3% · 1% of that distance used
+  equity is 50% of exposure (call below 25%)
   status: OK
 
 Simulated only. Nothing here places an order.
