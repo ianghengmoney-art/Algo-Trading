@@ -1,19 +1,19 @@
 ==============================================================================
-MULTI-ASSET TREND (MA) — PAPER TRADING · 2026-11-09 close
+MULTI-ASSET TREND (MA) — PAPER TRADING · 2026-11-10 close
 ==============================================================================
 3.82x total across 4 sleeves, each in its market while above its 10-month average, else T-bills (docs/LEVERAGE_STRATEGY.md)
-started 2026-10-10 · paper value 146,722 (-2.09% since the first signal)
+started 2026-10-10 · paper value 145,380 (-2.99% since the first signal)
 
 SLEEVES (signal of 2026-10, set 2026-10-30)
-  US stocks    (^SP500TR) IN  · month-end 17,011.14 vs average 16,327.86 (+4.2%) · exposure 138,740 · since rebalance -0.4%
-  Intl stocks  (EFA     ) IN  · month-end 103.37 vs average 102.66 (+0.7%) · exposure 138,740 · since rebalance +1.5%
-  Treasuries   (IEF     ) OUT · month-end 91.76 vs average 92.60 (-0.9%) · exposure 0 · since rebalance +0.0%
-  Gold         (GLD     ) OUT · month-end 355.78 vs average 408.47 (-12.9%) · exposure 0 · since rebalance +6.7%
-  gross exposure 279,083 = 1.90x of equity
+  US stocks    (^SP500TR) IN  · month-end 17,011.14 vs average 16,327.86 (+4.2%) · exposure 138,740 · since rebalance -0.8%
+  Intl stocks  (EFA     ) IN  · month-end 103.37 vs average 102.66 (+0.7%) · exposure 138,740 · since rebalance +1.0%
+  Treasuries   (IEF     ) OUT · month-end 91.76 vs average 92.60 (-0.9%) · exposure 0 · since rebalance -0.8%
+  Gold         (GLD     ) OUT · month-end 355.78 vs average 408.47 (-12.9%) · exposure 0 · since rebalance +3.8%
+  gross exposure 277,761 = 1.91x of equity
   next signals: the last trading day of this month
 
 MARGIN (futures; a call below 8% of gross exposure; set in scripts/leverage_config.json)
-  equity is 53% of exposure (started at 52%); 0% of the distance to a call used
+  equity is 52% of exposure (started at 52%); 0% of the distance to a call used
   status: OK
 
 Simulated only. Nothing here places an order.
@@ -22,20 +22,20 @@ Simulated only. Nothing here places an order.
 ==============================================================================
 ETF VERSION — PAPER ACCOUNT, SGD 4,000 (started 2026-10-09)
 ==============================================================================
-value SGD 3,890 (-2.75%) · US$3,042 (-2.62% in US$) · exposure 1.87x
+value SGD 3,865 (-3.37%) · US$3,015 (-3.49% in US$) · exposure 1.87x
 orders 2 · commissions US$2
 
   ETF    sleeve             US$   share    shares     price
-  EFO    Intl stocks      1,526     50%     21.14     72.16
-  UPRO   US stocks          881     29%      6.39    137.91
-  SGOV   T-bills            636     21%      6.33    100.50
+  EFO    Intl stocks      1,508     50%     21.14     71.33
+  UPRO   US stocks          871     29%      6.39    136.37
+  SGOV   T-bills            636     21%      6.33    100.53
   Simulated only. Nothing here places an order.
 ==============================================================================
 
 FUTURES CONTRACT TICKET — US$145,278 account at 3.82x
   sleeve       instrument                               target    qty     actual  off by
-  US stocks    Micro E-mini S&P 500 (MES)              138,740      4    151,510     +9%
+  US stocks    Micro E-mini S&P 500 (MES)              138,740      4    151,080     +9%
   Treasuries   10-year T-note (ZN)                           0      0          0     +0%
   Gold         Micro gold (MGC)                              0      0          0     +0%
-  Intl stocks  EFA shares (EAFE futures too large)     138,740   1322    138,757     +0%
+  Intl stocks  EFA shares (EAFE futures too large)     138,740   1329    138,694     -0%
   Rounding to whole contracts moves each sleeve off its target; smaller accounts drift further.

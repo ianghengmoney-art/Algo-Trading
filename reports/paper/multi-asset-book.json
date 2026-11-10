@@ -276,6 +276,16 @@
         "Treasuries": 91.8,
         "Gold": 379.53
       }
+    },
+    {
+      "date": "2026-11-10",
+      "value": 145379.95,
+      "prices": {
+        "US stocks": 16882.6094,
+        "Intl stocks": 104.36,
+        "Treasuries": 91.01,
+        "Gold": 369.36
+      }
     }
   ]
 }
