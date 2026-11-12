@@ -13,7 +13,7 @@
   "price_at": {
     "US stocks": 17011.140625,
     "Intl stocks": 103.37000274658203,
-    "Treasuries": 91.76000213623047,
+    "Treasuries": 91.4489974975586,
     "Gold": 355.7799987792969
   },
   "in_trend": {
@@ -295,6 +295,16 @@
         "Intl stocks": 104.66,
         "Treasuries": 90.94,
         "Gold": 365.17
+      }
+    },
+    {
+      "date": "2026-11-12",
+      "value": 146197.06,
+      "prices": {
+        "US stocks": 17044.4395,
+        "Intl stocks": 104.01,
+        "Treasuries": 90.21,
+        "Gold": 354.89
       }
     }
   ]
