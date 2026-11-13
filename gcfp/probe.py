@@ -1,0 +1,1103 @@
+"""§18 — the critical first task.
+
+    "Before writing any strategy code, verify the data source can supply what
+    each classification path requires. ... Report all findings before
+    proceeding to build the gates."
+
+This module is that verification, made repeatable.  It pulls one company per
+classification plus the four special cases §18 names, attempts every Module A
+gate input, every Module B input for that company's path, seven years of the
+relevant C1 multiple, and a full C2 peer set — then reports what is missing,
+stale, or unreliable, and evaluates the four stop conditions.
+
+The stop conditions are the point.  They are not warnings to note and work
+around; three of them say to change what gets built, and the fourth says the
+dual-anchor premise itself does not hold for this source.  So they are computed
+here rather than left to a reader's judgement, and
+:meth:`CoverageReport.build_directives` turns them into the concrete
+instructions they imply.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from datetime import date
+from typing import Sequence
+
+from .classification import Classification
+from .config import Config
+from .diagnostics import (
+    UniversePeerAvailability,
+    measure_universe_peer_availability,
+)
+from .data.adapter import Capability, DataAdapter, DataUnavailable
+from .data.taxonomy import TaxonomyAvailability, assess_taxonomy
+from .modules import a_health, c_anchors
+from .types import CompanyData, CompanyProfile, MarketData, TaxonomyLevel
+
+
+@dataclass(frozen=True)
+class ProbeTarget:
+    """One of the ten companies §18 requires."""
+
+    symbol: str
+    role: str
+    expected_classification: Classification | None
+    tests: str
+
+    @property
+    def label(self) -> str:
+        return f"{self.symbol} ({self.role})"
+
+
+#: §18's roster.  Symbols are the default US-listed choices; an operator can
+#: substitute their own, but the *roles* are fixed — each exists to exercise a
+#: path the others do not reach.
+DEFAULT_TARGETS: tuple[ProbeTarget, ...] = (
+    ProbeTarget("CAT", "mature industrial", Classification.CORE_STABLE, "B1 two-stage DCF"),
+    ProbeTarget("NVDA", "profitable fast-grower", Classification.CORE_GROWTH, "B2 scenario DCF, Rule of 40"),
+    ProbeTarget("RIVN", "unprofitable grower", Classification.SPEC_GROWTH, "A3 pre-profit branch, cash burn"),
+    ProbeTarget("JPM", "bank", Classification.FINANCIAL_BANK, "B3 P/B and P/TBV, ROE history"),
+    ProbeTarget("O", "REIT", Classification.REIT, "B4 P/AFFO, FFO/AFFO availability"),
+    ProbeTarget("PGR", "insurer", Classification.INSURER, "B5 combined ratio"),
+    ProbeTarget("TSM", "foreign ADR", None, "Module K — underlying currency exposure"),
+    ProbeTarget("GE", "spinoff in the last 7 years", None, "C1.1 series discontinuity"),
+    ProbeTarget("TPL", "fewer than 4 obvious peers", None, "C5 SINGLE-ANCHOR MODE"),
+    ProbeTarget("SIVBQ", "delisted name", None, "survivorship bias / point-in-time"),
+)
+
+
+#: Every input the probe attempts, grouped by the gate that needs it.  A gate
+#: whose inputs are missing cannot be enforced, and §18 stop condition 1 is
+#: explicit that an unenforceable gate means disabling a path, not building
+#: around the gap.
+GATE_INPUTS: dict[str, tuple[str, ...]] = {
+    "A1 solvency": ("current_ratio", "ttm_operating_cash_flow"),
+    "A2 leverage": ("net_debt", "ttm_ebitda", "industry_grouping"),
+    "A3 earnings quality": ("ttm_net_income", "ttm_operating_cash_flow", "cash_and_equivalents"),
+    "A4 red flags": ("share_count_history", "filing_dates"),
+    "A5 data integrity": ("latest_filing_date", "current_price", "market_cap"),
+    "A6 classification": ("annual_revenue_3y", "annual_net_income_3y", "free_cash_flow_5y"),
+    "B discount rate": ("beta", "interest_expense", "total_debt", "risk_free_rate"),
+    "B path-specific": ("path_inputs",),
+    "C1 own history": ("multiple_history_7y", "corporate_actions"),
+    "C2 peer set": ("peer_candidates", "peer_multiples"),
+}
+
+
+@dataclass
+class InputResult:
+    name: str
+    available: bool
+    value: object = None
+    detail: str = ""
+
+    def as_report_line(self) -> str:
+        mark = "OK " if self.available else "MISSING"
+        line = f"      [{mark}] {self.name}"
+        if self.available and self.value is not None:
+            line += f" = {_fmt(self.value)}"
+        if self.detail:
+            line += f" — {self.detail}"
+        return line
+
+
+def _fmt(value: object) -> str:
+    if isinstance(value, float):
+        if abs(value) >= 1e9:
+            return f"{value:,.3g}"
+        return f"{value:,.4g}"
+    return str(value)
+
+
+@dataclass
+class TargetCoverage:
+    """What the source could supply for one probe target."""
+
+    target: ProbeTarget
+    reached: bool
+    profile: CompanyProfile | None = None
+    actual_classification: Classification | None = None
+    gate_inputs: dict[str, list[InputResult]] = field(default_factory=dict)
+    c1_years_available: float | None = None
+    #: Set when C1.1 truncated the series at a corporate action.  A short
+    #: window for this reason is the gate working, not the source failing.
+    c1_discontinuity_date: date | None = None
+    c1_raw_observations: int = 0
+    #: The span the source supplied, before C1.1 truncation.
+    c1_raw_years: float = 0.0
+    c2_peer_count: int | None = None
+    single_anchor: bool = False
+    #: C2's decision for every candidate — the exclusion log the spec requires.
+    peer_decisions: list = field(default_factory=list)
+    error: str | None = None
+    notes: list[str] = field(default_factory=list)
+
+    @property
+    def missing(self) -> list[str]:
+        return [
+            f"{gate}: {r.name}"
+            for gate, results in self.gate_inputs.items()
+            for r in results
+            if not r.available
+        ]
+
+    @property
+    def coverage_rate(self) -> float:
+        total = sum(len(v) for v in self.gate_inputs.values())
+        if not total:
+            return 0.0
+        have = sum(1 for v in self.gate_inputs.values() for r in v if r.available)
+        return have / total
+
+    def as_report_lines(self) -> list[str]:
+        lines = [f"  {self.target.label} — tests {self.target.tests}"]
+        if not self.reached:
+            lines.append(f"    UNREACHABLE: {self.error}")
+            return lines
+        lines.append(f"    coverage: {self.coverage_rate:.0%} of attempted inputs")
+        if self.actual_classification:
+            expected = (
+                self.target.expected_classification.value
+                if self.target.expected_classification
+                else "n/a"
+            )
+            match = (
+                "matches"
+                if self.target.expected_classification is self.actual_classification
+                else f"EXPECTED {expected}"
+            )
+            lines.append(
+                f"    A6 routed to: {self.actual_classification.value} ({match})"
+            )
+        else:
+            lines.append("    A6 routed to: NO TAG — the router could not classify it")
+        if self.c1_years_available is not None:
+            lines.append(f"    C1 usable history: {self.c1_years_available:.1f} years")
+        if self.c2_peer_count is not None:
+            lines.append(f"    C2 genuine peers: {self.c2_peer_count}")
+            for d in self.peer_decisions:
+                verdict = "INCLUDED" if d.included else "excluded"
+                lines.append(f"      {d.candidate.symbol}: {verdict} — {d.reason}")
+        if self.single_anchor:
+            lines.append("    -> SINGLE-ANCHOR MODE")
+        for gate, results in self.gate_inputs.items():
+            lines.append(f"    {gate}:")
+            lines.extend(r.as_report_line() for r in results)
+        lines.extend(f"    note: {n}" for n in self.notes)
+        return lines
+
+
+@dataclass
+class StopCondition:
+    number: int
+    name: str
+    tripped: bool
+    finding: str
+    directive: str
+
+    def as_report_lines(self) -> list[str]:
+        status = "TRIPPED" if self.tripped else "clear"
+        lines = [f"  [{status}] Stop condition {self.number}: {self.name}"]
+        lines.append(f"    finding: {self.finding}")
+        if self.tripped:
+            lines.append(f"    DIRECTIVE: {self.directive}")
+        return lines
+
+
+@dataclass
+class CoverageReport:
+    """§18's deliverable."""
+
+    generated_on: date
+    source_name: str
+    capabilities: list[Capability]
+    coverages: list[TargetCoverage]
+    taxonomy: TaxonomyAvailability
+    stop_conditions: list[StopCondition]
+    point_in_time_available: bool
+    notes: list[str] = field(default_factory=list)
+    #: Peer availability across the universe sample, when one was built.
+    #: The §18 roster cannot answer stop condition 4 on its own.
+    peer_availability: UniversePeerAvailability | None = None
+
+    @property
+    def reached(self) -> list[TargetCoverage]:
+        return [c for c in self.coverages if c.reached]
+
+    @property
+    def single_anchor_rate(self) -> float | None:
+        reached = self.reached
+        if not reached:
+            return None
+        return sum(1 for c in reached if c.single_anchor) / len(reached)
+
+    @property
+    def any_tripped(self) -> bool:
+        return any(s.tripped for s in self.stop_conditions)
+
+    def build_directives(self) -> list[str]:
+        """What the findings require to change about the build."""
+        out = [s.directive for s in self.stop_conditions if s.tripped]
+        if not self.point_in_time_available:
+            out.append(
+                "Point-in-time constituent and peer data is unavailable. §13.8 "
+                "requires this be stated in the report header, not footnoted: "
+                "backtest results are inflated by an unknown material amount."
+            )
+        return out
+
+    def render(self) -> str:
+        lines = [
+            "=" * 78,
+            f"GCFP v4 — §18 DATA FEASIBILITY REPORT",
+            f"source: {self.source_name} · generated {self.generated_on.isoformat()}",
+            "=" * 78,
+            "",
+            "ADAPTER CAPABILITIES",
+        ]
+        for cap in self.capabilities:
+            mark = "OK " if cap.supported else "NO "
+            lines.append(f"  [{mark}] {cap.name}" + (f" — {cap.detail}" if cap.detail else ""))
+
+        lines.extend(["", "TAXONOMY", f"  {self.taxonomy.as_report_line()}", f"  {self.taxonomy.detail}"])
+
+        lines.extend(["", "PER-TARGET COVERAGE"])
+        for coverage in self.coverages:
+            lines.extend(coverage.as_report_lines())
+            lines.append("")
+
+        lines.append("STOP CONDITIONS")
+        for stop in self.stop_conditions:
+            lines.extend(stop.as_report_lines())
+
+        rate = self.single_anchor_rate
+        lines.extend(
+            [
+                "",
+                "SUMMARY",
+                f"  targets reached: {len(self.reached)}/{len(self.coverages)}",
+                f"  SINGLE-ANCHOR MODE rate (§18 roster): "
+                + (f"{rate:.0%}" if rate is not None else "not measurable"),
+                f"  point-in-time data: {'available' if self.point_in_time_available else 'NOT AVAILABLE'}",
+            ]
+        )
+
+        if self.peer_availability is not None:
+            lines.extend(
+                [
+                    "",
+                    "PEER AVAILABILITY ACROSS THE UNIVERSE",
+                    "  The roster above is nine companies chosen for being "
+                    "extreme, so its single-anchor rate is not evidence about "
+                    "the market. This is:",
+                ]
+            )
+            lines.extend(self.peer_availability.report_lines())
+
+        directives = self.build_directives()
+        if directives:
+            lines.extend(["", "BUILD DIRECTIVES — these change what gets built:"])
+            lines.extend(f"  - {d}" for d in directives)
+        else:
+            lines.extend(["", "No stop condition tripped. Proceed to build the gates."])
+
+        if self.notes:
+            lines.extend(["", "NOTES"])
+            lines.extend(f"  {n}" for n in self.notes)
+
+        lines.append("=" * 78)
+        return "\n".join(lines)
+
+
+# -- the probe ------------------------------------------------------------
+
+
+def _debt_basis_note(period) -> str:
+    """Say how total debt was arrived at, so a zero is never read as measured."""
+    basis = getattr(period, "debt_basis", None) if period is not None else None
+    return {
+        "tagged": "",
+        "summed": "summed from non-current, current and short-term parts",
+        "long_term_only": "only a total-including-current tag resolved; "
+                          "short-term borrowings may be understated",
+        "inferred_zero": "INFERRED ZERO — no debt tag anywhere in this filer's "
+                         "history and the balance sheet reads cleanly",
+        None: "no debt tag resolved, and a zero could not be safely inferred",
+    }.get(basis, "")
+
+
+def _probe_target(
+    adapter: DataAdapter,
+    target: ProbeTarget,
+    market: MarketData,
+    config: Config,
+    peer_universe=None,
+) -> TargetCoverage:
+    """Attempt every input one target needs."""
+    try:
+        data = adapter.load_company(target.symbol, multiple=None)
+    except DataUnavailable as exc:
+        return TargetCoverage(target, False, error=str(exc))
+    except Exception as exc:  # provider-specific transport failures
+        return TargetCoverage(target, False, error=f"{type(exc).__name__}: {exc}")
+
+    coverage = TargetCoverage(target, True, profile=data.profile)
+    coverage.notes.extend(data.source_notes)
+
+    tag, considered, _ = a_health.classify(data, config)
+    coverage.actual_classification = tag
+
+    q4 = data.trailing_quarters(4)
+    latest_q = data.latest_quarter
+    ttm_ocf = a_health._sum(q4, "operating_cash_flow") if len(q4) == 4 else None
+    ttm_ni = a_health._sum(q4, "net_income") if len(q4) == 4 else None
+    ttm_ebitda = a_health._sum(q4, "ebitda") if len(q4) == 4 else None
+
+    coverage.gate_inputs["A1 solvency"] = [
+        InputResult("current_ratio", latest_q is not None and latest_q.current_ratio is not None,
+                    latest_q.current_ratio if latest_q else None),
+        InputResult("ttm_operating_cash_flow", ttm_ocf is not None, ttm_ocf),
+    ]
+
+    grouping = (
+        data.profile.gics_sub_industry_code
+        or data.profile.sub_industry
+        or data.profile.industry
+        or data.profile.sector
+    )
+    coverage.gate_inputs["A2 leverage"] = [
+        InputResult("net_debt", latest_q is not None and latest_q.net_debt is not None,
+                    latest_q.net_debt if latest_q else None),
+        InputResult("ttm_ebitda", ttm_ebitda is not None, ttm_ebitda),
+        InputResult(
+            "industry_grouping", grouping is not None, grouping,
+            "GICS sub-industry" if data.profile.taxonomy_is_gics else "VENDOR SUBSTITUTE",
+        ),
+    ]
+
+    runway = a_health.cash_runway_months(data)
+    coverage.gate_inputs["A3 earnings quality"] = [
+        InputResult("ttm_net_income", ttm_ni is not None, ttm_ni),
+        InputResult("ttm_operating_cash_flow", ttm_ocf is not None, ttm_ocf),
+        InputResult(
+            "cash_runway_months",
+            runway is not None,
+            runway if runway not in (None, float("inf")) else ("not burning" if runway else None),
+            "pre-profit branch cannot be enforced without this" if runway is None else "",
+        ),
+    ]
+
+    share_growth = a_health.share_count_cagr(data, years=2)
+    has_filing_dates = any(q.filing_date is not None for q in data.quarterly)
+    coverage.gate_inputs["A4 red flags"] = [
+        InputResult(
+            "share_count_history", share_growth is not None, share_growth,
+            "dilution flag cannot be enforced without this" if share_growth is None else "",
+        ),
+        InputResult("filing_dates", has_filing_dates, None),
+    ]
+
+    coverage.gate_inputs["A5 data integrity"] = [
+        InputResult("latest_filing_date", latest_q is not None and latest_q.filing_date is not None,
+                    latest_q.filing_date if latest_q else None),
+        InputResult("current_price", data.current_price is not None, data.current_price),
+        InputResult("market_cap", data.profile.market_cap is not None, data.profile.market_cap),
+    ]
+
+    annual3 = data.trailing_years(3)
+    annual5 = data.trailing_years(5)
+    coverage.gate_inputs["A6 classification"] = [
+        InputResult("annual_revenue_3y", len(annual3) == 3 and all(a.revenue is not None for a in annual3), len(annual3)),
+        InputResult("annual_net_income_3y", len(annual3) == 3 and all(a.net_income is not None for a in annual3), len(annual3)),
+        InputResult(
+            "free_cash_flow_5y",
+            len(annual5) == 5 and all(
+                a.free_cash_flow is not None
+                or (a.operating_cash_flow is not None and a.capital_expenditure is not None)
+                for a in annual5
+            ),
+            len(annual5),
+        ),
+    ]
+
+    latest_a = data.latest_annual
+    coverage.gate_inputs["B discount rate"] = [
+        InputResult("beta", data.profile.beta is not None, data.profile.beta,
+                    "1.0 is never assumed; absence is an A5 failure" if data.profile.beta is None else ""),
+        InputResult("interest_expense", latest_a is not None and latest_a.interest_expense is not None,
+                    latest_a.interest_expense if latest_a else None),
+        InputResult("total_debt", latest_a is not None and latest_a.total_debt is not None,
+                    latest_a.total_debt if latest_a else None,
+                    _debt_basis_note(latest_a)),
+        InputResult("risk_free_rate", market.risk_free_rate is not None, market.risk_free_rate),
+    ]
+
+    coverage.gate_inputs["B path-specific"] = _path_inputs(data, tag or target.expected_classification)
+
+    # C1: seven years of the relevant multiple.
+    # Route through the resolver so a source without forward estimates probes
+    # the multiple it will actually use, not the one it cannot compute.
+    multiple_name = c_anchors.anchor_multiple_for(
+        tag or target.expected_classification or Classification.CORE_STABLE, config
+    )
+    try:
+        history = adapter.get_historical_multiples(
+            target.symbol, multiple_name, config.anchors.history_window_years
+        )
+        history_detail = ""
+    except DataUnavailable as exc:
+        history = ()
+        history_detail = str(exc)
+    except Exception as exc:
+        history = ()
+        history_detail = f"{type(exc).__name__}: {exc}"
+
+    try:
+        actions = adapter.get_corporate_actions(
+            target.symbol, config.anchors.history_window_years
+        )
+        actions_available = True
+    except Exception:
+        actions = ()
+        actions_available = False
+
+    coverage.c1_raw_observations = len(history)
+    if history:
+        adjusted = c_anchors.adjust_series(history, actions, config)
+        coverage.c1_years_available = adjusted.years_available
+        coverage.c1_discontinuity_date = adjusted.discontinuity_date
+        raw_span = (
+            max(o.observation_date for o in history)
+            - min(o.observation_date for o in history)
+        ).days / 365.25
+        coverage.c1_raw_years = raw_span
+    else:
+        coverage.c1_years_available = 0.0
+
+    coverage.gate_inputs["C1 own history"] = [
+        InputResult(
+            f"multiple_history_7y ({multiple_name})",
+            coverage.c1_years_available >= config.anchors.min_history_years,
+            coverage.c1_years_available,
+            history_detail or f"{len(history)} observations",
+        ),
+        InputResult(
+            "corporate_actions", actions_available, len(actions),
+            "an empty list must not be read as 'no spinoffs occurred'"
+            if actions_available and not actions else "",
+        ),
+    ]
+
+    # C2: a full peer set.
+    #
+    # Peers come from the universe, screened by grouping, size and growth —
+    # the same way the live screen builds them.  Asking the adapter for a
+    # vendor peer list instead is how an earlier version of this probe
+    # reported every target as SINGLE-ANCHOR MODE: EDGAR publishes no such
+    # list, so every candidate set was empty and the headline finding measured
+    # the probe rather than the data.
+    peer_symbols: list[str] = []
+    peers_detail = ""
+    if peer_universe is not None:
+        member = peer_universe.by_symbol(target.symbol)
+        if member is not None:
+            group = member.grouping_at(TaxonomyLevel.INDUSTRY) or member.sector
+            same_group = [
+                m
+                for m in peer_universe.included
+                if m.symbol != target.symbol
+                and (m.grouping_at(TaxonomyLevel.INDUSTRY) or m.sector) == group
+            ]
+            # Closest by size first, exactly as ``universe.find_peers`` does.
+            # Only the first two dozen candidates get fundamentals fetched, and
+            # taking them in universe order spends that budget on whichever
+            # names happen to come first — usually the small ones, since an
+            # industry has far more minor filers than major ones.  C2 then
+            # rejects the lot on the size band and the probe reports
+            # SINGLE-ANCHOR MODE for a company that does have peers.
+            subject_cap = member.market_cap
+            if subject_cap:
+                same_group.sort(
+                    key=lambda m: (
+                        m.market_cap is None,
+                        abs((m.market_cap or 0.0) / subject_cap - 1.0),
+                    )
+                )
+            peer_symbols = [m.symbol for m in same_group]
+            peers_detail = (
+                f"{len(peer_symbols)} same-grouping names in a "
+                f"{len(peer_universe.included)}-name universe sample"
+                + ("" if subject_cap else "; subject has no market cap, so "
+                   "candidates could not be ordered by size")
+            )
+        else:
+            peers_detail = "target not in the universe sample"
+    else:
+        try:
+            peer_symbols = list(adapter.get_peer_symbols(target.symbol))
+            peers_detail = f"{len(peer_symbols)} vendor candidates"
+        except Exception as exc:
+            peers_detail = (
+                f"no vendor peer list ({type(exc).__name__}) and no universe "
+                "sample supplied — C2 cannot be tested in isolation. Pass "
+                "--peer-sample to build one."
+            )
+
+    # Build each candidate the way C2 will: the same multiple as the subject,
+    # computed from the peer's own fundamentals.  Passing nulls in here would
+    # reject every peer for "multiple not computable" and report a
+    # SINGLE-ANCHOR MODE rate that is an artefact of the probe rather than a
+    # property of the data source.
+    subject_growth = c_anchors.revenue_growth_yoy(data)
+    peer_multiples_available = 0
+    unresolved_peers: list[str] = []
+    candidates: list[c_anchors.PeerCandidate] = []
+    for peer in peer_symbols[:24]:
+        try:
+            peer_data = adapter.load_company(peer, multiple=None)
+        except Exception:
+            # A peer the source names but cannot describe is a C2 gap, not a
+            # peer that failed the screen.  The two look identical in a bare
+            # peer count, so they are separated here.
+            unresolved_peers.append(peer)
+            continue
+        peer_multiple = c_anchors.compute_current_multiple(peer_data, multiple_name)
+        if peer_multiple is not None:
+            peer_multiples_available += 1
+        candidates.append(
+            c_anchors.PeerCandidate(
+                symbol=peer,
+                multiple=peer_multiple,
+                market_cap=peer_data.profile.market_cap,
+                revenue_growth=c_anchors.revenue_growth_yoy(peer_data),
+                group=(
+                    peer_data.profile.gics_sub_industry_code
+                    or peer_data.profile.sub_industry
+                    or peer_data.profile.industry
+                ),
+            )
+        )
+
+    kept, decisions = c_anchors.select_peers(
+        grouping, data.profile.market_cap, subject_growth, candidates, config
+    )
+    coverage.c2_peer_count = len(kept)
+    coverage.peer_decisions = decisions
+
+    coverage.gate_inputs["C2 peer set"] = [
+        InputResult("peer_candidates", bool(peer_symbols), len(peer_symbols), peers_detail),
+        InputResult(
+            "peer_fundamentals_resolvable",
+            not unresolved_peers,
+            len(candidates),
+            f"{len(unresolved_peers)} named peers could not be described: "
+            f"{unresolved_peers}" if unresolved_peers else "",
+        ),
+        InputResult(
+            "peer_multiples_computable",
+            peer_multiples_available > 0,
+            peer_multiples_available,
+            f"{peer_multiples_available}/{len(candidates)} candidates had a "
+            f"computable {multiple_name}",
+        ),
+        InputResult(
+            "peer_set",
+            len(kept) >= config.anchors.peer_min,
+            len(kept),
+            f"{len(kept)} survive C2's screen; {config.anchors.peer_min} required",
+        ),
+    ]
+
+    c1_ok = coverage.c1_years_available >= config.anchors.min_history_years
+    c2_ok = coverage.c2_peer_count >= config.anchors.peer_min
+    coverage.single_anchor = (c1_ok != c2_ok)
+    if not c1_ok and not c2_ok:
+        coverage.notes.append(
+            "BOTH ANCHORS UNCOMPUTABLE — C5 makes this an automatic FAIL"
+        )
+
+    return coverage
+
+
+def _path_inputs(
+    data: CompanyData, classification: Classification | None
+) -> list[InputResult]:
+    """Module B inputs specific to the path this company routes to."""
+    latest = data.latest_annual
+    if classification is Classification.REIT:
+        return [
+            InputResult("adjusted_funds_from_operations",
+                        latest is not None and latest.adjusted_funds_from_operations is not None,
+                        latest.adjusted_funds_from_operations if latest else None,
+                        "B4 primary measure; P/E is banned on this path"),
+            InputResult("funds_from_operations",
+                        latest is not None and latest.funds_from_operations is not None,
+                        latest.funds_from_operations if latest else None),
+        ]
+    if classification is Classification.INSURER:
+        return [
+            InputResult("combined_ratio",
+                        latest is not None and latest.combined_ratio is not None,
+                        latest.combined_ratio if latest else None,
+                        "B5's primary underwriting read"),
+        ]
+    if classification is Classification.FINANCIAL_BANK:
+        return [
+            InputResult("tangible_book_value",
+                        latest is not None and latest.tangible_book_value is not None,
+                        latest.tangible_book_value if latest else None),
+            InputResult("total_equity",
+                        latest is not None and latest.total_equity is not None,
+                        latest.total_equity if latest else None),
+        ]
+    # B1 / B2 both need cash-flow depth.
+    fcf_ok = latest is not None and (
+        latest.free_cash_flow is not None
+        or (latest.operating_cash_flow is not None and latest.capital_expenditure is not None)
+    )
+    return [
+        InputResult("free_cash_flow", fcf_ok,
+                    latest.free_cash_flow if latest else None,
+                    "B1/B2 cash-flow depth"),
+        InputResult("shares_diluted",
+                    latest is not None and latest.shares_diluted is not None,
+                    latest.shares_diluted if latest else None),
+    ]
+
+
+def _could_route_to_spec_growth(coverage: TargetCoverage) -> bool:
+    """Whether SPEC-GROWTH is a path this target could actually take.
+
+    Either the roster says so, or A6 actually routed it there.  Both are
+    consulted because a router that disagrees with the roster is itself worth
+    catching, and because a target the router could not classify at all must
+    not silently drop out of the assessment.
+    """
+    expected = coverage.target.expected_classification
+    actual = coverage.actual_classification
+    return Classification.SPEC_GROWTH in (expected, actual)
+
+
+def _evaluate_stop_conditions(
+    coverages: Sequence[TargetCoverage],
+    taxonomy: TaxonomyAvailability,
+    config: Config,
+    point_in_time: bool,
+    availability: "UniversePeerAvailability | None" = None,
+) -> list[StopCondition]:
+    """The four stop conditions, computed rather than left to judgement."""
+    reached = [c for c in coverages if c.reached]
+
+    # 1. Cash-burn and share-count history.
+    #
+    # Scoped to the targets that could actually take the SPEC-GROWTH path.
+    # A profitable industrial has no cash runway to compute, and counting it
+    # as a gap here would disable a strategy on evidence drawn from companies
+    # that would never use it.  Gaps elsewhere are still reported, as a note
+    # rather than as this kill switch.
+    spec_relevant = [c for c in reached if _could_route_to_spec_growth(c)]
+    scope = spec_relevant or reached
+
+    def _gap(rows, name):
+        return [
+            c.target.symbol
+            for c in rows
+            for r in c.gate_inputs.get(name[0], [])
+            if r.name == name[1] and not r.available
+        ]
+
+    burn_missing = _gap(scope, ("A3 earnings quality", "cash_runway_months"))
+    share_missing = _gap(scope, ("A4 red flags", "share_count_history"))
+    elsewhere = sorted(
+        set(_gap(reached, ("A3 earnings quality", "cash_runway_months")))
+        - set(burn_missing)
+    )
+
+    cond1 = bool(burn_missing or share_missing)
+    if spec_relevant:
+        scope_note = (
+            f"assessed on the SPEC-GROWTH candidates among the targets "
+            f"({[c.target.symbol for c in spec_relevant]})"
+        )
+    else:
+        scope_note = (
+            "no target routed to SPEC-GROWTH, so this was assessed across all "
+            "reached targets and is weaker evidence than it looks"
+        )
+    finding1 = (
+        f"cash runway not computable for {burn_missing or 'none'}; "
+        f"share count history not computable for {share_missing or 'none'} "
+        f"— {scope_note}"
+        if cond1
+        else f"both computable — {scope_note}"
+    )
+    if elsewhere:
+        finding1 += (
+            f". Separately, cash runway was not computable for {elsewhere}, "
+            "which are not SPEC-GROWTH candidates: that is an A3 coverage gap "
+            "worth fixing, not grounds for disabling the path."
+        )
+    stop1 = StopCondition(
+        1,
+        "cash-burn and share-count history computable",
+        cond1,
+        finding1,
+        "DISABLE SPEC-GROWTH ENTIRELY rather than building around the gap. "
+        "Without A3's pre-profit branch and A4's dilution flag, SPEC-GROWTH is "
+        "not a strategy, it is a way to buy companies shortly before they run "
+        "out of money.",
+    )
+
+    # 2. Seven years of historical multiples.  Compared against the same
+    # tolerance C1 applies: a series fetched for a 7-year window has its
+    # newest and oldest observations inside that window and so can never span
+    # quite 7.0 years.  Without the tolerance this condition trips for every
+    # source, which would make it carry no information.
+    full_window = config.anchors.history_window_years - c_anchors._WINDOW_TOLERANCE_YEARS
+    # A window shortened by C1.1's discontinuity handling is the gate working
+    # as designed, not the source failing to supply history.  Only the latter
+    # is what stop condition 2 asks about.
+    source_short = [
+        c.target.symbol
+        for c in reached
+        if c.c1_raw_years < full_window
+    ]
+    truncated = [
+        (c.target.symbol, c.c1_discontinuity_date)
+        for c in reached
+        if c.c1_discontinuity_date is not None
+    ]
+    cond2 = bool(source_short)
+    finding2 = (
+        f"{len(source_short)}/{len(reached)} targets: the source supplied under "
+        f"{full_window:.2f} years: {source_short}"
+        if cond2
+        else f"the source supplied the full window for all {len(reached)} reached targets"
+    )
+    if truncated:
+        finding2 += (
+            "; separately, C1.1 truncated "
+            + ", ".join(f"{sym} at {d.isoformat()}" for sym, d in truncated)
+            + " — that is the gate working, not a sourcing gap"
+        )
+    stop2 = StopCondition(
+        2,
+        "seven years of historical multiples sourceable",
+        cond2,
+        finding2,
+        "REPORT BEFORE BUILDING — do not silently shorten the C1 window. C1 "
+        "cannot function at full strength and the system degrades toward "
+        "single-anchor operation, which C5 penalises but does not make free.",
+    )
+
+    # 3. GICS sub-industry codes.
+    cond3 = not taxonomy.gics_available
+    stop3 = StopCondition(
+        3,
+        "GICS sub-industry codes available",
+        cond3,
+        taxonomy.as_report_line(),
+        (
+            "REPORT WHICH FALLBACK LEVEL IS AVAILABLE BEFORE BUILDING. A2's "
+            f"sector-relative leverage and C2's peer matching both run at "
+            f"{taxonomy.finest_level_available.value} level against a vendor "
+            "taxonomy, which is wider than the spec assumes. Every grouping is "
+            "logged VENDOR-SUBSTITUTE, and Module I's peer-gameability break "
+            "criterion applies with more force, not less."
+            if not taxonomy.blocks_build
+            else "A2 and C2 both fail outright — no taxonomy at any level."
+        ),
+    )
+
+    # 4. SINGLE-ANCHOR MODE rate.
+    #
+    # Measured across the universe where one was built, and only across the
+    # roster otherwise.  The roster is nine companies chosen for being
+    # extreme — the largest chipmaker on earth, the largest US bank, a
+    # near-monopoly land trust — and none of them has a size-matched peer for
+    # reasons that are about those companies, not about the market.  Reading a
+    # design finding off that sample would condemn the dual-anchor premise on
+    # evidence that never tested it.
+    roster_rate = (
+        sum(1 for c in reached if c.single_anchor) / len(reached) if reached else None
+    )
+    # A sample-limited measurement cannot trip this condition.  The same
+    # market reads 96% single-anchor at eight names per industry and 0% at
+    # forty-five; firing a design-level directive off the former would
+    # condemn the dual-anchor premise on the sample size.  It is reported
+    # loudly instead, with the sample size that would settle it.
+    limited = availability is not None and availability.sample_limited
+    rate = availability.rate if availability is not None else roster_rate
+    cond4 = (
+        rate is not None
+        and rate > config.expectations.single_anchor_rate_break
+        and not limited
+    )
+
+    if availability is not None and availability.rate is not None and roster_rate is not None:
+        finding4 = (
+            f"{availability.rate:.0%} of {availability.assessed} universe names "
+            f"could not reach {config.anchors.peer_min} size-band peers "
+            f"(grouping and size only — an upper bound). "
+            f"The §18 roster's own rate is {roster_rate:.0%}, which is higher "
+            f"by design: those targets were chosen for being extreme, and the "
+            f"universe figure is the one this condition is asking about"
+        )
+        if limited:
+            suggested = availability.suggested_peer_sample
+            finding4 += (
+                ". NOT TRIPPED — the sample carries about "
+                f"{availability.median_group_size:.0f} names per industry "
+                f"where roughly {availability.industry_size_needed:.0f} are "
+                "needed for any peer set to form, so this rate is a property "
+                "of the sample. The identical market reads 96% single-anchor "
+                "at eight names per industry and 0% at forty-five"
+                + (f"; re-run with --peer-sample {suggested}" if suggested else "")
+            )
+    elif roster_rate is not None:
+        finding4 = (
+            f"{roster_rate:.0%} of reached targets fall into SINGLE-ANCHOR "
+            "MODE — measured on the §18 roster only, which is nine "
+            "deliberately extreme companies. Pass --peer-sample to measure "
+            "this across a universe, which is what the condition is about"
+        )
+    else:
+        finding4 = "not measurable — no targets reached"
+
+    causes = _single_anchor_causes(reached)
+    if causes:
+        finding4 += ". Roster breakdown: " + "; ".join(
+            f"{count} {cause}" for cause, count in causes.items()
+        )
+
+    stop4 = StopCondition(
+        4,
+        "SINGLE-ANCHOR MODE below 40% of test companies",
+        cond4,
+        finding4,
+        "THIS IS A DESIGN-LEVEL FINDING, NOT A DATA GAP TO WORK AROUND. The "
+        "dual-anchor premise does not hold for this data source and universe. "
+        "Report it as such before proceeding.",
+    )
+
+    return [stop1, stop2, stop3, stop4]
+
+
+def _single_anchor_causes(reached: Sequence[TargetCoverage]) -> dict[str, int]:
+    """Why each single-anchor target ended up there.
+
+    "89% single-anchor" hides three different findings and only one of them is
+    a design finding: an industry with no other names in the sample is a
+    sampling problem, candidates rejected on the size band is the genuine
+    structural result, and candidates whose multiples would not compute is a
+    data gap.  Lumping them together makes the directive unearned.
+    """
+    causes: dict[str, int] = {}
+
+    def bump(label: str) -> None:
+        causes[label] = causes.get(label, 0) + 1
+
+    for c in reached:
+        if not c.single_anchor:
+            continue
+        decisions = list(c.peer_decisions)
+        if not decisions:
+            bump("had no candidates in their industry at all")
+            continue
+        reasons = [d.reason for d in decisions if not d.included]
+        if any("market cap" in r for r in reasons) and all(
+            "market cap" in r or "growth" in r for r in reasons
+        ):
+            bump("had candidates, all outside the size or growth bands")
+        elif any("not computable" in r or "non-positive" in r for r in reasons):
+            bump("had candidates whose multiples would not compute")
+        else:
+            bump("had candidates rejected for mixed reasons")
+    return causes
+
+
+def _industry_peers(adapter, symbol: str, limit: int) -> list[str]:
+    """Other filers sharing ``symbol``'s industry code, if the source can say."""
+    getter = getattr(adapter, "symbols_by_sic", None)
+    if getter is None:
+        inner = getattr(adapter, "fundamentals", None)
+        getter = getattr(inner, "symbols_by_sic", None) if inner else None
+    if getter is None:
+        return []
+    try:
+        code = adapter.get_profile(symbol).industry_code
+    except Exception:
+        return []
+    if not code:
+        return []
+    try:
+        return [s for s in getter(code, limit=limit) if s.upper() != symbol.upper()]
+    except Exception:
+        return []
+
+
+def _peer_pool(
+    adapter,
+    targets: Sequence[ProbeTarget],
+    budget: int,
+    *,
+    progress: bool = False,
+) -> tuple[list[str], str | None]:
+    """The names C2 will be offered as candidates.
+
+    Drawn from each target's *own industry* rather than sampled from the
+    market. A slice of a few hundred tickers taken alphabetically contains no
+    second oil royalty trader and no second construction-machinery maker, so
+    C2 reports "no peers" for a reason that is about the sample and not about
+    the market — and stop condition 4 then reads as a design finding when it
+    is an artefact of how the pool was built.
+
+    Falls back to a plain market slice when the source cannot enumerate an
+    industry, so the probe still runs; the report says which happened.
+    """
+    wanted = [t.symbol for t in targets]
+    pool: list[str] = list(wanted)
+    seen = {s.upper() for s in pool}
+
+    per_target = max(4, budget // max(len(targets), 1))
+    for target in targets:
+        if progress:
+            print(f"  peers: {target.symbol} (SIC lookup)", flush=True)
+        for symbol in _industry_peers(adapter, target.symbol, per_target):
+            if symbol.upper() in seen:
+                continue
+            seen.add(symbol.upper())
+            pool.append(symbol)
+
+    if len(pool) > len(wanted):
+        return pool[: max(budget, len(wanted))], None
+
+    # No industry listing came back for any target. Fall back to a market
+    # slice so the probe still runs — but say so loudly. This fallback fired
+    # silently for a whole run, and the peer findings it produced looked like
+    # evidence about the market when they were evidence about an alphabetical
+    # slice of the ticker index.
+    from .universe import default_symbol_list
+
+    try:
+        rest = default_symbol_list(adapter)
+    except Exception:
+        rest = []
+    pool.extend(s for s in rest if s.upper() not in seen)
+    warning = (
+        "PEER POOL IS NOT INDUSTRY-MATCHED. No industry listing came back for "
+        "any target, so candidates are an alphabetical slice of the ticker "
+        "index. Peer findings below — and stop condition 4 — describe that "
+        "slice, not the market. Do not read them as a design finding."
+    )
+    return pool[: max(budget, len(wanted))], warning
+
+
+def run_probe(
+    adapter: DataAdapter,
+    config: Config,
+    targets: Sequence[ProbeTarget] = DEFAULT_TARGETS,
+    market: MarketData | None = None,
+    *,
+    peer_sample: int = 0,
+    progress: bool = False,
+) -> CoverageReport:
+    """Run §18's critical first task against one adapter."""
+    if market is None:
+        try:
+            market = adapter.get_market_data()
+        except Exception:
+            market = MarketData()
+
+    capabilities = list(adapter.capabilities())
+
+    # C2 needs a universe to screen. Without one the probe cannot distinguish
+    # "this universe has no comparables" from "nobody handed me candidates".
+    peer_universe = None
+    peer_warning: str | None = None
+    if peer_sample:
+        from .universe import build_universe
+
+        sampled, peer_warning = _peer_pool(
+            adapter, targets, peer_sample, progress=progress
+        )
+        peer_universe = build_universe(adapter, sampled, config, progress=progress)
+
+    # Costs no requests: market cap and industry are already on each row.
+    availability = (
+        measure_universe_peer_availability(peer_universe, config)
+        if peer_universe is not None
+        else None
+    )
+    if availability is not None:
+        availability.requested = len(sampled)
+    # Nothing in the sample could be measured — usually because the price
+    # feed refused every request, so no name had a market cap.  Formatting the
+    # empty rate used to crash the probe at its very last step, after every
+    # download had finished, so a 40-minute run wrote no report at all.  Say
+    # what happened instead and fall back to the roster figure.
+    unmeasured_universe: str | None = None
+    if availability is not None and not availability.assessed:
+        unmeasured_universe = (
+            f"PEER UNIVERSE NOT MEASURED — none of the {len(peer_universe.members)} "
+            f"names sampled cleared the universe screen "
+            f"({len(peer_universe.unreachable)} could not be loaded at all). "
+            "Most often the price feed refused requests, so no company had a "
+            "market cap. Stop condition 4 falls back to the roster figure below."
+        )
+        availability = None
+
+    coverages = [
+        _probe_target(adapter, t, market, config, peer_universe) for t in targets
+    ]
+
+    profiles = [c.profile for c in coverages if c.profile is not None]
+    taxonomy = assess_taxonomy(profiles)
+
+    point_in_time = adapter.supports("point_in_time")
+    stops = _evaluate_stop_conditions(
+        coverages, taxonomy, config, point_in_time, availability
+    )
+
+    notes: list[str] = []
+    if peer_warning:
+        notes.append(peer_warning)
+    if unmeasured_universe:
+        notes.append(unmeasured_universe)
+    unreached = [c.target.symbol for c in coverages if not c.reached]
+    if unreached:
+        notes.append(
+            f"Targets the source could not return at all: {unreached}. A probe "
+            "that cannot reach a target has not cleared it — treat these as "
+            "unknown, not as passing."
+        )
+    if not point_in_time:
+        notes.append(
+            "Point-in-time data unavailable. §13.8: using today's peer list to "
+            "backtest yesterday's decisions bakes survivorship bias into the "
+            "methodology. State this in the report header, do not footnote it."
+        )
+
+    return CoverageReport(
+        generated_on=date.today(),
+        source_name=adapter.name,
+        capabilities=capabilities,
+        coverages=coverages,
+        taxonomy=taxonomy,
+        stop_conditions=stops,
+        point_in_time_available=point_in_time,
+        notes=notes,
+        peer_availability=availability,
+    )
+
+
+__all__ = [
+    "ProbeTarget",
+    "DEFAULT_TARGETS",
+    "TargetCoverage",
+    "CoverageReport",
+    "StopCondition",
+    "InputResult",
+    "run_probe",
+]
