@@ -1,0 +1,33 @@
+==============================================================================
+MA DAILY CRASH CHECK — 3.82x, day by day (docs/LEVERAGE_STRATEGY.md)
+==============================================================================
+Data: US stocks: French daily
+Data: Intl stocks: French Developed ex US daily from 19900702
+Data: Treasuries: from Yahoo ^TNX daily yields, from 19900103
+Data: Gold: Yahoo GC=F daily from 20000831
+Period: 2001-06-29 to 2026-08-31. Monthly signals, daily marks, margin checked every close at 8% of gross exposure.
+
+                                    MA 3.82x       L2 2.0x
+  per year                            +20.6%        +16.1%
+  deepest fall (daily)                  -38%          -42%
+  worst day                           -12.1%        -15.2%
+  worst month                         -27.6%        -19.0%
+  lowest equity / exposure               19%           41%
+    on                            2026-03-27    2018-12-24
+  margin calls                             0             0   (MA at 8%, L2 at 25%)
+
+CRASH WINDOWS (total change)
+  2000-02 dot-com                     +10.0%        -10.5%
+  2008 crisis                          -1.8%         -9.3%
+  Oct 2008 alone                       -0.9%         -0.0%
+  2011 euro crisis                     -4.1%        -20.8%
+  2015 China scare                    -19.4%        -23.9%
+  Feb 2018 vol spike                  -18.3%        -17.6%
+  2020 Covid                          -16.1%        -23.4%
+  2022 bear                           -18.5%        -12.0%
+
+WHAT WOULD CHANGE THE DECISION (registered)
+  [OK] no margin call at 8% maintenance (0)
+  [OK] deepest daily fall no deeper than L2's (-38% vs -42%)
+  VERDICT: no concern: MA stays as chosen
+==============================================================================

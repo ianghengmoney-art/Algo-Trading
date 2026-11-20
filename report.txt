@@ -1,0 +1,606 @@
+==============================================================================
+GCFP v4 — §18 DATA FEASIBILITY REPORT
+source: edgar+fallback · generated 2026-10-03
+==============================================================================
+
+ADAPTER CAPABILITIES
+  [OK ] profile — from XBRL company facts
+  [OK ] annual_financials — from XBRL company facts
+  [OK ] quarterly_financials — from XBRL company facts
+  [OK ] prices — from fallback
+  [OK ] historical_multiples — reconstructed from prices x per-share fundamentals, observed on filing dates so the series carries no lookahead
+  [NO ] corporate_actions — splits only, from the price source; spinoffs are not detected, so C1.1 cannot see a business changing in kind
+  [NO ] gics_sub_industry — SIC codes only; official but coarser than GICS, and logged as VENDOR-SUBSTITUTE wherever a grouping is used
+  [NO ] peer_group — built from the universe, not fetched
+  [OK ] share_count_history — from XBRL company facts
+  [OK ] cash_burn — from XBRL company facts
+  [NO ] reit_ffo_affo — FFO/AFFO are almost always custom XBRL extensions, not us-gaap tags; the REIT path cannot be valued from this source alone
+  [NO ] insurer_combined_ratio — combined ratio is not a us-gaap tag; the insurer path cannot be valued from this source alone
+  [OK ] bank_tangible_book — from XBRL company facts
+  [NO ] forward_estimates — no analyst estimates; C3 reports PEGY n/a and CORE-GROWTH uses a trailing anchor by explicit configuration
+  [OK ] risk_free_rate — 10-year Treasury yield via fallback
+  [NO ] fx_rates — EDGAR publishes no exchange rates
+  [OK ] point_in_time — as-filed with filing dates — natively point-in-time
+
+TAXONOMY
+  GICS NOT available. Finest rung offered is industry from provider-defined taxonomy (profiles from NYSE, Nasdaq). A2 and C2 run against a substitute grouping — every result is logged VENDOR-SUBSTITUTE and the peer-gameability break criterion (Module I) applies with more force, not less.
+  9/9 profiles carry a industry label
+
+PER-TARGET COVERAGE
+  CAT (mature industrial) — tests B1 two-stage DCF
+    coverage: 89% of attempted inputs
+    A6 routed to: CORE-STABLE (matches)
+    C1 usable history: 6.8 years
+    C2 genuine peers: 0
+      CNH: excluded — market cap 0.04x subject, outside 0.3-3.0x
+      ASTE: excluded — market cap 0.00x subject, outside 0.3-3.0x
+      PLOW: excluded — market cap 0.00x subject, outside 0.3-3.0x
+      MTW: excluded — market cap 0.00x subject, outside 0.3-3.0x
+      AEBI: excluded — market cap 0.00x subject, outside 0.3-3.0x
+      CMCO: excluded — multiple not computable or non-positive
+    -> SINGLE-ANCHOR MODE
+    A1 solvency:
+      [OK ] current_ratio = 1.368
+      [OK ] ttm_operating_cash_flow = 1.36e+10
+    A2 leverage:
+      [OK ] net_debt = 2.95e+10
+      [OK ] ttm_ebitda = 1.55e+10
+      [OK ] industry_grouping = Construction Machinery & Equip — VENDOR SUBSTITUTE
+    A3 earnings quality:
+      [OK ] ttm_net_income = 1.08e+10
+      [OK ] ttm_operating_cash_flow = 1.36e+10
+      [OK ] cash_runway_months = not burning
+    A4 red flags:
+      [OK ] share_count_history = -0.02797
+      [OK ] filing_dates
+    A5 data integrity:
+      [OK ] latest_filing_date = 2026-08-05
+      [OK ] current_price = 845.4
+      [OK ] market_cap = 3.91e+11
+    A6 classification:
+      [OK ] annual_revenue_3y = 3
+      [OK ] annual_net_income_3y = 3
+      [OK ] free_cash_flow_5y = 5
+    B discount rate:
+      [OK ] beta = 1.218
+      [MISSING] interest_expense
+      [OK ] total_debt = 3.62e+10 — summed from non-current, current and short-term parts
+      [OK ] risk_free_rate = 0.05277
+    B path-specific:
+      [OK ] free_cash_flow = 8.92e+09 — B1/B2 cash-flow depth
+      [OK ] shares_diluted = 4.723e+08
+    C1 own history:
+      [OK ] multiple_history_7y (trailing_pe) = 6.762 — 28 observations
+      [MISSING] corporate_actions
+    C2 peer set:
+      [OK ] peer_candidates = 6 — 6 same-grouping names in a 118-name universe sample
+      [OK ] peer_fundamentals_resolvable = 6
+      [OK ] peer_multiples_computable = 5 — 5/6 candidates had a computable trailing_pe
+      [MISSING] peer_set — 0 survive C2's screen; 4 required
+    note: corporate_actions unavailable: corporate_actions: neither the price feed nor the filings reported any action; an empty list must not be read as 'none occurred'
+
+  NVDA (profitable fast-grower) — tests B2 scenario DCF, Rule of 40
+    coverage: 96% of attempted inputs
+    A6 routed to: CORE-GROWTH (matches)
+    C1 usable history: 6.8 years
+    C2 genuine peers: 0
+      AVGO: excluded — revenue growth 41.6pp from subject, outside 10pp band
+      AMD: excluded — market cap 0.19x subject, outside 0.3-3.0x
+      INTC: excluded — multiple not computable or non-positive
+      AMAT: excluded — market cap 0.08x subject, outside 0.3-3.0x
+      ARM: excluded — market cap 0.06x subject, outside 0.3-3.0x
+      ALMU: excluded — multiple not computable or non-positive
+      ADI: excluded — market cap 0.04x subject, outside 0.3-3.0x
+      ALAB: excluded — market cap 0.01x subject, outside 0.3-3.0x
+      CRDO: excluded — market cap 0.01x subject, outside 0.3-3.0x
+      GFS: excluded — market cap 0.00x subject, outside 0.3-3.0x
+      CBRS: excluded — multiple not computable or non-positive
+      FSLR: excluded — market cap 0.00x subject, outside 0.3-3.0x
+      AMKR: excluded — market cap 0.00x subject, outside 0.3-3.0x
+      FORM: excluded — market cap 0.00x subject, outside 0.3-3.0x
+      AAOI: excluded — multiple not computable or non-positive
+      ALGM: excluded — market cap 0.00x subject, outside 0.3-3.0x
+      CRUS: excluded — market cap 0.00x subject, outside 0.3-3.0x
+      AXTI: excluded — market cap 0.00x subject, outside 0.3-3.0x
+      DIOD: excluded — market cap 0.00x subject, outside 0.3-3.0x
+      ENPH: excluded — market cap 0.00x subject, outside 0.3-3.0x
+      AMBA: excluded — multiple not computable or non-positive
+      DQ: excluded — multiple not computable or non-positive
+      ICHR: excluded — multiple not computable or non-positive
+      AMBQ: excluded — multiple not computable or non-positive
+    -> SINGLE-ANCHOR MODE
+    A1 solvency:
+      [OK ] current_ratio = 4.589
+      [OK ] ttm_operating_cash_flow = 1.34e+11
+    A2 leverage:
+      [OK ] net_debt = 1.09e+10
+      [OK ] ttm_ebitda = 2.01e+11
+      [OK ] industry_grouping = Semiconductors & Related Devices — VENDOR SUBSTITUTE
+    A3 earnings quality:
+      [OK ] ttm_net_income = 1.93e+11
+      [OK ] ttm_operating_cash_flow = 1.34e+11
+      [OK ] cash_runway_months = not burning
+    A4 red flags:
+      [OK ] share_count_history = -0.01139
+      [OK ] filing_dates
+    A5 data integrity:
+      [OK ] latest_filing_date = 2026-08-26
+      [OK ] current_price = 233.9
+      [OK ] market_cap = 5.68e+12
+    A6 classification:
+      [OK ] annual_revenue_3y = 3
+      [OK ] annual_net_income_3y = 3
+      [OK ] free_cash_flow_5y = 5
+    B discount rate:
+      [OK ] beta = 1.729
+      [OK ] interest_expense = 2.59e+08
+      [OK ] total_debt = 8.47e+09 — summed from non-current, current and short-term parts
+      [OK ] risk_free_rate = 0.05277
+    B path-specific:
+      [OK ] free_cash_flow = 9.67e+10 — B1/B2 cash-flow depth
+      [OK ] shares_diluted = 2.45e+10
+    C1 own history:
+      [OK ] multiple_history_7y (trailing_pe) = 6.782 — 28 observations
+      [OK ] corporate_actions = 2
+    C2 peer set:
+      [OK ] peer_candidates = 29 — 29 same-grouping names in a 118-name universe sample
+      [OK ] peer_fundamentals_resolvable = 24
+      [OK ] peer_multiples_computable = 16 — 16/24 candidates had a computable trailing_pe
+      [MISSING] peer_set — 0 survive C2's screen; 4 required
+
+  RIVN (unprofitable grower) — tests A3 pre-profit branch, cash burn
+    coverage: 93% of attempted inputs
+    A6 routed to: SPEC-GROWTH (matches)
+    C1 usable history: 4.6 years
+    C2 genuine peers: 2
+      OSK: excluded — revenue growth 11.3pp from subject, outside 10pp band
+      FSS: INCLUDED — meets grouping, size, and growth screen
+      NIO: excluded — multiple not computable or non-positive
+      LCID: excluded — market cap 0.08x subject, outside 0.3-3.0x
+      F: INCLUDED — meets grouping, size, and growth screen
+      PCAR: excluded — multiple not computable or non-positive
+      GM: excluded — multiple not computable or non-positive
+      TSLA: excluded — market cap 69.24x subject, outside 0.3-3.0x
+    -> SINGLE-ANCHOR MODE
+    A1 solvency:
+      [OK ] current_ratio = 2.104
+      [OK ] ttm_operating_cash_flow = -1.84e+09
+    A2 leverage:
+      [OK ] net_debt = 8.52e+08
+      [OK ] ttm_ebitda = -2.71e+09
+      [OK ] industry_grouping = Motor Vehicles & Passenger Car Bodies — VENDOR SUBSTITUTE
+    A3 earnings quality:
+      [OK ] ttm_net_income = -3.23e+09
+      [OK ] ttm_operating_cash_flow = -1.84e+09
+      [OK ] cash_runway_months = 23.36
+    A4 red flags:
+      [OK ] share_count_history = 0.1505
+      [OK ] filing_dates
+    A5 data integrity:
+      [OK ] latest_filing_date = 2026-07-30
+      [OK ] current_price = 14.3
+      [OK ] market_cap = 1.89e+10
+    A6 classification:
+      [OK ] annual_revenue_3y = 3
+      [OK ] annual_net_income_3y = 3
+      [OK ] free_cash_flow_5y = 5
+    B discount rate:
+      [OK ] beta = 1.622
+      [OK ] interest_expense = 2.74e+08
+      [OK ] total_debt = 4.44e+09 — summed from non-current, current and short-term parts
+      [OK ] risk_free_rate = 0.05277
+    B path-specific:
+      [OK ] free_cash_flow = -2.49e+09 — B1/B2 cash-flow depth
+      [OK ] shares_diluted = 1.19e+09
+    C1 own history:
+      [OK ] multiple_history_7y (ev_revenue) = 4.616 — 26 observations
+      [MISSING] corporate_actions
+    C2 peer set:
+      [OK ] peer_candidates = 8 — 8 same-grouping names in a 118-name universe sample
+      [OK ] peer_fundamentals_resolvable = 8
+      [OK ] peer_multiples_computable = 5 — 5/8 candidates had a computable ev_revenue
+      [MISSING] peer_set — 2 survive C2's screen; 4 required
+    note: corporate_actions unavailable: corporate_actions: neither the price feed nor the filings reported any action; an empty list must not be read as 'none occurred'
+
+  JPM (bank) — tests B3 P/B and P/TBV, ROE history
+    coverage: 82% of attempted inputs
+    A6 routed to: FINANCIAL-BANK (matches)
+    C1 usable history: 6.8 years
+    C2 genuine peers: 1
+      BAC: INCLUDED — meets grouping, size, and growth screen
+      C: excluded — market cap 0.26x subject, outside 0.3-3.0x
+      COF: excluded — market cap 0.14x subject, outside 0.3-3.0x
+      BOKF: excluded — market cap 0.01x subject, outside 0.3-3.0x
+      BANF: excluded — market cap 0.00x subject, outside 0.3-3.0x
+      BANC: excluded — market cap 0.00x subject, outside 0.3-3.0x
+      TBBK: excluded — market cap 0.00x subject, outside 0.3-3.0x
+      BFC: excluded — market cap 0.00x subject, outside 0.3-3.0x
+      BHRB: excluded — market cap 0.00x subject, outside 0.3-3.0x
+      AMTB: excluded — market cap 0.00x subject, outside 0.3-3.0x
+      CAC: excluded — market cap 0.00x subject, outside 0.3-3.0x
+      ALRS: excluded — market cap 0.00x subject, outside 0.3-3.0x
+      BCAL: excluded — market cap 0.00x subject, outside 0.3-3.0x
+      CARE: excluded — market cap 0.00x subject, outside 0.3-3.0x
+      CBNK: excluded — market cap 0.00x subject, outside 0.3-3.0x
+      AROW: excluded — market cap 0.00x subject, outside 0.3-3.0x
+    -> SINGLE-ANCHOR MODE
+    A1 solvency:
+      [MISSING] current_ratio
+      [OK ] ttm_operating_cash_flow = -1.63e+11
+    A2 leverage:
+      [OK ] net_debt = -2.37e+11
+      [MISSING] ttm_ebitda
+      [OK ] industry_grouping = National Commercial Banks — VENDOR SUBSTITUTE
+    A3 earnings quality:
+      [OK ] ttm_net_income = 6.5e+10
+      [OK ] ttm_operating_cash_flow = -1.63e+11
+      [OK ] cash_runway_months = 22.87
+    A4 red flags:
+      [OK ] share_count_history = -0.03529
+      [OK ] filing_dates
+    A5 data integrity:
+      [OK ] latest_filing_date = 2026-08-06
+      [OK ] current_price = 332.4
+      [OK ] market_cap = 8.95e+11
+    A6 classification:
+      [OK ] annual_revenue_3y = 3
+      [OK ] annual_net_income_3y = 3
+      [MISSING] free_cash_flow_5y
+    B discount rate:
+      [OK ] beta = 1.097
+      [OK ] interest_expense = 9.54e+10
+      [OK ] total_debt = 6.48e+10 — summed from non-current, current and short-term parts
+      [OK ] risk_free_rate = 0.05277
+    B path-specific:
+      [OK ] tangible_book_value = 3.08e+11
+      [OK ] total_equity = 3.62e+11
+    C1 own history:
+      [OK ] multiple_history_7y (p_b) = 6.754 — 28 observations
+      [MISSING] corporate_actions
+    C2 peer set:
+      [OK ] peer_candidates = 16 — 16 same-grouping names in a 118-name universe sample
+      [OK ] peer_fundamentals_resolvable = 16
+      [OK ] peer_multiples_computable = 16 — 16/16 candidates had a computable p_b
+      [MISSING] peer_set — 1 survive C2's screen; 4 required
+    note: corporate_actions unavailable: corporate_actions: neither the price feed nor the filings reported any action; an empty list must not be read as 'none occurred'
+
+  O (REIT) — tests B4 P/AFFO, FFO/AFFO availability
+    coverage: 71% of attempted inputs
+    A6 routed to: REIT (matches)
+    C1 usable history: 0.0 years
+    C2 genuine peers: 0
+      AMT: excluded — multiple not computable or non-positive
+      NLY: excluded — multiple not computable or non-positive
+      AMH: excluded — multiple not computable or non-positive
+      AGNC: excluded — multiple not computable or non-positive
+      CPT: excluded — multiple not computable or non-positive
+      AHR: excluded — multiple not computable or non-positive
+      BXP: excluded — multiple not computable or non-positive
+      BRX: excluded — multiple not computable or non-positive
+      ARE: excluded — multiple not computable or non-positive
+      ADC: excluded — multiple not computable or non-positive
+      COLD: excluded — multiple not computable or non-positive
+      APLE: excluded — multiple not computable or non-positive
+      BNL: excluded — multiple not computable or non-positive
+      AKR: excluded — multiple not computable or non-positive
+      BXMT: excluded — multiple not computable or non-positive
+      ARR: excluded — multiple not computable or non-positive
+      AAT: excluded — multiple not computable or non-positive
+      ALX: excluded — multiple not computable or non-positive
+      ARI: excluded — multiple not computable or non-positive
+      ADAM: excluded — multiple not computable or non-positive
+      ABR: excluded — multiple not computable or non-positive
+      BDN: excluded — multiple not computable or non-positive
+      BRSP: excluded — multiple not computable or non-positive
+      PINE: excluded — multiple not computable or non-positive
+    A1 solvency:
+      [MISSING] current_ratio
+      [OK ] ttm_operating_cash_flow = 4.17e+09
+    A2 leverage:
+      [OK ] net_debt = 8.474e+08
+      [MISSING] ttm_ebitda
+      [OK ] industry_grouping = Real Estate Investment Trusts — VENDOR SUBSTITUTE
+    A3 earnings quality:
+      [OK ] ttm_net_income = 1.27e+09
+      [OK ] ttm_operating_cash_flow = 4.17e+09
+      [OK ] cash_runway_months = not burning
+    A4 red flags:
+      [OK ] share_count_history = 0.03606
+      [OK ] filing_dates
+    A5 data integrity:
+      [OK ] latest_filing_date = 2026-08-06
+      [OK ] current_price = 54.13
+      [OK ] market_cap = 5.06e+10
+    A6 classification:
+      [OK ] annual_revenue_3y = 3
+      [OK ] annual_net_income_3y = 3
+      [OK ] free_cash_flow_5y = 5
+    B discount rate:
+      [OK ] beta = 0.7899
+      [MISSING] interest_expense
+      [OK ] total_debt = 5.168e+08 — summed from non-current, current and short-term parts
+      [OK ] risk_free_rate = 0.05277
+    B path-specific:
+      [MISSING] adjusted_funds_from_operations — B4 primary measure; P/E is banned on this path
+      [MISSING] funds_from_operations
+    C1 own history:
+      [MISSING] multiple_history_7y (p_affo) — historical_multiples: could not reconstruct a p_affo series for O
+      [OK ] corporate_actions = 4
+    C2 peer set:
+      [OK ] peer_candidates = 24 — 24 same-grouping names in a 118-name universe sample
+      [OK ] peer_fundamentals_resolvable = 24
+      [MISSING] peer_multiples_computable — 0/24 candidates had a computable p_affo
+      [MISSING] peer_set — 0 survive C2's screen; 4 required
+    note: BOTH ANCHORS UNCOMPUTABLE — C5 makes this an automatic FAIL
+
+  PGR (insurer) — tests B5 combined ratio
+    coverage: 81% of attempted inputs
+    A6 routed to: INSURER (matches)
+    C1 usable history: 6.7 years
+    C2 genuine peers: 1
+      CB: INCLUDED — meets grouping, size, and growth screen
+      ALL: excluded — revenue growth 10.7pp from subject, outside 10pp band
+      AIG: excluded — revenue growth 18.1pp from subject, outside 10pp band
+      HIG: excluded — market cap 0.28x subject, outside 0.3-3.0x
+      ACGL: excluded — market cap 0.27x subject, outside 0.3-3.0x
+      WRB: excluded — market cap 0.22x subject, outside 0.3-3.0x
+      CINF: excluded — market cap 0.21x subject, outside 0.3-3.0x
+      EG: excluded — market cap 0.12x subject, outside 0.3-3.0x
+      CNA: excluded — market cap 0.10x subject, outside 0.3-3.0x
+      AFG: excluded — market cap 0.09x subject, outside 0.3-3.0x
+      THG: excluded — market cap 0.06x subject, outside 0.3-3.0x
+      AXS: excluded — market cap 0.06x subject, outside 0.3-3.0x
+      HG: excluded — market cap 0.03x subject, outside 0.3-3.0x
+      HCI: excluded — market cap 0.02x subject, outside 0.3-3.0x
+      BOW: excluded — market cap 0.01x subject, outside 0.3-3.0x
+      HRTG: excluded — market cap 0.01x subject, outside 0.3-3.0x
+      EIG: excluded — market cap 0.01x subject, outside 0.3-3.0x
+      HIPO: excluded — market cap 0.01x subject, outside 0.3-3.0x
+      AII: excluded — market cap 0.00x subject, outside 0.3-3.0x
+      GLRE: excluded — market cap 0.00x subject, outside 0.3-3.0x
+      ACIC: excluded — market cap 0.00x subject, outside 0.3-3.0x
+      AMSF: excluded — market cap 0.00x subject, outside 0.3-3.0x
+      BRK-A: excluded — market cap 5.78x subject, outside 0.3-3.0x
+    -> SINGLE-ANCHOR MODE
+    A1 solvency:
+      [MISSING] current_ratio
+      [OK ] ttm_operating_cash_flow = 1.63e+10
+    A2 leverage:
+      [OK ] net_debt = 8.19e+09
+      [MISSING] ttm_ebitda
+      [OK ] industry_grouping = Fire, Marine & Casualty Insurance — VENDOR SUBSTITUTE
+    A3 earnings quality:
+      [OK ] ttm_net_income = 1.17e+10
+      [OK ] ttm_operating_cash_flow = 1.63e+10
+      [OK ] cash_runway_months = not burning
+    A4 red flags:
+      [OK ] share_count_history = -0.002728
+      [OK ] filing_dates
+    A5 data integrity:
+      [OK ] latest_filing_date = 2026-08-03
+      [OK ] current_price = 210.3
+      [OK ] market_cap = 1.23e+11
+    A6 classification:
+      [OK ] annual_revenue_3y = 3
+      [OK ] annual_net_income_3y = 3
+      [OK ] free_cash_flow_5y = 5
+    B discount rate:
+      [OK ] beta = 0.3743
+      [OK ] interest_expense = 2.78e+08
+      [OK ] total_debt = 6.9e+09
+      [OK ] risk_free_rate = 0.05277
+    B path-specific:
+      [MISSING] combined_ratio — B5's primary underwriting read
+    C1 own history:
+      [OK ] multiple_history_7y (p_b) = 6.741 — 28 observations
+      [MISSING] corporate_actions
+    C2 peer set:
+      [OK ] peer_candidates = 23 — 23 same-grouping names in a 118-name universe sample
+      [OK ] peer_fundamentals_resolvable = 23
+      [OK ] peer_multiples_computable = 23 — 23/23 candidates had a computable p_b
+      [MISSING] peer_set — 1 survive C2's screen; 4 required
+    note: corporate_actions unavailable: corporate_actions: neither the price feed nor the filings reported any action; an empty list must not be read as 'none occurred'
+
+  TSM (foreign ADR) — tests Module K — underlying currency exposure
+    coverage: 43% of attempted inputs
+    A6 routed to: NO TAG — the router could not classify it
+    C1 usable history: 0.0 years
+    C2 genuine peers: 5
+      NVDA: excluded — revenue growth 40.4pp from subject, outside 10pp band
+      AMD: INCLUDED — meets grouping, size, and growth screen
+      ALMU: excluded — multiple not computable or non-positive
+      ALGM: INCLUDED — meets grouping, size, and growth screen
+      AOSL: excluded — multiple not computable or non-positive
+      AMBA: excluded — multiple not computable or non-positive
+      AMBQ: excluded — multiple not computable or non-positive
+      AMKR: excluded — revenue growth 18.8pp from subject, outside 10pp band
+      ADI: INCLUDED — meets grouping, size, and growth screen
+      AMAT: excluded — revenue growth 20.6pp from subject, outside 10pp band
+      AAOI: excluded — multiple not computable or non-positive
+      ARM: INCLUDED — meets grouping, size, and growth screen
+      ARRY: excluded — multiple not computable or non-positive
+      AIP: excluded — multiple not computable or non-positive
+      ALAB: excluded — revenue growth 90.1pp from subject, outside 10pp band
+      AXTI: excluded — revenue growth 36.1pp from subject, outside 10pp band
+      AVGO: INCLUDED — meets grouping, size, and growth screen
+      CBRS: excluded — multiple not computable or non-positive
+      CRUS: excluded — revenue growth 19.7pp from subject, outside 10pp band
+      CRDO: excluded — revenue growth 180.6pp from subject, outside 10pp band
+      DQ: excluded — multiple not computable or non-positive
+      DIOD: excluded — revenue growth 12.0pp from subject, outside 10pp band
+      ENPH: excluded — revenue growth 14.3pp from subject, outside 10pp band
+      MRAM: excluded — multiple not computable or non-positive
+    -> SINGLE-ANCHOR MODE
+    A1 solvency:
+      [MISSING] current_ratio
+      [MISSING] ttm_operating_cash_flow
+    A2 leverage:
+      [MISSING] net_debt
+      [MISSING] ttm_ebitda
+      [OK ] industry_grouping = Semiconductors & Related Devices — VENDOR SUBSTITUTE
+    A3 earnings quality:
+      [MISSING] ttm_net_income
+      [MISSING] ttm_operating_cash_flow
+      [MISSING] cash_runway_months — pre-profit branch cannot be enforced without this
+    A4 red flags:
+      [MISSING] share_count_history — dilution flag cannot be enforced without this
+      [MISSING] filing_dates
+    A5 data integrity:
+      [MISSING] latest_filing_date
+      [OK ] current_price = 472.8
+      [MISSING] market_cap
+    A6 classification:
+      [OK ] annual_revenue_3y = 3
+      [OK ] annual_net_income_3y = 3
+      [MISSING] free_cash_flow_5y
+    B discount rate:
+      [OK ] beta = 1.123
+      [OK ] interest_expense = 3.201e+08
+      [OK ] total_debt = 4.14e+09 — summed from non-current, current and short-term parts
+      [OK ] risk_free_rate = 0.05277
+    B path-specific:
+      [MISSING] free_cash_flow — B1/B2 cash-flow depth
+      [MISSING] shares_diluted
+    C1 own history:
+      [MISSING] multiple_history_7y (trailing_pe) — financials: no revenue or net-income facts for TSM (quarterly) — annual facts exist but no quarterly ones, which is how a foreign private issuer filing 20-F reports. Every TTM gate and the C1 series are structurally unavailable for this filer, not merely unread
+      [MISSING] corporate_actions
+    C2 peer set:
+      [OK ] peer_candidates = 30 — 30 same-grouping names in a 118-name universe sample; subject has no market cap, so candidates could not be ordered by size
+      [OK ] peer_fundamentals_resolvable = 24
+      [OK ] peer_multiples_computable = 14 — 14/24 candidates had a computable trailing_pe
+      [OK ] peer_set = 5 — 5 survive C2's screen; 4 required
+    note: quarterly unavailable: financials: no revenue or net-income facts for TSM (quarterly) — annual facts exist but no quarterly ones, which is how a foreign private issuer filing 20-F reports. Every TTM gate and the C1 series are structurally unavailable for this filer, not merely unread
+    note: corporate_actions unavailable: corporate_actions: neither the price feed nor the filings reported any action; an empty list must not be read as 'none occurred'
+
+  GE (spinoff in the last 7 years) — tests C1.1 series discontinuity
+    coverage: 89% of attempted inputs
+    A6 routed to: CORE-STABLE (EXPECTED n/a)
+    C1 usable history: 5.7 years
+    C2 genuine peers: 1
+      GEV: INCLUDED — meets grouping, size, and growth screen
+      EMR: excluded — market cap 0.28x subject, outside 0.3-3.0x
+      OTIS: excluded — market cap 0.08x subject, outside 0.3-3.0x
+    -> SINGLE-ANCHOR MODE
+    A1 solvency:
+      [OK ] current_ratio = 0.9819
+      [OK ] ttm_operating_cash_flow = 9.8e+09
+    A2 leverage:
+      [OK ] net_debt = 9.81e+09
+      [MISSING] ttm_ebitda
+      [OK ] industry_grouping = Electronic & Other Electrical Equipment (No Computer Equip) — VENDOR SUBSTITUTE
+    A3 earnings quality:
+      [OK ] ttm_net_income = 8.97e+09
+      [OK ] ttm_operating_cash_flow = 9.8e+09
+      [OK ] cash_runway_months = not burning
+    A4 red flags:
+      [OK ] share_count_history = -0.02439
+      [OK ] filing_dates
+    A5 data integrity:
+      [OK ] latest_filing_date = 2026-07-16
+      [OK ] current_price = 309.6
+      [OK ] market_cap = 3.24e+11
+    A6 classification:
+      [OK ] annual_revenue_3y = 3
+      [OK ] annual_net_income_3y = 3
+      [OK ] free_cash_flow_5y = 5
+    B discount rate:
+      [OK ] beta = 1.246
+      [MISSING] interest_expense
+      [OK ] total_debt = 2.05e+10
+      [OK ] risk_free_rate = 0.05277
+    B path-specific:
+      [OK ] free_cash_flow = 7.26e+09 — B1/B2 cash-flow depth
+      [OK ] shares_diluted = 1.07e+09
+    C1 own history:
+      [OK ] multiple_history_7y (trailing_pe) = 5.714 — 17 observations
+      [OK ] corporate_actions = 8
+    C2 peer set:
+      [OK ] peer_candidates = 3 — 3 same-grouping names in a 118-name universe sample
+      [OK ] peer_fundamentals_resolvable = 3
+      [OK ] peer_multiples_computable = 3 — 3/3 candidates had a computable trailing_pe
+      [MISSING] peer_set — 1 survive C2's screen; 4 required
+
+  TPL (fewer than 4 obvious peers) — tests C5 SINGLE-ANCHOR MODE
+    coverage: 89% of attempted inputs
+    A6 routed to: NO TAG — the router could not classify it
+    C1 usable history: 5.4 years
+    C2 genuine peers: 0
+      LB: excluded — market cap 0.27x subject, outside 0.3-3.0x
+    -> SINGLE-ANCHOR MODE
+    A1 solvency:
+      [OK ] current_ratio = 4.552
+      [OK ] ttm_operating_cash_flow = 6.032e+08
+    A2 leverage:
+      [OK ] net_debt = -2.486e+08
+      [OK ] ttm_ebitda = 7.401e+08
+      [OK ] industry_grouping = Oil Royalty Traders — VENDOR SUBSTITUTE
+    A3 earnings quality:
+      [OK ] ttm_net_income = 5.414e+08
+      [OK ] ttm_operating_cash_flow = 6.032e+08
+      [OK ] cash_runway_months = not burning
+    A4 red flags:
+      [OK ] share_count_history = 0.0003113
+      [OK ] filing_dates
+    A5 data integrity:
+      [OK ] latest_filing_date = 2026-08-05
+      [OK ] current_price = 340.2
+      [OK ] market_cap = 2.35e+10
+    A6 classification:
+      [OK ] annual_revenue_3y = 3
+      [OK ] annual_net_income_3y = 3
+      [MISSING] free_cash_flow_5y
+    B discount rate:
+      [OK ] beta = 1.395
+      [OK ] interest_expense = 6.9e+05
+      [OK ] total_debt = 0 — summed from non-current, current and short-term parts
+      [OK ] risk_free_rate = 0.05277
+    B path-specific:
+      [MISSING] free_cash_flow — B1/B2 cash-flow depth
+      [OK ] shares_diluted = 6.903e+07
+    C1 own history:
+      [OK ] multiple_history_7y (trailing_pe) = 5.44 — 30 observations
+      [OK ] corporate_actions = 2
+    C2 peer set:
+      [OK ] peer_candidates = 1 — 1 same-grouping names in a 118-name universe sample
+      [OK ] peer_fundamentals_resolvable = 1
+      [OK ] peer_multiples_computable = 1 — 1/1 candidates had a computable trailing_pe
+      [MISSING] peer_set — 0 survive C2's screen; 4 required
+
+  SIVBQ (delisted name) — tests survivorship bias / point-in-time
+    UNREACHABLE: cik: SIVBQ not in the SEC ticker index. That index lists currently registered tickers only, so a delisted company is absent from it while its filings remain on EDGAR. Address it by CIK instead (e.g. 'CIK0000719739') or pass a cik_overrides entry. Building a universe from the index alone gives a survivors-only backtest.
+
+STOP CONDITIONS
+  [clear] Stop condition 1: cash-burn and share-count history computable
+    finding: both computable — assessed on the SPEC-GROWTH candidates among the targets (['RIVN']). Separately, cash runway was not computable for ['TSM'], which are not SPEC-GROWTH candidates: that is an A3 coverage gap worth fixing, not grounds for disabling the path.
+  [TRIPPED] Stop condition 2: seven years of historical multiples sourceable
+    finding: 5/9 targets: the source supplied under 6.50 years: ['RIVN', 'O', 'TSM', 'GE', 'TPL']
+    DIRECTIVE: REPORT BEFORE BUILDING — do not silently shorten the C1 window. C1 cannot function at full strength and the system degrades toward single-anchor operation, which C5 penalises but does not make free.
+  [TRIPPED] Stop condition 3: GICS sub-industry codes available
+    finding: GICS NOT available. Finest rung offered is industry from provider-defined taxonomy (profiles from NYSE, Nasdaq). A2 and C2 run against a substitute grouping — every result is logged VENDOR-SUBSTITUTE and the peer-gameability break criterion (Module I) applies with more force, not less.
+    DIRECTIVE: REPORT WHICH FALLBACK LEVEL IS AVAILABLE BEFORE BUILDING. A2's sector-relative leverage and C2's peer matching both run at industry level against a vendor taxonomy, which is wider than the spec assumes. Every grouping is logged VENDOR-SUBSTITUTE, and Module I's peer-gameability break criterion applies with more force, not less.
+  [clear] Stop condition 4: SINGLE-ANCHOR MODE below 40% of test companies
+    finding: 25% of 118 universe names could not reach 4 size-band peers (grouping and size only — an upper bound). The §18 roster's own rate is 89%, which is higher by design: those targets were chosen for being extreme, and the universe figure is the one this condition is asking about. Roster breakdown: 4 had candidates whose multiples would not compute; 4 had candidates, all outside the size or growth bands
+
+SUMMARY
+  targets reached: 9/10
+  SINGLE-ANCHOR MODE rate (§18 roster): 89%
+  point-in-time data: available
+
+PEER AVAILABILITY ACROSS THE UNIVERSE
+  The roster above is nine companies chosen for being extreme, so its single-anchor rate is not evidence about the market. This is:
+  assessed 118 universe names (not just the roster)
+  would fall into SINGLE-ANCHOR MODE: 25%
+  median size-band peers available: 7
+  no same-industry name at all: 0
+  median names sampled per industry: 13
+  size dispersion: 34% of an industry's members fall inside one member's size band, so an industry needs about 12 listed names before a 4-name peer set is available
+  the sample carries enough names per industry for this rate to describe the market rather than the sample
+  upper bound — grouping and size only; the growth band and the multiple test can only reduce these counts further
+
+BUILD DIRECTIVES — these change what gets built:
+  - REPORT BEFORE BUILDING — do not silently shorten the C1 window. C1 cannot function at full strength and the system degrades toward single-anchor operation, which C5 penalises but does not make free.
+  - REPORT WHICH FALLBACK LEVEL IS AVAILABLE BEFORE BUILDING. A2's sector-relative leverage and C2's peer matching both run at industry level against a vendor taxonomy, which is wider than the spec assumes. Every grouping is logged VENDOR-SUBSTITUTE, and Module I's peer-gameability break criterion applies with more force, not less.
+
+NOTES
+  Targets the source could not return at all: ['SIVBQ']. A probe that cannot reach a target has not cleared it — treat these as unknown, not as passing.
+==============================================================================

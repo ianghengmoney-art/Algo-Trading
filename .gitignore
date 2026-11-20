@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+*.sqlite
+*.sqlite3
+*.db
+reports/
+.pytest_cache/
+.env
+
+# Cached SEC and price responses. Re-downloadable, and large: one
+# push carried 1,855 of them, about 1.7 GB. None are tracked: when a run
+# refreshed a tracked one, the workflow could not pull before pushing its
+# report (run #25). The workflow keeps the cache in GitHub's own cache.
+.cache/

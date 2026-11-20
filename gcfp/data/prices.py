@@ -1,0 +1,639 @@
+"""Free price sources.
+
+EDGAR holds filings, not quotes, so prices come from elsewhere.  Two free
+options, deliberately both:
+
+* **Stooq** serves plain CSV over a stable URL with no key.  It is the sturdier
+  of the two and is tried first.
+* **Yahoo** (the endpoint ``yfinance`` wraps) is richer — it carries splits and
+  index quotes — but it is an unofficial interface that changes without notice.
+
+Neither is a contract.  A free price feed *will* break at some point, so
+:class:`FallbackPriceSource` tries them in order and reports which one answered,
+and every source returns ``None`` rather than a guess when it cannot help.  A
+silently stale price is worse than a missing one: A5 catches the missing one.
+"""
+
+from __future__ import annotations
+
+import csv
+import io
+import json
+import time
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from datetime import date, datetime, timedelta
+from pathlib import Path
+from typing import Any, Sequence
+
+from ..types import CorporateAction, CorporateActionType, DividendEvent, PricePoint
+from .adapter import DataUnavailable
+
+STOOQ_URL = "https://stooq.com/q/d/l/"
+YAHOO_CHART_URL = "https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
+
+#: Yahoo's symbol for the 10-year US Treasury yield, quoted in percent.
+TEN_YEAR_YIELD_SYMBOL = "^TNX"
+
+#: How far back a split lookup reaches. One wide request per symbol, filtered
+#: locally, instead of one request per window asked for.
+SPLIT_HISTORY_START = date(1990, 1, 1)
+
+#: How long a fetched split history is reused before asking the feed again.
+SPLITS_FRESH_DAYS = 7
+
+#: Minimum history fetched on a cache miss, so the later, wider windows a
+#: backtest asks for (C1 reaches back nine years) are already on disk.
+FETCH_HISTORY_DAYS = int(365.25 * 12)
+
+#: Days a cached "this symbol has no data" answer is trusted before the feed
+#: is asked again.
+UNAVAILABLE_TTL_DAYS = 3
+#: The benchmark D5 momentum and the beta regression are measured against.
+BENCHMARK_SYMBOL = "^GSPC"
+#: The S&P 500 with dividends reinvested. What money held in an index fund
+#: actually earns, and so the fair yardstick once holdings are credited
+#: their dividends too.
+TOTAL_RETURN_SYMBOL = "^SP500TR"
+
+
+class PriceSource(ABC):
+    """Daily closes, and whatever corporate actions the source knows about."""
+
+    name: str = "abstract"
+
+    @abstractmethod
+    def get_prices(
+        self, symbol: str, start: date, end: date
+    ) -> Sequence[PricePoint]:
+        """Newest-first daily bars."""
+
+    def get_splits(self, symbol: str, start: date, end: date) -> Sequence[CorporateAction]:
+        """Splits only.
+
+        A source that cannot report splits must raise rather than return an
+        empty tuple: C1.1 reads an empty list as "no splits occurred", and a
+        missed split leaves a step change in the multiple series that C1.2 then
+        reports as a re-rating.
+        """
+        raise DataUnavailable("splits", f"{self.name} does not report splits")
+
+    def get_index_level(self, symbol: str) -> float | None:
+        """Latest level for an index or yield symbol, if the source has one."""
+        raise DataUnavailable("index", f"{self.name} does not serve index quotes")
+
+    def get_dividends(self, symbol: str, start: date, end: date) -> Sequence[DividendEvent]:
+        """Cash dividends with an ex-date in the window. A source that cannot
+        report them raises: an empty tuple would read as "paid nothing"."""
+        raise DataUnavailable("dividends", f"{self.name} does not report dividends")
+
+
+def _session(existing: Any = None) -> Any:
+    if existing is not None:
+        return existing
+    import requests
+
+    return requests.Session()
+
+
+@dataclass
+class StooqPriceSource(PriceSource):
+    """Plain CSV, no key, no rate limit worth worrying about.
+
+    Stooq suffixes US tickers with ``.us`` and serves oldest-first CSV.
+    """
+
+    session: Any = None
+    timeout: float = 20.0
+    max_retries: int = 3
+    name: str = "stooq"
+
+    def __post_init__(self) -> None:
+        self.session = _session(self.session)
+
+    def _fetch(self, params: dict[str, str]) -> str:
+        last: Exception | None = None
+        for attempt in range(self.max_retries):
+            try:
+                resp = self.session.get(STOOQ_URL, params=params, timeout=self.timeout)
+            except Exception as exc:
+                last = exc
+                time.sleep(2.0**attempt)
+                continue
+            if resp.status_code >= 500:
+                last = RuntimeError(f"HTTP {resp.status_code}")
+                time.sleep(2.0**attempt)
+                continue
+            resp.raise_for_status()
+            return resp.text
+        raise DataUnavailable("prices", f"stooq exhausted retries: {last}")
+
+    def get_prices(
+        self, symbol: str, start: date, end: date
+    ) -> Sequence[PricePoint]:
+        text = self._fetch(
+            {
+                "s": f"{symbol.lower()}.us",
+                "i": "d",
+                "d1": start.strftime("%Y%m%d"),
+                "d2": end.strftime("%Y%m%d"),
+            }
+        )
+        if not text.strip() or text.lstrip().lower().startswith("no data"):
+            raise DataUnavailable("prices", f"stooq has no data for {symbol}")
+
+        rows = list(csv.DictReader(io.StringIO(text)))
+        out: list[PricePoint] = []
+        for row in rows:
+            try:
+                day = datetime.strptime(row["Date"], "%Y-%m-%d").date()
+                close = float(row["Close"])
+            except (KeyError, ValueError, TypeError):
+                continue
+            volume = None
+            try:
+                volume = float(row.get("Volume") or 0) or None
+            except (TypeError, ValueError):
+                pass
+            out.append(
+                PricePoint(
+                    price_date=day,
+                    close=close,
+                    # Stooq's series is already split-adjusted; it publishes no
+                    # separate unadjusted close, so the two are the same here.
+                    adjusted_close=close,
+                    volume=volume,
+                )
+            )
+        if not out:
+            raise DataUnavailable("prices", f"stooq returned no usable rows for {symbol}")
+        return tuple(sorted(out, key=lambda p: p.price_date, reverse=True))
+
+
+@dataclass
+class YahooPriceSource(PriceSource):
+    """Richer, but unofficial and liable to change without warning."""
+
+    session: Any = None
+    timeout: float = 20.0
+    max_retries: int = 3
+    name: str = "yahoo"
+
+    def __post_init__(self) -> None:
+        self.session = _session(self.session)
+
+    def _fetch(self, symbol: str, params: dict[str, Any]) -> dict[str, Any]:
+        last: Exception | None = None
+        for attempt in range(self.max_retries):
+            try:
+                resp = self.session.get(
+                    YAHOO_CHART_URL.format(symbol=symbol),
+                    params=params,
+                    timeout=self.timeout,
+                    headers={"User-Agent": "Mozilla/5.0 (compatible; gcfp/4.0)"},
+                )
+            except Exception as exc:
+                last = exc
+                time.sleep(2.0**attempt)
+                continue
+            if resp.status_code == 404:
+                raise DataUnavailable("prices", f"yahoo has no symbol {symbol}")
+            if resp.status_code in (429,) or resp.status_code >= 500:
+                last = RuntimeError(f"HTTP {resp.status_code}")
+                time.sleep(2.0 ** (attempt + 1))
+                continue
+            resp.raise_for_status()
+            payload = resp.json()
+            result = (payload.get("chart") or {}).get("result") or []
+            if not result:
+                raise DataUnavailable("prices", f"yahoo returned no result for {symbol}")
+            return result[0]
+        raise DataUnavailable("prices", f"yahoo exhausted retries: {last}")
+
+    def _chart(self, symbol: str, start: date, end: date) -> dict[str, Any]:
+        return self._fetch(
+            symbol,
+            {
+                "period1": int(datetime(start.year, start.month, start.day).timestamp()),
+                "period2": int(datetime(end.year, end.month, end.day).timestamp()) + 86400,
+                "interval": "1d",
+                "events": "div,split",
+            },
+        )
+
+    def get_prices(
+        self, symbol: str, start: date, end: date
+    ) -> Sequence[PricePoint]:
+        result = self._chart(symbol, start, end)
+        stamps = result.get("timestamp") or []
+        quote = ((result.get("indicators") or {}).get("quote") or [{}])[0]
+        adjclose_block = ((result.get("indicators") or {}).get("adjclose") or [{}])[0]
+        closes = quote.get("close") or []
+        volumes = quote.get("volume") or []
+        adjcloses = adjclose_block.get("adjclose") or []
+
+        out: list[PricePoint] = []
+        for i, stamp in enumerate(stamps):
+            close = closes[i] if i < len(closes) else None
+            if close is None:
+                continue  # Yahoo pads holidays and halts with nulls.
+            out.append(
+                PricePoint(
+                    price_date=datetime.utcfromtimestamp(stamp).date(),
+                    close=float(close),
+                    adjusted_close=(
+                        float(adjcloses[i])
+                        if i < len(adjcloses) and adjcloses[i] is not None
+                        else None
+                    ),
+                    volume=(
+                        float(volumes[i])
+                        if i < len(volumes) and volumes[i] is not None
+                        else None
+                    ),
+                )
+            )
+        if not out:
+            raise DataUnavailable("prices", f"yahoo returned no usable bars for {symbol}")
+        return tuple(sorted(out, key=lambda p: p.price_date, reverse=True))
+
+    def get_splits(
+        self, symbol: str, start: date, end: date
+    ) -> Sequence[CorporateAction]:
+        result = self._chart(symbol, start, end)
+        splits = ((result.get("events") or {}).get("splits") or {}).values()
+        out: list[CorporateAction] = []
+        for split in splits:
+            stamp = split.get("date")
+            numerator = split.get("numerator")
+            denominator = split.get("denominator")
+            if stamp is None or not denominator:
+                continue
+            ratio = float(numerator) / float(denominator)
+            out.append(
+                CorporateAction(
+                    action_type=(
+                        CorporateActionType.SPLIT
+                        if ratio >= 1
+                        else CorporateActionType.REVERSE_SPLIT
+                    ),
+                    effective_date=datetime.utcfromtimestamp(stamp).date(),
+                    ratio=ratio,
+                    description=split.get("splitRatio"),
+                )
+            )
+        return tuple(out)
+
+    def get_dividends(
+        self, symbol: str, start: date, end: date
+    ) -> Sequence[DividendEvent]:
+        result = self._chart(symbol, start, end)
+        events = ((result.get("events") or {}).get("dividends") or {}).values()
+        out: list[DividendEvent] = []
+        for event in events:
+            stamp, amount = event.get("date"), event.get("amount")
+            if stamp is None or amount is None:
+                continue
+            day = datetime.utcfromtimestamp(stamp).date()
+            if start <= day <= end and float(amount) > 0:
+                out.append(DividendEvent(ex_date=day, amount=float(amount)))
+        return tuple(sorted(out, key=lambda d: d.ex_date))
+
+    def get_index_level(self, symbol: str) -> float | None:
+        end = date.today()
+        prices = self.get_prices(symbol, end - timedelta(days=10), end)
+        return prices[0].close if prices else None
+
+
+@dataclass
+class FallbackPriceSource(PriceSource):
+    """Try each source in order; report which one answered.
+
+    A free feed breaking is a matter of when, not if, so the fallback is part
+    of the design rather than an afterthought.  ``last_source_used`` is
+    recorded so a report can say where a price came from — two sources
+    disagreeing is a thing worth being able to notice.
+    """
+
+    sources: Sequence[PriceSource] = ()
+    name: str = "fallback"
+    last_source_used: str | None = field(default=None, repr=False)
+    failures: dict[str, str] = field(default_factory=dict, repr=False)
+
+    def __post_init__(self) -> None:
+        if not self.sources:
+            self.sources = (StooqPriceSource(), YahooPriceSource())
+
+    #: Consecutive transport failures after which a source is skipped for the
+    #: rest of the run.
+    breaker_threshold: int = 3
+    _strikes: dict[str, int] = field(default_factory=dict, repr=False)
+    _tripped: set = field(default_factory=set, repr=False)
+
+    def _try(self, method: str, *args, **kwargs):
+        errors: list[str] = []
+        for source in self.sources:
+            if source.name in self._tripped:
+                errors.append(f"{source.name}: skipped (unreachable earlier this run)")
+                continue
+            try:
+                result = getattr(source, method)(*args, **kwargs)
+            except Exception as exc:
+                errors.append(f"{source.name}: {type(exc).__name__}: {exc}")
+                self.failures[source.name] = str(exc)
+                self._strike(source, exc)
+                continue
+            self._strikes[source.name] = 0
+            self.last_source_used = source.name
+            return result
+        raise DataUnavailable(method, "; ".join(errors) or "no sources configured")
+
+    def _strike(self, source: PriceSource, exc: Exception) -> None:
+        """Count a failure that says the source is unreachable, not that the
+        symbol is unknown.
+
+        A source that times out costs a minute per symbol — three attempts of
+        up to 20 seconds plus back-off — before the next source is even
+        asked. From a runner where a feed is blocked, that was most of a
+        screen's time: 45 seconds a company. After a few such failures in a
+        row the source is skipped for the rest of the run.
+        """
+        if "exhausted retries" not in str(exc):
+            return
+        self._strikes[source.name] = self._strikes.get(source.name, 0) + 1
+        if self._strikes[source.name] >= self.breaker_threshold:
+            self._tripped.add(source.name)
+            import sys
+
+            print(
+                f"  price source {source.name} unreachable "
+                f"{self.breaker_threshold} times in a row; skipping it for "
+                "the rest of this run",
+                file=sys.stderr, flush=True,
+            )
+
+    def get_prices(self, symbol: str, start: date, end: date) -> Sequence[PricePoint]:
+        return self._try("get_prices", symbol, start, end)
+
+    def get_splits(self, symbol: str, start: date, end: date) -> Sequence[CorporateAction]:
+        return self._try("get_splits", symbol, start, end)
+
+    def get_index_level(self, symbol: str) -> float | None:
+        return self._try("get_index_level", symbol)
+
+    def get_dividends(self, symbol: str, start: date, end: date) -> Sequence[DividendEvent]:
+        return self._try("get_dividends", symbol, start, end)
+
+
+@dataclass
+class CachedPriceSource(PriceSource):
+    """A disk cache in front of another price source.
+
+    Without it an interrupted run started from nothing on the price side:
+    SEC filings were already cached, but every price series was downloaded
+    again, so a laptop going to sleep halfway through a 1,400-company probe
+    cost the whole run.  With it, re-running the same command picks up where
+    the last one stopped — everything already fetched comes off disk.
+
+    A cached series is reused when it covers the requested window and either
+    the window ends before the day it was fetched (history does not change)
+    or it was fetched today (anything reaching the present is refreshed
+    daily).  A symbol the source could not price is remembered for the day
+    too, so a re-run does not retry hundreds of dead tickers.
+    """
+
+    inner: PriceSource = field(default=None)  # type: ignore[assignment]
+    cache_dir: Path = field(default=Path(".cache/prices"))
+    name: str = field(default="", init=False)
+    #: Parsed files kept in memory. A backtest asks for the same company's
+    #: prices several times a month for ten years; re-reading and re-parsing
+    #: the file each time was most of the CPU in a run.
+    _memory: dict[str, dict | None] = field(default_factory=dict, init=False, repr=False)
+
+    def __post_init__(self) -> None:
+        if self.inner is None:
+            raise ValueError("CachedPriceSource needs a source to wrap")
+        # Reports name the underlying feed, not the cache.
+        self.name = self.inner.name
+        self.cache_dir = Path(self.cache_dir)
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
+
+    def _path(self, symbol: str) -> Path:
+        safe = "".join(c if c.isalnum() or c in "-_." else "_" for c in symbol.upper())
+        return self.cache_dir / f"{safe}.json"
+
+    def _load(self, symbol: str) -> dict | None:
+        if symbol in self._memory:
+            return self._memory[symbol]
+        path = self._path(symbol)
+        payload = None
+        if path.exists():
+            try:
+                payload = json.loads(path.read_text())
+            except (OSError, ValueError):
+                payload = None
+        self._memory[symbol] = payload
+        return payload
+
+    def get_prices(self, symbol: str, start: date, end: date) -> Sequence[PricePoint]:
+        today = date.today().isoformat()
+        cached = self._load(symbol)
+        if cached is not None:
+            fetched_on = cached.get("fetched_on", "")
+            current = fetched_on == today or end.isoformat() < fetched_on
+            if cached.get("unavailable") and self._unavailable_still_trusted(fetched_on):
+                raise DataUnavailable("prices", cached["unavailable"])
+            if (
+                current
+                and not cached.get("unavailable")
+                and cached["start"] <= start.isoformat()
+                and cached["end"] >= end.isoformat()
+            ):
+                return [
+                    PricePoint(
+                        price_date=date.fromisoformat(r[0]),
+                        close=r[1],
+                        adjusted_close=r[2],
+                        volume=r[3],
+                    )
+                    for r in cached["rows"]
+                    if start.isoformat() <= r[0] <= end.isoformat()
+                ]
+            # Widen to the union so a later, longer request does not refetch
+            # what a shorter one already had.
+            if current and not cached.get("unavailable"):
+                start = min(start, date.fromisoformat(cached["start"]))
+
+        # Always fetch through today. A backtest walks forward a month at a
+        # time, so a cache that stopped at the requested end was missed —
+        # and the whole history downloaded again — at every single
+        # rebalance. Requests are still answered only up to their own end
+        # date, so nothing after the as-of date can leak out.
+        requested_start, requested_end = start, end
+        start = min(start, end - timedelta(days=FETCH_HISTORY_DAYS))
+        end = date.fromisoformat(today)
+
+        try:
+            points = list(self.inner.get_prices(symbol, start, end))
+        except DataUnavailable as exc:
+            self._save(symbol, {"fetched_on": today, "unavailable": str(exc)})
+            raise
+        self._save(
+            symbol,
+            {
+                "fetched_on": today,
+                "start": start.isoformat(),
+                "end": end.isoformat(),
+                "rows": [
+                    [p.price_date.isoformat(), p.close, p.adjusted_close, p.volume]
+                    for p in points
+                ],
+            },
+        )
+        return [
+            p for p in points
+            if requested_start <= p.price_date <= requested_end
+        ]
+
+    def _save(self, symbol: str, payload: dict) -> None:
+        self._memory[symbol] = payload
+        try:
+            self._path(symbol).write_text(json.dumps(payload))
+        except OSError:
+            pass  # a cache that cannot be written is a slower run, not a wrong one
+
+    def get_splits(self, symbol: str, start: date, end: date) -> Sequence[CorporateAction]:
+        """Splits, fetched once per symbol per day over the whole history and
+        filtered to the window.
+
+        Uncached, a backtest asked the feed for the same company's splits at
+        every monthly rebalance; with the feed throttling and the client
+        backing off, those calls alone could outlast a six-hour job.
+        """
+        key = f"{symbol}.splits"
+        today = date.today().isoformat()
+        cached = self._load(key)
+        fetched_on = (cached or {}).get("fetched_on", "")
+        if cached is None:
+            stale = True
+        elif cached.get("unavailable"):
+            # It may have been a rate limit or an outage, so it is retried —
+            # but not within the TTL, and never twice in one run.
+            stale = not self._unavailable_still_trusted(fetched_on)
+        else:
+            # Splits are rare and announced in advance, so a week-old answer
+            # is good for any window. Refetching daily cost one request per
+            # company per run once evaluations began asking for splits up to
+            # today (to restore past prices to their as-of basis).
+            age = (date.today() - date.fromisoformat(fetched_on)).days if fetched_on else None
+            stale = (
+                (age is None or age > SPLITS_FRESH_DAYS)
+                and end.isoformat() >= fetched_on
+            )
+        if stale:
+            try:
+                actions = self.inner.get_splits(symbol, SPLIT_HISTORY_START, date.today())
+            except DataUnavailable as exc:
+                cached = {"fetched_on": today, "unavailable": str(exc)}
+            else:
+                cached = {
+                    "fetched_on": today,
+                    "rows": [
+                        [a.action_type.value, a.effective_date.isoformat(), a.ratio,
+                         a.description]
+                        for a in actions
+                    ],
+                }
+            self._save(key, cached)
+        if cached.get("unavailable"):
+            raise DataUnavailable("splits", cached["unavailable"])
+        return tuple(
+            CorporateAction(
+                action_type=CorporateActionType(r[0]),
+                effective_date=date.fromisoformat(r[1]),
+                ratio=r[2],
+                description=r[3],
+            )
+            for r in cached["rows"]
+            if start.isoformat() <= r[1] <= end.isoformat()
+        )
+
+    def _unavailable_still_trusted(self, fetched_on: str) -> bool:
+        """Whether a cached "no data" answer stands, rather than being retried.
+
+        It used to stand for the calendar day only. A backtest that crossed
+        midnight UTC then re-asked the feed about every dead ticker at once,
+        each with retries and back-off, and one month of the walk outlasted
+        the job. A dead ticker does not come back, and a throttled one is
+        retried after the TTL — well inside a weekly screen's cycle.
+        """
+        try:
+            age = (date.today() - date.fromisoformat(fetched_on)).days
+        except ValueError:
+            return False
+        return age < UNAVAILABLE_TTL_DAYS
+
+    def get_dividends(self, symbol: str, start: date, end: date) -> Sequence[DividendEvent]:
+        """Dividends, fetched once per symbol over the whole history and
+        filtered to the window. Refreshed daily only for a window reaching
+        the day of the last fetch — a past window never changes."""
+        key = f"{symbol}.dividends"
+        today = date.today().isoformat()
+        cached = self._load(key)
+        fetched_on = (cached or {}).get("fetched_on", "")
+        if cached is None:
+            stale = True
+        elif cached.get("unavailable"):
+            stale = not self._unavailable_still_trusted(fetched_on)
+        else:
+            stale = fetched_on != today and end.isoformat() >= fetched_on
+        if stale:
+            try:
+                events = self.inner.get_dividends(symbol, SPLIT_HISTORY_START, date.today())
+            except DataUnavailable as exc:
+                cached = {"fetched_on": today, "unavailable": str(exc)}
+            else:
+                cached = {
+                    "fetched_on": today,
+                    "rows": [[e.ex_date.isoformat(), e.amount] for e in events],
+                }
+            self._save(key, cached)
+        if cached.get("unavailable"):
+            raise DataUnavailable("dividends", cached["unavailable"])
+        return tuple(
+            DividendEvent(ex_date=date.fromisoformat(r[0]), amount=r[1])
+            for r in cached["rows"]
+            if start.isoformat() <= r[0] <= end.isoformat()
+        )
+
+    def get_index_level(self, symbol: str) -> float | None:
+        # A live yield, read once per run; caching it would only risk staleness.
+        return self.inner.get_index_level(symbol)
+
+
+def average_dollar_volume(prices: Sequence[PricePoint], days: int = 63) -> float | None:
+    """Dollar ADV over roughly three months of trading.
+
+    The universe screen is written in dollars; a share count would let a
+    penny stock through on volume alone.
+    """
+    usable = [
+        p for p in sorted(prices, key=lambda p: p.price_date, reverse=True)[:days]
+        if p.volume is not None and p.close
+    ]
+    if len(usable) < days // 2:
+        return None
+    return sum(p.close * (p.volume or 0.0) for p in usable) / len(usable)
+
+
+__all__ = [
+    "PriceSource",
+    "StooqPriceSource",
+    "YahooPriceSource",
+    "FallbackPriceSource",
+    "CachedPriceSource",
+    "average_dollar_volume",
+    "TEN_YEAR_YIELD_SYMBOL",
+    "BENCHMARK_SYMBOL",
+    "TOTAL_RETURN_SYMBOL",
+]
