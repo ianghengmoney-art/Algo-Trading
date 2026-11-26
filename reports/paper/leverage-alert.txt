@@ -23,7 +23,7 @@ Simulated only. Nothing here places an order.
 ==============================================================================
 ETF VERSION — PAPER ACCOUNT, SGD 4,000 (started 2026-10-09)
 ==============================================================================
-value SGD 3,536 (-11.61%) · US$2,741 (-12.26% in US$) · exposure 1.81x
+value SGD 3,537 (-11.57%) · US$2,741 (-12.26% in US$) · exposure 1.81x
 orders 2 · commissions US$2
 
   ETF    sleeve             US$   share    shares     price
@@ -35,7 +35,7 @@ orders 2 · commissions US$2
 
 FUTURES CONTRACT TICKET — US$145,278 account at 3.82x
   sleeve       instrument                               target    qty     actual  off by
-  US stocks    Micro E-mini S&P 500 (MES)              138,740      4    143,940     +4%
+  US stocks    Micro E-mini S&P 500 (MES)              138,740      4    144,690     +4%
   Treasuries   10-year T-note (ZN)                           0      0          0     +0%
   Gold         Micro gold (MGC)                              0      0          0     +0%
   Intl stocks  EFA shares (EAFE futures too large)     138,740   1399    138,753     +0%
