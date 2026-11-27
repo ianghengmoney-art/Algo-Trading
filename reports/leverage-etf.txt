@@ -1,0 +1,35 @@
+==============================================================================
+MA AS LEVERAGED ETFs — what a small account could actually earn
+==============================================================================
+Data: US stocks: French daily
+Data: Intl stocks: French Developed ex US daily from 19900702
+Data: Treasuries: from Yahoo ^TNX daily yields, from 19900103
+Data: Gold: Yahoo GC=F daily from 20000831
+Period: 2001-06-29 to 2026-08-31. ETFs: US stocks UPRO (3x), Intl stocks EFO (2x), Treasuries TYD (3x), Gold UGL (2x)
+
+                                            per year   deepest  worst day  worst mo
+  MA via futures, 3.82x                       +20.6%      -38%     -12.1%    -27.6%
+  ETF version, US$3,100, $1 orders            +15.7%      -32%      -9.8%    -16.0%
+  ETF version, no commissions                 +15.8%      -32%      -9.8%    -16.0%
+
+  US$3,100 grew to US$119,638 in 25 years (futures version, same start: US$340,695)
+  orders: 307 (12.2 a year), commissions US$307 in all
+  gross exposure after each month-end: average 2.07x, highest 2.86x (futures MA reaches 3.82x)
+
+CRASH WINDOWS (total change)
+                                   futures        ETFs
+  2000-02 dot-com                   +10.0%       +9.9%
+  2008 crisis                        -1.8%       -6.9%
+  Oct 2008 alone                     -0.9%       -1.2%
+  2011 euro crisis                   -4.1%       -2.6%
+  2015 China scare                  -19.4%      -17.0%
+  Feb 2018 vol spike                -18.3%      -13.6%
+  2020 Covid                        -16.1%      -10.0%
+  2022 bear                         -18.5%      -13.5%
+
+READING IT
+  The ETF version holds less when all four sleeves are in trend (capital
+  runs out), pays ETF fees, and resets leverage daily, which helps in
+  steady trends and hurts in choppy markets. It is what an account this
+  size can hold; the futures version needs about US$150,000 or more.
+==============================================================================

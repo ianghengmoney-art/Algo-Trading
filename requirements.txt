@@ -1,0 +1,11 @@
+# Runtime dependencies.
+#
+# Prime Directive 1: no trading library anywhere in the dependency tree. The
+# system must be incapable of placing an order, not merely configured not to.
+# tests/test_prime_directives.py asserts this against both this file and every
+# import in the package.
+requests>=2.31
+
+# Optional, per data source. Uncomment only what you use.
+# pandas>=2.0          # convenience for backtest analysis; gates do not need it
+# yfinance>=0.2        # alternative adapter
